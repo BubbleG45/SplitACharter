@@ -41,8 +41,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 			return { session: null, user: null, isAdmin: false };
 		}
 
-		// Bootstrap admin dynamically if the email matches ADMIN_EMAIL
-		if (user.email === ADMIN_EMAIL) {
+		// Bootstrap admin dynamically if the email matches one of the comma-separated ADMIN_EMAIL list
+		const adminEmails = ADMIN_EMAIL
+			? ADMIN_EMAIL.split(',').map((email) => email.trim().toLowerCase())
+			: [];
+
+		if (user.email && adminEmails.includes(user.email.toLowerCase())) {
 			const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 			
 			// Check if already in admin_users table
