@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { type Handle } from '@sveltejs/kit';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import { SUPABASE_SERVICE_ROLE_KEY, ADMIN_EMAIL } from '$env/static/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// Initialize Supabase server client
@@ -26,7 +28,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		} = await event.locals.supabase.auth.getSession();
 
 		if (!session) {
-			return { session: null, user: null };
+			return { session: null, user: null, isAdmin: false };
 		}
 
 		const {
@@ -34,12 +36,39 @@ export const handle: Handle = async ({ event, resolve }) => {
 			error
 		} = await event.locals.supabase.auth.getUser();
 
-		if (error) {
+		if (error || !user) {
 			// JWT validation failed or expired
-			return { session: null, user: null };
+			return { session: null, user: null, isAdmin: false };
 		}
 
-		return { session, user };
+		// Bootstrap admin dynamically if the email matches ADMIN_EMAIL
+		if (user.email === ADMIN_EMAIL) {
+			const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+			
+			// Check if already in admin_users table
+			const { data: adminExists } = await supabaseAdmin
+				.from('admin_users')
+				.select('id')
+				.eq('id', user.id)
+				.maybeSingle();
+
+			if (!adminExists) {
+				await supabaseAdmin
+					.from('admin_users')
+					.insert({ id: user.id });
+			}
+		}
+
+		// Check if user is in admin_users
+		const { data: adminRecord } = await event.locals.supabase
+			.from('admin_users')
+			.select('id')
+			.eq('id', user.id)
+			.maybeSingle();
+
+		const isAdmin = !!adminRecord;
+
+		return { session, user, isAdmin };
 	};
 
 	// Resolve the request, filtering serialized response headers for Supabase compatibility

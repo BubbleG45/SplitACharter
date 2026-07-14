@@ -1,2 +1,188 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script lang="ts">
+	let { data } = $props();
+</script>
+
+<svelte:head>
+	<title>SplitACharter — Shared Private Boat Charters</title>
+</svelte:head>
+
+<div class="landing-wrapper">
+	<!-- Background Blur Elements -->
+	<div class="bg-blur bg-blur-1"></div>
+	<div class="bg-blur bg-blur-2"></div>
+
+	<main class="landing-main">
+		<header class="landing-header">
+			<span class="logo-text">SplitACharter</span>
+			<nav class="nav-links">
+				{#if data.session}
+					{#if data.isAdmin}
+						<a href="/admin" class="btn btn-secondary">Admin Dashboard</a>
+					{:else}
+						<span class="user-greeting">Hello, {data.user?.email}</span>
+						<form action="/login?/signOut" method="POST" style="display: inline;">
+							<button type="submit" class="btn btn-secondary">Sign Out</button>
+						</form>
+					{/if}
+				{:else}
+					<a href="/login" class="btn btn-primary">Sign In</a>
+				{/if}
+			</nav>
+		</header>
+
+		<section class="hero">
+			<span class="badge">Phase 1 Release</span>
+			<h1>Share a Boat Charter.<br/><span class="highlight">Pay Half the Price.</span></h1>
+			<p class="hero-desc">
+				SplitACharter connects small groups who want to share a private boat charter. 
+				Each group pays exactly half. No login passwords, just smooth sailing.
+			</p>
+			<div class="hero-actions">
+				{#if data.session}
+					{#if data.isAdmin}
+						<a href="/admin" class="btn btn-primary btn-large">Go to Operations Admin</a>
+					{:else}
+						<a href="/browse" class="btn btn-primary btn-large">Browse Charters</a>
+						<a href="/dashboard" class="btn btn-secondary btn-large">My Dashboard</a>
+					{/if}
+				{:else}
+					<a href="/login" class="btn btn-primary btn-large font-bold">Sign In to Platform</a>
+					<a href="/browse" class="btn btn-secondary btn-large">Browse Charters</a>
+				{/if}
+			</div>
+		</section>
+	</main>
+</div>
+
+<style>
+	.landing-wrapper {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+		position: relative;
+		overflow: hidden;
+		background: #060913;
+	}
+
+	/* Glowing decorative blobs */
+	.bg-blur {
+		position: absolute;
+		border-radius: 50%;
+		filter: blur(150px);
+		z-index: 1;
+		pointer-events: none;
+		opacity: 0.15;
+	}
+	.bg-blur-1 {
+		background: var(--primary);
+		width: 500px;
+		height: 500px;
+		top: -10%;
+		right: 5%;
+	}
+	.bg-blur-2 {
+		background: var(--secondary);
+		width: 500px;
+		height: 500px;
+		bottom: -10%;
+		left: 5%;
+	}
+
+	.landing-main {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		max-width: 1200px;
+		margin: 0 auto;
+		width: 100%;
+		padding: 2rem;
+		z-index: 2;
+	}
+
+	.landing-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 5rem;
+	}
+	.logo-text {
+		font-family: var(--font-heading);
+		font-weight: 800;
+		font-size: 1.5rem;
+		background: linear-gradient(135deg, var(--primary), var(--secondary));
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		letter-spacing: -0.5px;
+	}
+	.nav-links {
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
+	}
+	.user-greeting {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+
+	.hero {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		max-width: 650px;
+		padding-bottom: 5rem;
+	}
+	.badge {
+		background: rgba(6, 182, 212, 0.12);
+		color: var(--primary);
+		border: 1px solid rgba(6, 182, 212, 0.25);
+		padding: 6px 14px;
+		border-radius: 20px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+		align-self: flex-start;
+		margin-bottom: 1.5rem;
+	}
+	.hero h1 {
+		font-size: 3.5rem;
+		font-weight: 850;
+		line-height: 1.15;
+		letter-spacing: -1.5px;
+		margin-bottom: 1.5rem;
+	}
+	.highlight {
+		background: linear-gradient(135deg, var(--primary), var(--secondary));
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
+	.hero-desc {
+		font-size: 1.15rem;
+		color: var(--text-secondary);
+		line-height: 1.6;
+		margin-bottom: 2.5rem;
+	}
+	.hero-actions {
+		display: flex;
+		gap: 1rem;
+		align-items: center;
+	}
+	.btn-large {
+		padding: 14px 28px;
+		font-size: 1rem;
+	}
+	.font-bold {
+		font-weight: 700;
+	}
+
+	@media (max-width: 768px) {
+		.hero h1 {
+			font-size: 2.5rem;
+		}
+		.landing-header {
+			margin-bottom: 3rem;
+		}
+	}
+</style>

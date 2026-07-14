@@ -1,0 +1,199 @@
+﻿SplitACharter
+Solo Developer Build Plan
+Based on Developer Specification v6.0  ·  Phase 1 scope only
+How to use this document
+This sequences the v6.0 spec into a buildable order for one developer working alone. It is organized into 7 build phases plus a Day-Zero setup phase, each ending in something you can actually click through and test — not a pile of unfinished pieces.
+Timeframes are sizing estimates assuming full-time solo work and familiarity with the chosen stack. Treat them as relative weights between phases, not a contractual schedule — your actual pace depends on experience with Stripe, Twilio, and your framework of choice.
+Sections marked ⚠ HARD are the parts of this spec that are genuinely tricky engineering, not routine CRUD — budget extra time and testing for these specifically.
+1. Build sequencing overview
+The spec has one foundational fact that should drive build order: almost everything depends on the data model for listings, trip instances, groups, and captains. Build that wrong and every later phase requires rework. So the plan front-loads schema design, then layers features in the order a real booking would happen — browse, book, reconfirm, match, notify — before touching the admin tooling that supports each of those steps.
+Week
+Build focus
+Done means
+Phase 0
+Environment, accounts, and stack setup
+All third-party accounts approved/sandboxed; empty project deploys
+Phase 1
+Data model + auth + admin skeleton
+Admin can log in and CRUD a listing template by hand
+Phase 2
+Customer browse, profile, booking, payment
+A real customer can create a profile and pay $50 for a trip
+Phase 3
+Reconfirmation engine
+Two test bookings correctly trigger windows, reminders, forfeiture
+Phase 4
+Captain database + text blast + matching
+A simulated blast picks a winning captain correctly under race conditions
+Phase 5
+Full notification system
+Every trigger in spec section 6 fires the correct channel(s), logged
+Phase 6
+Admin operational tooling
+Admin can run the entire business from a phone
+Phase 7
+Hardening, edge cases, and launch prep
+Refunds, cancellations, and strikes all behave per policy under test
+Rough relative sizing across phases, assuming full-time solo work:
+Phase 0–1 (foundation): ~15% of total effort — feels slow, nothing user-visible yet, but rushing this is the single biggest source of rework later.
+Phase 2–4 (core booking loop + reconfirmation + matching): ~45% of total effort — this is the actual product.
+Phase 5–6 (notifications + admin tooling): ~25% of total effort — large surface area, but mostly repetitive once the patterns are set.
+Phase 7 (hardening + launch): ~15% of total effort — always longer than it feels like it should be.
+2. Phase 0 — Day-zero setup
+Several of these have external approval lead times measured in days, not minutes. Kick these off before writing application code.
+2.1 Accounts to open immediately
+Stripe — standard account for Payment Intents. No Connect needed in Phase 1. Verify business details early; Stripe's own KYC review can take a few days.
+SMS provider (Twilio recommended) — buy a phone number, register for A2P 10DC messaging (US carrier compliance for business SMS). This registration step alone can take 1–2 weeks — start it the same day you start coding.
+Email provider (Resend) — verify your sending domain (SPF/DKIM) early so deliverability is solid before launch.
+Hosting/infra — see stack recommendation below.
+Supabase Auth — phone provider — connect Twilio (or Twilio Verify) inside Supabase's Auth > Providers > Phone settings, separately from the application-level Twilio integration used for notifications. This is a distinct setup step with its own credentials, not something the main Twilio account configuration covers automatically.
+2.2 Recommended stack
+The spec deliberately leaves the stack open (“developer to choose notification stack based on experience and preference”), but two constraints are fixed for this build: Supabase for the database and Vercel for hosting. The remaining choices are driven by one hard requirement — this site will be used in areas without reliable connectivity, so minimizing JavaScript shipped to the browser is a real constraint, not a nice-to-have.
+SvelteKit is recommended over a React-based framework like Next.js specifically because of this constraint: Svelte compiles away its runtime instead of shipping a framework to the browser, so a typical page ships meaningfully less JavaScript than an equivalent React page. That matters directly for time-to-usable on a weak signal. SvelteKit's form actions also use progressive enhancement — booking, payment, and reconfirm forms degrade to a plain HTML POST and still work even if JS hasn't finished loading, which is a materially better failure mode than a client-rendered form that does nothing until the bundle hydrates. The tradeoff is a smaller ecosystem and hiring pool than React, which matters less for a solo build than it would for a team.
+Layer
+Recommendation
+Why
+Framework
+SvelteKit, deployed via the Vercel adapter
+Smallest JS payload per page of the mainstream options — directly addresses the low-connectivity requirement; progressive-enhancement forms degrade gracefully on a weak connection
+Database
+Supabase (managed Postgres)
+Relational integrity matters a lot here (trip capacity, payment state, strikes); also provides built-in auth and row-level security, reducing what you build by hand
+Background jobs
+Inngest — not cron, and not a self-hosted worker
+Reconfirmation windows and the captain blast both need precise, cancellable, reschedulable timers — see ⚠ HARD sections below. Vercel functions are short-lived, so a self-hosted BullMQ/Redis worker doesn't fit this hosting model the way it would on a traditional server; Inngest's step-function model (steps with step.sleep() between them, each checkpointed independently) maps directly onto the reconfirmation flow, and Supabase's own scheduler (pg_cron) only supports recurring schedules, not per-booking delayed/cancellable jobs
+SMS
+Twilio (Programmable SMS + incoming webhook for replies)
+Industry standard, good two-way SMS support for the “reply YES” captain flow and STOP opt-out
+Email
+Resend
+Reliable transactional delivery with good template support and a clean SvelteKit/Vercel integration story
+Payments
+Stripe Payment Intents
+Spec explicitly scopes to this; architect with Stripe Customer objects from day one so Connect can be added in Phase 2 without a rebuild
+Auth
+Supabase Auth, passwordless: email magic link + SMS OTP, persistent sessions
+Already paired with the database; avoids hand-rolling session security. Note: email sends a true clickable link, but phone/SMS can only send a typed 6-digit code — the two need different UI, not one shared “check your messages” screen. Phone OTP also requires its own Twilio hookup inside Supabase's Auth settings, separate from the app's notification Twilio integration
+Hosting
+Vercel
+Minimizes ops burden for a solo developer; first-class SvelteKit adapter support
+3. Phase 1 — Data model, auth, admin skeleton
+Get the schema right before building any UI on top of it. This is the highest-leverage phase in the whole project.
+3.1 Core entities
+ListingTemplate — trip type, location, duration, price range (low/high), max passengers, description, what's included/to bring, meeting area, active flag.
+TripInstance — belongs to a ListingTemplate, has a date, status (open / half-booked / pending-reconfirm / confirmed / completed / canceled), and a captain reference (nullable until matched).
+Booking (a “group” on a trip) — belongs to a TripInstance and a Customer, group size, payment status, reconfirmation status/timestamp, certification fields (nullable, only used for dive trip types).
+Customer — profile fields per spec section 2, SMS opt-in, strike count, flagged boolean.
+Captain — full entity per spec section 4E/10, including the forward-looking fields (login placeholder, booking platform name/ID, availability calendar structure) even though they're unused in Phase 1.
+Notification log — every send: recipient, channel, template, content, status, timestamp.
+PaymentRecord — Stripe Payment Intent ID, amount, status, refund history.
+AdminNotificationSetting — per-trigger toggle for text/email, independently.
+⚠ HARD — Booking and TripInstance need explicit state machines
+Don't model trip/booking status as a loose string field you set ad hoc. Define the explicit states and legal transitions up front (e.g. open → half-booked → pending-reconfirm → confirmed → completed, with cancel/forfeit branches at each step). This single decision prevents most of the bugs that show up later in reconfirmation and refund logic, because you can assert “this transition is invalid” instead of discovering inconsistent state in production.
+3.2 Build order within this phase
+Schema + migrations for all entities above.
+Admin auth (simple — email magic link via Supabase Auth is fine for the single admin user; no need to build the SMS OTP path for this account specifically).
+Admin CRUD for ListingTemplate (create/edit/activate/deactivate) — this is spec section 4B.
+Customer auth: email magic link first, then layer in SMS OTP as a second login option — these need separate completion UI, since email ends in a clicked link and SMS ends in a typed code. Configure persistent (long-lived) sessions so returning customers don't have to re-authenticate often.
+Empty admin dashboard shell (the real dashboard widgets come in Phase 6, but route/auth/layout now).
+Phase 1 exit test: log in as admin, create a real listing template (e.g. “Reef Fishing, Upper Keys, 4hr”), edit it, deactivate and reactivate it. No customer-facing UI required yet.
+4. Phase 2 — Customer browse, profile, booking, payment
+This phase builds the entire customer-facing happy path for booking the first half of a charter. It deliberately excludes the second-group match and reconfirmation logic — that's Phase 3.
+4.1 Build order
+Customer profile completion flow — required fields, mandatory SMS opt-in (cannot proceed without it), “how did you hear about us” dropdown.
+Browse/filter page: single trip-type dropdown with category grouping, location, date range, duration, half-booked toggle. Real-time filtering, no full page reload.
+Trip instance resolution logic: when a customer picks a date for a template, find an existing open instance for that date or create one. This is small but important — get the “find-or-create” logic right and unit-test it, since the auto-spawn behavior in Phase 3 depends on the same pattern.
+Trip detail page: price range display, status, explainer copy, Join Charter button.
+Join Charter flow: group size selection with the dynamic max-for-second-group calculation, certification fields conditional on trip type, liability disclaimer checkbox, commitment checkbox.
+Stripe Payment Intent integration for the $50 fee, with card-on-file opt-in and webhook handling for payment success/failure.
+Confirmation screen + the two notifications this triggers (first-group and, later, second-group emails/texts — build the actual sends in Phase 5, but stub them now so the flow is end-to-end testable).
+Customer dashboard v1: list of active reservations with status.
+⚠ HARD — Preventing double-booking on capacity
+Two customers could theoretically hit “Join Charter” on the same half-open trip instance at nearly the same moment. Without a safeguard, both could be accepted past the 2-group cap. Use a database-level constraint or transaction (e.g. a row lock or a unique partial index limiting bookings per instance) rather than only checking capacity in application code before insert — application-level checks have a race window between the check and the write.
+Phase 2 exit test: two separate test customer accounts can browse, filter, and each book a trip — one as the first group, one joining an already-half-booked trip — and pay through Stripe sandbox successfully.
+5. Phase 3 — Reconfirmation engine
+This is the most mechanically intricate piece of business logic in the whole spec. It deserves its own phase and its own dedicated test suite before you build anything that depends on it (the captain blast in Phase 4 only fires after both groups reconfirm).
+5.1 The tiered window logic
+Per spec section 5, build this as a pure function of time-until-trip, not hardcoded branches sprinkled through the codebase:
+If time-to-trip > 72 hours → window = 24 hours, reminders at 12h and 2h remaining.
+If 48–72 hours → window = 12 hours, reminders at 6h and 2h remaining.
+If < 24 hours → window = min(2 hours, time remaining), reminder at 1h remaining.
+General reminder rule per spec: 50% of the window elapsed, and again at 2 hours remaining (or sooner if the window itself is under 2 hours).
+Write this as one isolated, heavily unit-tested function (input: trip datetime, current time → output: window length, reminder timestamps). Every other part of the system just calls it.
+⚠ HARD — Scheduling and canceling timers reliably
+Each reconfirmation window needs: a deadline job, one or two reminder jobs before it, and the ability to cancel all of them instantly if both groups confirm early. This is exactly the use case Inngest's step functions are for — don't try to do this with a single cron sweep checking “is anyone overdue” every minute (whether built on a self-hosted scheduler or on Supabase's own pg_cron), since that makes precise reminder timing and instant cancellation awkward. Because Vercel functions are short-lived rather than long-running processes, schedule delayed jobs as Inngest steps (step.sleep() between a deadline step and reminder steps) rather than a self-hosted BullMQ/Redis-style worker — the worker pattern assumes a persistent process that Vercel's hosting model doesn't provide. Schedule these steps at booking-match time, and on early confirmation, cancel the pending run for that booking explicitly.
+5.2 Build order
+Reconfirmation request triggered the moment a second group pays (spec Flow 1/3).
+Schedule window-deadline and reminder jobs per the tiered logic above.
+Reconfirm action (customer-facing button/link) that marks a booking confirmed and cancels its pending timers.
+Deadline-reached job logic: if one group confirmed and the other didn't — forfeit the non-confirmer's $50, mark a strike, hold the confirmer's $50, reset the trip instance to open, notify both per spec section 6A.
+Both-confirmed trigger → hands off to the admin approval queue (Phase 6) or auto-fires the captain blast directly if under 24 hours (Phase 4).
+Auto-spawn: the instant a trip reaches 2-of-2 confirmed, create a fresh 0-of-2 instance for the same date/type/location.
+Phase 3 exit test: simulate a match, let one group confirm and force the other to time out — verify the forfeiting account gets a strike, the confirming group's fee is held (not auto-refunded), the trip resets to open, and a fresh listing still shows for that date. Then repeat with both groups confirming and verify the auto-spawn instance appears.
+6. Phase 4 — Captain database and text-blast matching
+6.1 Captain CRM (admin-only)
+Build per spec sections 4E and 10: full entity with multi-select trip types, location/marina, minimum notice, max passengers, small-craft-advisory flag (stored now, acted on in Phase 2 of the product later), referral promo code (auto-generated per captain), admin notes, active toggle, and the forward-looking placeholder fields (login credential placeholder, availability calendar structure, booking platform name/ID) so a future captain portal doesn't require a data migration.
+6.2 The text blast and first-acceptance race
+⚠ HARD — This is the trickiest concurrency problem in the entire spec
+When a match is approved, the system texts every eligible captain (filtered by trip type, location, minimum notice, active status) simultaneously, and the first to reply YES wins the booking. Two captains can plausibly reply within the same second. If your acceptance handler isn't atomic, you can end up with two captains both believing they got the trip.
+Handle this the same way as the booking-capacity problem in Phase 2: use a database-level atomic update (e.g. “update trip_instance set captain_id = X where id = Y and captain_id is null”, checking that exactly one row was affected) rather than “check if captain_id is null, then set it” as two separate steps. Whichever incoming SMS webhook wins that atomic update is the accepting captain; every other webhook for the same trip sees the slot already filled and triggers the “claimed” text instead.
+6.3 Build order
+Captain CRM CRUD (admin only, no captain-facing login per spec section 4E).
+Captain query/filter logic: trip type match, location match, minimum-notice satisfied, active = true.
+Outbound blast: send the same templated text simultaneously to every matching captain via Twilio.
+Inbound webhook handler for replies — parse “YES” or the accept-link click, run the atomic-acceptance check above.
+Winning-captain path: send full group details to the captain, send captain contact info to both customer groups, notify admin.
+Losing-captains path: immediate “claimed” follow-up text.
+STOP opt-out handling on the same inbound webhook (build this from day one per spec section 4F, not as an afterthought).
+No-response timeout: if no captain accepts within a set window, alert admin to handle manually.
+Referral promo code: if a customer entered a captain's code at booking, that captain gets first-text priority for a window before the blast opens to everyone else — build the tier/timing field now even though Phase 1 sets every captain to the same default tier (this is explicitly called out as Phase 2 premium-tier groundwork).
+Phase 4 exit test: with several test captains in the database matching the same trip type/location, fire a blast and have two “win” attempts arrive at nearly the same time (script this, don't rely on manually timing two phones) — verify exactly one captain is recorded as accepted and the other receives the claimed message.
+7. Phase 5 — Full notification system
+By this point most of the individual triggers already exist from earlier phases (you stubbed them). This phase is about building the real templated, logged, toggleable notification layer underneath all of them — spec section 6 in full, plus section 4J's admin controls.
+7.1 Build order
+Notification template storage (admin-editable, per spec 4J) for every trigger listed in spec sections 6A/6B/6C.
+Per-trigger, per-channel toggle (text and email independently) — a single settings table the send layer checks before dispatch.
+Unified send function: given a trigger + recipient + data, looks up the template, checks the toggle, sends via the right channel, and writes to the notification log regardless of outcome.
+Wire every trigger from Phases 2–4 through this unified function instead of any stubbed/inline sends.
+Admin notification log viewer with filters (recipient, channel, status, date).
+Manual send capability — admin can message any customer, group, or captain directly.
+Configurable admin phone number(s) for alerts.
+Phase 5 exit test: trigger one of each notification type in spec sections 6A–6C end-to-end (don't just unit-test the template — actually receive the text/email) and confirm it's correctly logged with delivery status. Toggle one notification off and confirm it's silently skipped but still logged as suppressed.
+8. Phase 6 — Admin operational tooling
+Spec section 4 in full. The match approval queue is explicitly called out as the priority mobile UI — build and test that one on an actual phone, not just a resized browser window.
+8.1 Build order
+Admin dashboard overview counters and recent activity feed (section 4A).
+Trip instance management: filter/view/edit/cancel/override, manual captain assignment, internal notes (section 4C).
+Match approval queue — mobile-first, side-by-side group details, one-click approve/reject, optional note. This is the screen admin will use most under time pressure, so prioritize speed and clarity over completeness.
+Customer management: profiles, booking history, strike history, suspend/flag, manual cancel + refund (section 4H).
+Payments & refunds view: all fees collected, forfeited fees, one-click refund, CSV export (section 4I).
+Weather cancellation review queue (manual approve/deny, section 3D/6).
+Reporting/CSV export across the data points listed in section 4G — build this generically (a query-builder-style export) rather than one bespoke report per requested metric, since the spec explicitly wants this to scale.
+Phase 6 exit test: from a phone only, approve a pending match, reassign a captain on an existing trip, issue a refund, and export a CSV — all without touching a desktop.
+9. Phase 7 — Hardening, edge cases, launch prep
+9.1 Policy edge cases to explicitly test
+Spec section 7's cancellation table is short, but each row has a different automatic/manual split. Write a test (manual or automated) for each row specifically:
+Cancel before any match — full automatic refund.
+Reconfirmed, then cancels before captain assigned — full automatic refund.
+Failed to reconfirm — forfeiture for that group, held (not auto-refunded) for the other.
+No match found before trip date — full automatic refund.
+Admin cancels for any reason — full automatic refund to all groups.
+No captain found after match — full automatic refund.
+Weather cancellation — manual review only, never automatic.
+Account strike accumulation and flagging — verify flagged name/email/phone actually blocks easy re-registration.
+9.2 Other pre-launch items
+Liability disclaimer copy — spec explicitly says to model on rideshare disclaimer language and consult legal counsel before finalizing wording. Do not ship placeholder legal text.
+Load-test the captain blast path specifically — it's the one place a burst of simultaneous writes is expected by design, not just possible under unlucky timing.
+Verify every admin notification toggle actually suppresses both channels independently, not just one.
+Confirm Stripe webhook idempotency — Stripe can redeliver webhooks; duplicate processing of a refund or payment-success event should be a no-op, not a double-charge or double-refund.
+Begin the booking-platform partner applications (FareHarbor, Rezdy, Peek Pro, Checkfront, Dockwa) now if you haven't already — spec section 9 notes these take weeks to months and should run in parallel with development, not after launch.
+10. What this plan deliberately leaves out
+Per spec sections 12 and 14, none of the following should be scoped, designed, or estimated as part of this build:
+Captain-facing login or portal of any kind
+Premium captain tier (paid first-access window) and rating-based notification order
+Small craft advisory auto-filter on the blast, and any booking-platform API integrations
+Full charter payment collection / Stripe Connect escrow
+Scuba certification verification API, reviews, post-trip questionnaires, in-app messaging, multi-language support, native mobile app
+The spec does ask you to architect a few things now so they're easy to add later without a rebuild: Captain records with placeholder fields for a future portal, and Stripe integration patterns that could extend to Connect. Build those fields and patterns, but stop there — don't build the features they're placeholders for.
+Bottom line for a solo build
+The two phases most likely to take longer than expected are Phase 3 (reconfirmation timers) and Phase 4 (the captain blast race condition) — not because either is conceptually hard, but because correctness here depends on getting concurrency and scheduling right, and that class of bug doesn't show up until you specifically test for it. Budget real test-writing time for both, not just feature-writing time.
