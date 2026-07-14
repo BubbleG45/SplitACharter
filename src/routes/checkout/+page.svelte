@@ -4,9 +4,13 @@
 	let { data, form } = $props();
 
 	// Step states
+	/* svelte-ignore state_referenced_locally */
 	let name = $state(data.profile?.name || '');
+	/* svelte-ignore state_referenced_locally */
 	let phone = $state(data.profile?.phone || '');
+	/* svelte-ignore state_referenced_locally */
 	let smsOptIn = $state(data.profile?.sms_opt_in || false);
+	/* svelte-ignore state_referenced_locally */
 	let howHeard = $state(data.profile?.how_heard || '');
 	
 	let groupSize = $state(1);

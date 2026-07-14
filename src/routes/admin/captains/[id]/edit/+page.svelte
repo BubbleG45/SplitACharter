@@ -3,6 +3,7 @@
 
 	let { data, form } = $props();
 
+	/* svelte-ignore state_referenced_locally */
 	let active = $state(data.captain.active);
 
 	const tripTypeOptions = [
@@ -97,6 +98,7 @@
 				<h3>Qualifications & Eligibility</h3>
 
 				<div class="form-group">
+					<!-- svelte-ignore a11y_label_has_associated_control -->
 					<label>Trip Types Approved</label>
 					<div class="options-grid">
 						{#each tripTypeOptions as type}
@@ -109,6 +111,7 @@
 				</div>
 
 				<div class="form-group">
+					<!-- svelte-ignore a11y_label_has_associated_control -->
 					<label>Locations / Marinas Approved</label>
 					<div class="options-grid">
 						{#each locationOptions as loc}

@@ -4,9 +4,11 @@
 	let { data, form } = $props();
 
 	// Array state management initialized from existing data
+	/* svelte-ignore state_referenced_locally */
 	let whatsIncludedList = $state<string[]>(data.listing.whats_included || []);
 	let newIncludedItem = $state('');
 	
+	/* svelte-ignore state_referenced_locally */
 	let whatToBringList = $state<string[]>(data.listing.what_to_bring || []);
 	let newBringItem = $state('');
 
