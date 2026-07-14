@@ -174,3 +174,14 @@ button {
   filter: brightness(1.1);
   box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
 }
+
+/* Global SVG dimension helpers (Tailwind fallback compatibility) */
+svg.w-4, .w-4 { width: 16px !important; }
+svg.h-4, .h-4 { height: 16px !important; }
+svg.w-5, .w-5 { width: 20px !important; }
+svg.h-5, .h-5 { height: 20px !important; }
+svg.w-6, .w-6 { width: 24px !important; }
+svg.h-6, .h-6 { height: 24px !important; }
+svg.w-12, .w-12 { width: 48px !important; }
+svg.h-12, .h-12 { height: 48px !important; }
+
