@@ -68,14 +68,16 @@
 			<!-- Row 1: Trip Type & Location -->
 			<div class="form-group">
 				<label for="trip_type">Trip Type / Name</label>
-				<input
-					type="text"
+				<select
 					id="trip_type"
 					name="trip_type"
-					value={data.listing.trip_type}
-					placeholder="e.g., Deep Sea Fishing, Scuba Reef Dive"
 					required
-				/>
+				>
+					<option value="" disabled>Select a Trip Type</option>
+					{#each data.tripTypes as type}
+						<option value={type.name} selected={type.name === data.listing.trip_type}>{type.name}</option>
+					{/each}
+				</select>
 			</div>
 
 			<div class="form-group">

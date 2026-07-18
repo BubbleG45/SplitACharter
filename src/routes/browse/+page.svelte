@@ -4,6 +4,7 @@
 	let searchQuery = $state('');
 	let filterDuration = $state('all'); // 'all', 'half-day', 'full-day'
 	let filterPax = $state('all'); // 'all', 'small', 'medium', 'large'
+	let filterTripType = $state('all');
 
 	// Client-side filtering
 	let filteredListings = $derived(
@@ -38,7 +39,10 @@
 			else if (filterPax === 'medium') matchesPax = pax > 4 && pax <= 8;
 			else if (filterPax === 'large') matchesPax = pax > 8;
 
-			return matchesSearch && matchesDuration && matchesPax;
+			// Trip Type filter
+			const matchesTripType = filterTripType === 'all' || listing.trip_type === filterTripType;
+
+			return matchesSearch && matchesDuration && matchesPax && matchesTripType;
 		})
 	);
 
@@ -116,6 +120,16 @@
 						<option value="small">Small Group (1–4 pax)</option>
 						<option value="medium">Medium Group (5–8 pax)</option>
 						<option value="large">Large Group (9+ pax)</option>
+					</select>
+				</div>
+
+				<div class="select-wrapper">
+					<label for="trip-type">Trip Type</label>
+					<select id="trip-type" bind:value={filterTripType}>
+						<option value="all">Any Trip Type</option>
+						{#each data.tripTypes as type}
+							<option value={type.name}>{type.name}</option>
+						{/each}
 					</select>
 				</div>
 			</div>

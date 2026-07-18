@@ -6,15 +6,6 @@
 	/* svelte-ignore state_referenced_locally */
 	let active = $state(data.captain.active);
 
-	const tripTypeOptions = [
-		'Inshore Fishing',
-		'Offshore Fishing',
-		'Reef Fishing',
-		'Sunset Cruise',
-		'Sandbar Excursion',
-		'Snorkeling Trip'
-	];
-
 	const locationOptions = [
 		'Miami Beach Marina',
 		'Key West Bight Marina',
@@ -101,10 +92,10 @@
 					<!-- svelte-ignore a11y_label_has_associated_control -->
 					<label>Trip Types Approved</label>
 					<div class="options-grid">
-						{#each tripTypeOptions as type}
+						{#each data.tripTypes as type}
 							<label class="checkbox-option">
-								<input type="checkbox" name="trip_types" value={type} checked={data.captain.trip_types?.includes(type)} />
-								<span>{type}</span>
+								<input type="checkbox" name="trip_types" value={type.name} checked={data.captain.trip_types?.includes(type.name)} />
+								<span>{type.name}</span>
 							</label>
 						{/each}
 					</div>

@@ -163,7 +163,177 @@
 	{/each}
 </div>
 
+<div class="divider-main"></div>
+
+<div class="admin-header section-header">
+	<div>
+		<span class="subtitle">Operations Configuration</span>
+		<h2>Allowed Trip Types</h2>
+		<p class="section-desc">Manage the exact categories of charters allowed on the platform.</p>
+	</div>
+</div>
+
+{#if form?.tripTypeMessage}
+	<div class="alert alert-error glass">
+		<p>{form.tripTypeMessage}</p>
+	</div>
+{/if}
+
+<div class="trip-types-container glass">
+	<div class="trip-types-grid">
+		<div class="add-type-form">
+			<h3>Add New Trip Type</h3>
+			<form method="POST" action="?/addTripType" use:enhance class="type-form">
+				<div class="form-group">
+					<label for="new-trip-type">Trip Type Name</label>
+					<input 
+						id="new-trip-type" 
+						type="text" 
+						name="name" 
+						placeholder="e.g. Eco Tour" 
+						required 
+						class="text-input"
+					/>
+				</div>
+				<button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; align-self: flex-start;">Add Trip Type</button>
+			</form>
+		</div>
+
+		<div class="types-list-section">
+			<h3>Active Trip Types ({data.tripTypes?.length || 0})</h3>
+			{#if !data.tripTypes || data.tripTypes.length === 0}
+				<p class="empty-msg">No trip types defined. The system requires at least one.</p>
+			{:else}
+				<div class="types-table glass">
+					{#each data.tripTypes as type}
+						<div class="type-row">
+							<span class="type-name">{type.name}</span>
+							<form method="POST" action="?/deleteTripType" use:enhance class="delete-form">
+								<input type="hidden" name="name" value={type.name} />
+								<button 
+									type="submit" 
+									class="btn-danger-action"
+									onclick={(e) => {
+										if (!confirm(`Are you sure you want to delete "${type.name}"?`)) {
+											e.preventDefault();
+										}
+									}}
+								>
+									Delete
+								</button>
+							</form>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	</div>
+</div>
+
 <style>
+	.divider-main {
+		margin: 4rem 0 3rem 0;
+		height: 1px;
+		background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+	}
+	.section-header {
+		margin-bottom: 1.5rem;
+	}
+	.section-header h2 {
+		font-size: 1.75rem;
+		font-weight: 800;
+		margin-top: 0.25rem;
+	}
+	.section-desc {
+		font-size: 0.95rem;
+		color: var(--text-secondary);
+		margin-top: 0.25rem;
+	}
+	.trip-types-container {
+		border: 1px solid var(--border-light);
+		padding: 2.5rem;
+		border-radius: 8px;
+		background: rgba(255, 255, 255, 0.01);
+		margin-bottom: 4rem;
+	}
+	.trip-types-grid {
+		display: grid;
+		grid-template-columns: 1fr 2fr;
+		gap: 3rem;
+	}
+	.trip-types-grid h3 {
+		font-size: 1.15rem;
+		font-weight: 700;
+		margin-bottom: 1rem;
+		color: var(--text-primary);
+	}
+	.type-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+	.text-input {
+		width: 100%;
+		padding: 10px 12px;
+		font-size: 0.9rem;
+		background: rgba(0, 0, 0, 0.2);
+		border: 1px solid var(--border-light);
+		border-radius: 6px;
+		color: var(--text-primary);
+		font-family: var(--font-body);
+		transition: border-color 0.2s;
+	}
+	.text-input:focus {
+		border-color: var(--primary);
+		outline: none;
+	}
+	.types-table {
+		border: 1px solid var(--border-light);
+		border-radius: 6px;
+		overflow: hidden;
+		max-height: 400px;
+		overflow-y: auto;
+	}
+	.type-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.75rem 1.5rem;
+		border-bottom: 1px solid var(--border-light);
+		transition: background-color 0.2s;
+	}
+	.type-row:last-child {
+		border-bottom: none;
+	}
+	.type-row:hover {
+		background: rgba(255, 255, 255, 0.02);
+	}
+	.type-name {
+		font-weight: 600;
+		font-size: 0.95rem;
+		color: var(--text-primary);
+	}
+	.empty-msg {
+		color: var(--text-muted);
+		font-style: italic;
+		font-size: 0.9rem;
+	}
+	.btn-danger-action {
+		background: rgba(239, 68, 68, 0.1);
+		color: var(--danger);
+		border: 1px solid rgba(239, 68, 68, 0.2);
+		font-size: 0.8rem;
+		padding: 4px 10px;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	.btn-danger-action:hover {
+		background: var(--danger);
+		color: #fff;
+		border-color: var(--danger);
+	}
+
 	.admin-header {
 		margin-bottom: 2.5rem;
 	}

@@ -2,19 +2,26 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
-	const { data: captain, error: loadErr } = await supabase
-		.from('captains')
-		.select('*')
-		.eq('id', params.id)
-		.maybeSingle();
+	const [captainRes, tripTypesRes] = await Promise.all([
+		supabase
+			.from('captains')
+			.select('*')
+			.eq('id', params.id)
+			.maybeSingle(),
+		supabase
+			.from('trip_types')
+			.select('*')
+			.order('name', { ascending: true })
+	]);
 
-	if (loadErr || !captain) {
-		console.error('Error loading captain:', loadErr);
+	if (captainRes.error || !captainRes.data) {
+		console.error('Error loading captain:', captainRes.error);
 		throw error(404, 'Captain not found');
 	}
 
 	return {
-		captain
+		captain: captainRes.data,
+		tripTypes: tripTypesRes.data || []
 	};
 };
 

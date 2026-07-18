@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 
-	let { form } = $props();
+	let { data, form } = $props();
 
 	// Array state management for whats_included & what_to_bring
 	let whatsIncludedList = $state<string[]>([]);
@@ -67,13 +67,16 @@
 			<!-- Row 1: Trip Type & Location -->
 			<div class="form-group">
 				<label for="trip_type">Trip Type / Name</label>
-				<input
-					type="text"
+				<select
 					id="trip_type"
 					name="trip_type"
-					placeholder="e.g., Deep Sea Fishing, Scuba Reef Dive"
 					required
-				/>
+				>
+					<option value="" disabled selected>Select a Trip Type</option>
+					{#each data.tripTypes as type}
+						<option value={type.name}>{type.name}</option>
+					{/each}
+				</select>
 			</div>
 
 			<div class="form-group">

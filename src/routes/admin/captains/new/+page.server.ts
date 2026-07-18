@@ -1,5 +1,21 @@
-import { fail, redirect } from '@sveltejs/kit';
-import type { Actions } from './$types';
+import { fail, redirect, error } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
+
+export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+	const { data: tripTypes, error: ttErr } = await supabase
+		.from('trip_types')
+		.select('*')
+		.order('name', { ascending: true });
+
+	if (ttErr) {
+		console.error('Error loading trip types:', ttErr);
+		throw error(500, 'Failed to load allowed trip types');
+	}
+
+	return {
+		tripTypes: tripTypes || []
+	};
+};
 
 export const actions: Actions = {
 	default: async ({ request, locals: { supabase } }) => {

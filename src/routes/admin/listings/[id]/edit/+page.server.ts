@@ -2,15 +2,23 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
-	const { data: listing, error: dbError } = await supabase
-		.from('listing_templates')
-		.select('*')
-		.eq('id', params.id)
-		.maybeSingle();
+	const [listingRes, tripTypesRes] = await Promise.all([
+		supabase
+			.from('listing_templates')
+			.select('*')
+			.eq('id', params.id)
+			.maybeSingle(),
+		supabase
+			.from('trip_types')
+			.select('*')
+			.order('name', { ascending: true })
+	]);
 
-	if (dbError || !listing) {
+	if (listingRes.error || !listingRes.data) {
 		throw error(404, 'Listing template not found');
 	}
+
+	const listing = listingRes.data;
 
 	// Format duration from interval to "HH:MM"
 	let formattedDuration = '04:00';
@@ -29,7 +37,8 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 
 	return {
 		listing,
-		formattedDuration
+		formattedDuration,
+		tripTypes: tripTypesRes.data || []
 	};
 };
 
@@ -61,6 +70,16 @@ export const actions: Actions = {
 
 		if (!trip_type || !location || !duration || isNaN(low_price) || isNaN(high_price) || isNaN(max_passengers) || !description || !meeting_area) {
 			return fail(400, { message: 'All fields are required and must be valid.' });
+		}
+
+		const { data: matchedType } = await supabase
+			.from('trip_types')
+			.select('name')
+			.eq('name', trip_type)
+			.maybeSingle();
+
+		if (!matchedType) {
+			return fail(400, { message: 'Invalid or disallowed trip type.' });
 		}
 
 		if (low_price > high_price) {

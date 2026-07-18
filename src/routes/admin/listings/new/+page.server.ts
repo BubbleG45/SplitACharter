@@ -1,5 +1,21 @@
-import { fail, redirect } from '@sveltejs/kit';
-import type { Actions } from './$types';
+import { fail, redirect, error } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
+
+export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+	const { data: tripTypes, error: ttErr } = await supabase
+		.from('trip_types')
+		.select('*')
+		.order('name', { ascending: true });
+
+	if (ttErr) {
+		console.error('Error loading trip types:', ttErr);
+		throw error(500, 'Failed to load allowed trip types');
+	}
+
+	return {
+		tripTypes: tripTypes || []
+	};
+};
 
 export const actions: Actions = {
 	create: async ({ request, locals: { supabase } }) => {
@@ -31,6 +47,16 @@ export const actions: Actions = {
 		// Validations
 		if (!trip_type || !location || !duration || isNaN(low_price) || isNaN(high_price) || isNaN(max_passengers) || !description || !meeting_area) {
 			return fail(400, { message: 'All fields are required and must be valid.' });
+		}
+
+		const { data: matchedType } = await supabase
+			.from('trip_types')
+			.select('name')
+			.eq('name', trip_type)
+			.maybeSingle();
+
+		if (!matchedType) {
+			return fail(400, { message: 'Invalid or disallowed trip type.' });
 		}
 
 		if (low_price > high_price) {

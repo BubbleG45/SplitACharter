@@ -1,18 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 
-	let { form } = $props();
+	let { data, form } = $props();
 
 	let active = $state(true);
-
-	const tripTypeOptions = [
-		'Inshore Fishing',
-		'Offshore Fishing',
-		'Reef Fishing',
-		'Sunset Cruise',
-		'Sandbar Excursion',
-		'Snorkeling Trip'
-	];
 
 	const locationOptions = [
 		'Miami Beach Marina',
@@ -100,10 +91,10 @@
 					<!-- svelte-ignore a11y_label_has_associated_control -->
 					<label>Trip Types Approved</label>
 					<div class="options-grid">
-						{#each tripTypeOptions as type}
+						{#each data.tripTypes as type}
 							<label class="checkbox-option">
-								<input type="checkbox" name="trip_types" value={type} />
-								<span>{type}</span>
+								<input type="checkbox" name="trip_types" value={type.name} />
+								<span>{type.name}</span>
 							</label>
 						{/each}
 					</div>
