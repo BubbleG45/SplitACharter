@@ -15,6 +15,7 @@
 		<header class="landing-header">
 			<span class="logo-text">SplitACharter</span>
 			<nav class="nav-links">
+				<a href="/how-it-works" class="nav-link-custom">How It Works</a>
 				{#if data.session}
 					{#if data.isAdmin}
 						<a href="/browse" class="nav-link-custom">Browse Charters</a>
@@ -27,6 +28,9 @@
 					{/if}
 				{:else}
 					<a href="/login" class="nav-btn-primary">Sign In</a>
+				{#if !data.session}
+					<a href="/browse" class="nav-link-custom">Browse Charters</a>
+				{/if}
 				{/if}
 			</nav>
 		</header>
