@@ -1,7 +1,9 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ params, url, locals: { supabase } }) => {
+	const preselectedDate = url.searchParams.get('date') || '';
+
 	const { data: listing, error: listingError } = await supabase
 		.from('listing_templates')
 		.select('*')
@@ -27,6 +29,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 
 	return {
 		listing,
-		tripInstances: tripInstances || []
+		tripInstances: tripInstances || [],
+		preselectedDate
 	};
 };

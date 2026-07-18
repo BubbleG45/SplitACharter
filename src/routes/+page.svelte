@@ -17,6 +17,7 @@
 			<nav class="nav-links">
 				{#if data.session}
 					{#if data.isAdmin}
+						<a href="/browse" class="btn btn-secondary">Browse Charters</a>
 						<a href="/admin" class="btn btn-secondary">Admin Dashboard</a>
 					{:else}
 						<span class="user-greeting">Hello, {data.user?.email}</span>
@@ -41,6 +42,7 @@
 				{#if data.session}
 					{#if data.isAdmin}
 						<a href="/admin" class="btn btn-primary btn-large">Go to Operations Admin</a>
+						<a href="/browse" class="btn btn-secondary btn-large">Browse Charters</a>
 					{:else}
 						<a href="/browse" class="btn btn-primary btn-large">Browse Charters</a>
 						<a href="/dashboard" class="btn btn-secondary btn-large">My Dashboard</a>

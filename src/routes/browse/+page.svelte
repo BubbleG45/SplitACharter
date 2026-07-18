@@ -5,25 +5,93 @@
 	let filterDuration = $state('all'); // 'all', 'half-day', 'full-day'
 	let filterPax = $state('all'); // 'all', 'small', 'medium', 'large'
 	let filterTripType = $state('all');
+	let searchDate = $state('');
+	let minDate = $state('');
+
+	import { onMount } from 'svelte';
+	onMount(() => {
+		const today = new Date();
+		const yyyy = today.getFullYear();
+		const mm = String(today.getMonth() + 1).padStart(2, '0');
+		const dd = String(today.getDate()).padStart(2, '0');
+		minDate = `${yyyy}-${mm}-${dd}`;
+	});
 
 	// Client-side filtering
 	let filteredListings = $derived(
-		data.listings.filter((listing) => {
+		data.listings
+			.filter((listing) => {
+				const matchesSearch =
+					listing.trip_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					listing.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					listing.description.toLowerCase().includes(searchQuery.toLowerCase());
+				
+				// Duration category
+				let isHalfDay = false;
+				let isFullDay = false;
+				if (listing.duration && typeof listing.duration === 'string') {
+					const parts = listing.duration.split(':');
+					const hours = parseInt(parts[0], 10);
+					isHalfDay = hours <= 4;
+					isFullDay = hours > 4;
+				} else if (listing.duration && typeof listing.duration === 'object') {
+					const hours = listing.duration.hours || 0;
+					isHalfDay = hours <= 4;
+					isFullDay = hours > 4;
+				}
+				const matchesDuration =
+					filterDuration === 'all' ||
+					(filterDuration === 'half-day' && isHalfDay) ||
+					(filterDuration === 'full-day' && isFullDay);
+
+				// Passenger size category
+				const pax = listing.max_passengers;
+				let matchesPax = true;
+				if (filterPax === 'small') matchesPax = pax <= 4;
+				else if (filterPax === 'medium') matchesPax = pax > 4 && pax <= 8;
+				else if (filterPax === 'large') matchesPax = pax > 8;
+
+				// Trip Type filter
+				const matchesTripType = filterTripType === 'all' || listing.trip_type === filterTripType;
+
+				return matchesSearch && matchesDuration && matchesPax && matchesTripType;
+			})
+			.map((listing) => {
+				// Find if there is a half-booked instance for this template on searchDate
+				const matchedInstance = searchDate
+					? data.halfBookedTrips.find(
+							(trip) => trip.listing_template_id === listing.id && trip.date === searchDate
+						)
+					: null;
+
+				return {
+					...listing,
+					matchedInstance
+				};
+			})
+	);
+
+	// Suggestions derived list
+	let suggestedTrips = $derived(
+		data.halfBookedTrips.filter((trip) => {
+			const template = data.listings.find((l) => l.id === trip.listing_template_id);
+			if (!template) return false;
+
 			const matchesSearch =
-				listing.trip_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				listing.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				listing.description.toLowerCase().includes(searchQuery.toLowerCase());
+				template.trip_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+				template.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+				template.description.toLowerCase().includes(searchQuery.toLowerCase());
 			
 			// Duration category
 			let isHalfDay = false;
 			let isFullDay = false;
-			if (listing.duration && typeof listing.duration === 'string') {
-				const parts = listing.duration.split(':');
+			if (template.duration && typeof template.duration === 'string') {
+				const parts = template.duration.split(':');
 				const hours = parseInt(parts[0], 10);
 				isHalfDay = hours <= 4;
 				isFullDay = hours > 4;
-			} else if (listing.duration && typeof listing.duration === 'object') {
-				const hours = listing.duration.hours || 0;
+			} else if (template.duration && typeof template.duration === 'object') {
+				const hours = template.duration.hours || 0;
 				isHalfDay = hours <= 4;
 				isFullDay = hours > 4;
 			}
@@ -33,16 +101,27 @@
 				(filterDuration === 'full-day' && isFullDay);
 
 			// Passenger size category
-			const pax = listing.max_passengers;
+			const pax = template.max_passengers;
 			let matchesPax = true;
 			if (filterPax === 'small') matchesPax = pax <= 4;
 			else if (filterPax === 'medium') matchesPax = pax > 4 && pax <= 8;
 			else if (filterPax === 'large') matchesPax = pax > 8;
 
 			// Trip Type filter
-			const matchesTripType = filterTripType === 'all' || listing.trip_type === filterTripType;
+			const matchesTripType = filterTripType === 'all' || template.trip_type === filterTripType;
 
-			return matchesSearch && matchesDuration && matchesPax && matchesTripType;
+			const matchesFilters = matchesSearch && matchesDuration && matchesPax && matchesTripType;
+			if (!matchesFilters) return false;
+
+			if (searchDate) {
+				const sDate = new Date(searchDate + 'T00:00:00');
+				const tDate = new Date(trip.date + 'T00:00:00');
+				const diffTime = Math.abs(tDate.getTime() - sDate.getTime());
+				const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+				return diffDays <= 2 && trip.date !== searchDate && trip.date >= minDate;
+			} else {
+				return trip.date >= minDate;
+			}
 		})
 	);
 
@@ -132,8 +211,54 @@
 						{/each}
 					</select>
 				</div>
+
+				<div class="select-wrapper">
+					<label for="search-date">Trip Date</label>
+					<input
+						type="date"
+						id="search-date"
+						bind:value={searchDate}
+						min={minDate}
+						class="date-input-field"
+					/>
+				</div>
 			</div>
 		</div>
+
+		<!-- Suggestions Section -->
+		{#if suggestedTrips.length > 0}
+			<div class="suggestions-panel glass glow-secondary">
+				<div class="suggestions-header">
+					<span class="pulse-dot"></span>
+					<div>
+						<h2>{searchDate ? 'Suggested Trips to Join' : 'Popular Trips Looking for Groups'}</h2>
+						<p>{searchDate ? 'These active charters are scheduled within 2 days of your searched date. Join one of them to complete the booking!' : 'These active charters are already open and waiting for another group. Book now to join them!'}</p>
+					</div>
+				</div>
+
+				<div class="suggestions-grid">
+					{#each suggestedTrips as trip (trip.id)}
+						{@const template = data.listings.find(l => l.id === trip.listing_template_id)}
+						{#if template}
+							<div class="suggestion-card glass">
+								<div class="suggestion-info">
+									<div class="suggestion-meta">
+										<span class="suggestion-badge">Active Group</span>
+										<span class="suggestion-date">Date: {trip.date}</span>
+									</div>
+									<h4>{template.trip_type}</h4>
+									<p class="suggestion-loc">{template.location} — {template.meeting_area}</p>
+									<p class="suggestion-price">${Math.round(template.low_price / 2)} – ${Math.round(template.high_price / 2)} <span class="price-lbl">/ group</span></p>
+								</div>
+								<a href="/browse/{template.id}?date={trip.date}" class="btn btn-secondary btn-suggestion">
+									Join Group
+								</a>
+							</div>
+						{/if}
+					{/each}
+				</div>
+			</div>
+		{/if}
 
 		<!-- Listing Cards Grid -->
 		{#if filteredListings.length === 0}
@@ -147,7 +272,7 @@
 		{:else}
 			<div class="cards-grid">
 				{#each filteredListings as listing (listing.id)}
-					<div class="listing-card glass glass-interactive">
+					<div class="listing-card glass glass-interactive" class:matched-card={listing.matchedInstance}>
 						<div class="card-header">
 							<span class="location-badge">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -156,11 +281,20 @@
 								</svg>
 								{listing.location}
 							</span>
-							<span class="pax-badge">{listing.max_passengers} Max Pax</span>
+							{#if listing.matchedInstance}
+								<span class="active-badge">1 spot left</span>
+							{:else}
+								<span class="pax-badge">{listing.max_passengers} Max Pax</span>
+							{/if}
 						</div>
 
 						<div class="card-body">
-							<h3>{listing.trip_type}</h3>
+							<div class="title-row">
+								<h3>{listing.trip_type}</h3>
+								{#if searchDate}
+									<span class="date-badge">Date: {searchDate}</span>
+								{/if}
+							</div>
 							<p class="description">{listing.description}</p>
 
 							<div class="meta-row">
@@ -180,7 +314,9 @@
 								<span class="price-split">${Math.round(listing.low_price / 2)} – ${Math.round(listing.high_price / 2)} <span class="per-group">/ group</span></span>
 								<span class="price-total">Total: ${Math.round(listing.low_price)}–${Math.round(listing.high_price)}</span>
 							</div>
-							<a href="/browse/{listing.id}" class="btn btn-primary">Book Charter</a>
+							<a href="/browse/{listing.id}{searchDate ? `?date=${searchDate}` : ''}" class="btn {listing.matchedInstance ? 'btn-primary' : 'btn-secondary'}">
+								{listing.matchedInstance ? 'Join Group' : 'Book Charter'}
+							</a>
 						</div>
 					</div>
 				{/each}
@@ -190,6 +326,180 @@
 </div>
 
 <style>
+	/* Date picker input styling */
+	.date-input-field {
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		color: var(--text-primary);
+		font-family: var(--font-body);
+		font-size: 0.95rem;
+		padding: 9px 14px;
+		width: 100%;
+		outline: none;
+		transition: border-color 0.2s;
+	}
+	.date-input-field:focus {
+		border-color: var(--primary);
+	}
+
+	/* Suggestions Panel */
+	.suggestions-panel {
+		border: 1px solid rgba(99, 102, 241, 0.2);
+		padding: 2rem;
+		margin-bottom: 3rem;
+		border-radius: 12px;
+		background: rgba(99, 102, 241, 0.02);
+	}
+	.suggestions-header {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		margin-bottom: 1.5rem;
+	}
+	.suggestions-header h2 {
+		font-size: 1.5rem;
+		font-weight: 800;
+		color: var(--text-primary);
+	}
+	.suggestions-header p {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		margin-top: 4px;
+	}
+	.pulse-dot {
+		width: 10px;
+		height: 10px;
+		background: var(--secondary);
+		border-radius: 50%;
+		flex-shrink: 0;
+		margin-top: 8px;
+		animation: pulse 2s infinite;
+		box-shadow: 0 0 10px var(--secondary);
+	}
+	@keyframes pulse {
+		0% {
+			transform: scale(0.95);
+			box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+		}
+		70% {
+			transform: scale(1);
+			box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+		}
+		100% {
+			transform: scale(0.95);
+			box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+		}
+	}
+	.suggestions-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		gap: 1.5rem;
+	}
+	.suggestion-card {
+		border: 1px solid var(--border-light);
+		padding: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		gap: 1.5rem;
+		transition: border-color 0.2s;
+	}
+	.suggestion-card:hover {
+		border-color: rgba(99, 102, 241, 0.4);
+	}
+	.suggestion-info h4 {
+		font-size: 1.15rem;
+		font-weight: 700;
+		margin-bottom: 6px;
+	}
+	.suggestion-loc {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		margin-bottom: 12px;
+	}
+	.suggestion-price {
+		font-size: 1.1rem;
+		font-weight: 700;
+		color: var(--primary);
+	}
+	.suggestion-price .price-lbl {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		font-weight: 400;
+	}
+	.suggestion-meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 10px;
+	}
+	.suggestion-badge {
+		background: rgba(99, 102, 241, 0.15);
+		color: #818cf8;
+		border: 1px solid rgba(99, 102, 241, 0.3);
+		padding: 2px 8px;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+	.suggestion-date {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		font-weight: 600;
+	}
+	.btn-suggestion {
+		width: 100%;
+		border-color: rgba(99, 102, 241, 0.4);
+	}
+	.btn-suggestion:hover {
+		background: var(--secondary);
+		color: white;
+		border-color: var(--secondary);
+	}
+
+	/* Card Badge customizations */
+	.active-badge {
+		background: rgba(99, 102, 241, 0.12);
+		color: #a5b4fc;
+		border: 1px solid rgba(99, 102, 241, 0.3);
+		padding: 2px 8px;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+	.date-badge {
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid var(--border-light);
+		color: var(--text-secondary);
+		padding: 2px 8px;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+	.title-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 12px;
+		margin-bottom: 8px;
+	}
+	.title-row h3 {
+		margin-bottom: 0 !important;
+	}
+	.matched-card {
+		border-color: rgba(99, 102, 241, 0.3) !important;
+		background: rgba(99, 102, 241, 0.01) !important;
+	}
+	.matched-card:hover {
+		border-color: var(--secondary) !important;
+		box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.15) !important;
+	}
+
 	.browse-wrapper {
 		min-height: 100vh;
 		position: relative;

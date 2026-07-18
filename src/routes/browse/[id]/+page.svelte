@@ -1,7 +1,8 @@
 <script lang="ts">
 	let { data } = $props();
 
-	let selectedDate = $state('');
+	/* svelte-ignore state_referenced_locally */
+	let selectedDate = $state(data.preselectedDate || '');
 	let minDate = $state('');
 
 	// Set minimum date to today
