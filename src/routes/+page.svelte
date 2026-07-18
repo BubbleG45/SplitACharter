@@ -17,16 +17,16 @@
 			<nav class="nav-links">
 				{#if data.session}
 					{#if data.isAdmin}
-						<a href="/browse" class="btn btn-secondary">Browse Charters</a>
-						<a href="/admin" class="btn btn-secondary">Admin Dashboard</a>
+						<a href="/browse" class="nav-link-custom">Browse Charters</a>
+						<a href="/admin" class="nav-link-custom">Admin Dashboard</a>
 					{:else}
 						<span class="user-greeting">Hello, {data.user?.email}</span>
 						<form action="/login?/signOut" method="POST" style="display: inline;">
-							<button type="submit" class="btn btn-secondary">Sign Out</button>
+							<button type="submit" class="nav-link-custom" style="cursor: pointer;">Sign Out</button>
 						</form>
 					{/if}
 				{:else}
-					<a href="/login" class="btn btn-primary">Sign In</a>
+					<a href="/login" class="nav-btn-primary">Sign In</a>
 				{/if}
 			</nav>
 		</header>
@@ -120,6 +120,43 @@
 		display: flex;
 		align-items: center;
 		gap: 1.5rem;
+	}
+	.nav-link-custom {
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		text-decoration: none;
+		padding: 8px 18px;
+		border-radius: 20px;
+		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-light);
+	}
+	.nav-link-custom:hover {
+		color: var(--text-primary);
+		background: rgba(255, 255, 255, 0.06);
+		border-color: rgba(255, 255, 255, 0.2);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+	}
+	.nav-btn-primary {
+		background: linear-gradient(135deg, var(--primary), var(--secondary));
+		color: #ffffff !important;
+		font-weight: 700;
+		padding: 8px 20px;
+		border-radius: 20px;
+		border: none;
+		box-shadow: 0 4px 15px rgba(6, 182, 212, 0.25);
+		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+		text-decoration: none;
+		font-size: 0.9rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.nav-btn-primary:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(6, 182, 212, 0.45);
 	}
 	.user-greeting {
 		font-size: 0.9rem;
