@@ -258,7 +258,7 @@
 									<p class="suggestion-loc">{template.location} — {template.meeting_area}</p>
 									<p class="suggestion-price">${Math.round(template.low_price / 2)} – ${Math.round(template.high_price / 2)} <span class="price-lbl">/ group</span></p>
 								</div>
-								<a href="/browse/{template.id}?date={trip.date}" class="btn btn-secondary btn-suggestion">
+								<a href="/browse/{template.id}?date={trip.date}" class="btn btn-join">
 									Join Group
 								</a>
 							</div>
@@ -481,15 +481,8 @@
 		color: var(--text-secondary);
 		font-weight: 700;
 	}
-	.btn-suggestion {
-		width: 100%;
-		border-color: rgba(99, 102, 241, 0.4);
-	}
-	.btn-suggestion:hover {
-		background: var(--secondary);
-		color: white;
-		border-color: var(--secondary);
-	}
+
+
 
 	/* Card Badge customizations */
 	.active-badge {
