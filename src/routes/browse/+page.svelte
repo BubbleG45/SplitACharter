@@ -22,9 +22,7 @@
 		data.listings
 			.filter((listing) => {
 				const matchesSearch =
-					listing.trip_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					listing.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					listing.description.toLowerCase().includes(searchQuery.toLowerCase());
+					listing.location.toLowerCase().includes(searchQuery.toLowerCase());
 				
 				// Duration category
 				let isHalfDay = false;
@@ -78,9 +76,7 @@
 			if (!template) return false;
 
 			const matchesSearch =
-				template.trip_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				template.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				template.description.toLowerCase().includes(searchQuery.toLowerCase());
+				template.location.toLowerCase().includes(searchQuery.toLowerCase());
 			
 			// Duration category
 			let isHalfDay = false;
@@ -144,7 +140,15 @@
 			if (intervalStr.minutes) result += `${intervalStr.minutes} min`;
 			return result.trim() || 'N/A';
 		}
-		return 'N/A';
+	}
+
+	function formatDateDisplay(dateStr: string) {
+		if (!dateStr) return '';
+		const parts = dateStr.split('-');
+		if (parts.length === 3) {
+			return `${parts[1]}/${parts[2]}/${parts[0]}`;
+		}
+		return dateStr;
 	}
 </script>
 
@@ -170,19 +174,18 @@
 
 		<!-- Filters Controls -->
 		<div class="controls-card glass">
-			<div class="search-box">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="search-icon">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-				</svg>
-				<input
-					type="text"
-					placeholder="Search by location, trip type..."
-					bind:value={searchQuery}
-					class="search-input"
-				/>
-			</div>
+			<div class="filters-group" style="width: 100%; flex: 1;">
+				<div class="select-wrapper">
+					<label for="search-date">Trip Date</label>
+					<input
+						type="date"
+						id="search-date"
+						bind:value={searchDate}
+						min={minDate}
+						class="date-input-field"
+					/>
+				</div>
 
-			<div class="filters-group">
 				<div class="select-wrapper">
 					<label for="duration">Duration</label>
 					<select id="duration" bind:value={filterDuration}>
@@ -212,15 +215,20 @@
 					</select>
 				</div>
 
-				<div class="select-wrapper">
-					<label for="search-date">Trip Date</label>
-					<input
-						type="date"
-						id="search-date"
-						bind:value={searchDate}
-						min={minDate}
-						class="date-input-field"
-					/>
+				<div class="select-wrapper location-search-wrapper">
+					<label for="search-query">Location Search</label>
+					<div class="search-input-container">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="search-input-icon">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+						</svg>
+						<input
+							type="text"
+							id="search-query"
+							placeholder="Search by location..."
+							bind:value={searchQuery}
+							class="location-search-input"
+						/>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -244,7 +252,7 @@
 								<div class="suggestion-info">
 									<div class="suggestion-meta">
 										<span class="suggestion-badge">Active Group</span>
-										<span class="suggestion-date">Date: {trip.date}</span>
+										<span class="suggestion-date">{formatDateDisplay(trip.date)}</span>
 									</div>
 									<h4>{template.trip_type}</h4>
 									<p class="suggestion-loc">{template.location} — {template.meeting_area}</p>
@@ -292,7 +300,7 @@
 							<div class="title-row">
 								<h3>{listing.trip_type}</h3>
 								{#if searchDate}
-									<span class="date-badge">Date: {searchDate}</span>
+									<span class="date-badge">{formatDateDisplay(searchDate)}</span>
 								{/if}
 							</div>
 							<p class="description">{listing.description}</p>
@@ -314,7 +322,7 @@
 								<span class="price-split">${Math.round(listing.low_price / 2)} – ${Math.round(listing.high_price / 2)} <span class="per-group">/ group</span></span>
 								<span class="price-total">Total: ${Math.round(listing.low_price)}–${Math.round(listing.high_price)}</span>
 							</div>
-							<a href="/browse/{listing.id}{searchDate ? `?date=${searchDate}` : ''}" class="btn {listing.matchedInstance ? 'btn-primary' : 'btn-secondary'}">
+							<a href="/browse/{listing.id}{searchDate ? `?date=${searchDate}` : ''}" class="btn {listing.matchedInstance ? 'btn-join' : 'btn-book'}">
 								{listing.matchedInstance ? 'Join Group' : 'Book Charter'}
 							</a>
 						</div>
@@ -341,6 +349,29 @@
 	}
 	.date-input-field:focus {
 		border-color: var(--primary);
+	}
+
+	/* Location Search input styling */
+	.location-search-wrapper {
+		flex: 1.5 !important;
+	}
+	.search-input-container {
+		position: relative;
+		display: flex;
+		align-items: center;
+		width: 100%;
+	}
+	.search-input-icon {
+		position: absolute;
+		left: 12px;
+		width: 18px;
+		height: 18px;
+		color: var(--text-muted);
+		pointer-events: none;
+	}
+	.location-search-input {
+		width: 100%;
+		padding-left: 38px !important;
 	}
 
 	/* Suggestions Panel */
@@ -446,9 +477,9 @@
 		letter-spacing: 0.5px;
 	}
 	.suggestion-date {
-		font-size: 0.8rem;
+		font-size: 0.95rem;
 		color: var(--text-secondary);
-		font-weight: 600;
+		font-weight: 700;
 	}
 	.btn-suggestion {
 		width: 100%;
@@ -476,10 +507,10 @@
 		background: rgba(255, 255, 255, 0.05);
 		border: 1px solid var(--border-light);
 		color: var(--text-secondary);
-		padding: 2px 8px;
-		border-radius: 4px;
-		font-size: 0.75rem;
-		font-weight: 600;
+		padding: 4px 10px;
+		border-radius: 6px;
+		font-size: 0.95rem;
+		font-weight: 700;
 	}
 	.title-row {
 		display: flex;
@@ -577,23 +608,6 @@
 		margin-bottom: 3rem;
 		align-items: flex-end;
 		border: 1px solid var(--border-light);
-	}
-	.search-box {
-		flex: 2;
-		position: relative;
-		display: flex;
-		align-items: center;
-	}
-	.search-icon {
-		position: absolute;
-		left: 14px;
-		width: 18px;
-		height: 18px;
-		color: var(--text-muted);
-	}
-	.search-input {
-		width: 100%;
-		padding-left: 42px;
 	}
 	.filters-group {
 		flex: 3;
@@ -706,19 +720,23 @@
 
 	.card-footer {
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
+		flex-direction: column;
+		align-items: stretch;
+		text-align: left;
+		gap: 1.25rem;
 		border-top: 1px solid var(--border-light);
 		padding-top: 1.25rem;
 	}
 	.price-info {
 		display: flex;
 		flex-direction: column;
+		align-items: flex-start;
+		text-align: left;
 	}
 	.price-split {
 		font-family: var(--font-heading);
 		font-weight: 700;
-		font-size: 1.2rem;
+		font-size: 1.25rem;
 		color: var(--text-primary);
 	}
 	.per-group {
@@ -731,6 +749,48 @@
 		font-size: 0.75rem;
 		color: var(--text-muted);
 		margin-top: 2px;
+	}
+
+	/* Centered custom pill buttons */
+	.btn-join {
+		background: linear-gradient(135deg, #818cf8, var(--secondary));
+		color: #ffffff !important;
+		font-weight: 700;
+		text-transform: uppercase;
+		font-size: 0.85rem;
+		letter-spacing: 0.8px;
+		padding: 12px 28px;
+		border-radius: 30px;
+		min-width: 170px;
+		text-align: center;
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+		align-self: center;
+	}
+	.btn-join:hover {
+		transform: translateY(-2px) scale(1.03);
+		box-shadow: 0 0 25px rgba(99, 102, 241, 0.65);
+	}
+
+	.btn-book {
+		background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+		color: #060913 !important;
+		font-weight: 800;
+		text-transform: uppercase;
+		font-size: 0.85rem;
+		letter-spacing: 0.8px;
+		padding: 12px 28px;
+		border-radius: 30px;
+		min-width: 170px;
+		text-align: center;
+		box-shadow: 0 4px 15px rgba(6, 182, 212, 0.25);
+		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+		align-self: center;
+	}
+	.btn-book:hover {
+		transform: translateY(-2px) scale(1.03);
+		box-shadow: 0 6px 20px rgba(6, 182, 212, 0.45);
 	}
 
 	.empty-state {
