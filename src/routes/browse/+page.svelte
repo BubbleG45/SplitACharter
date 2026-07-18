@@ -424,7 +424,7 @@
 	}
 	.suggestions-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 		gap: 1.5rem;
 	}
 	.suggestion-card {
@@ -435,6 +435,7 @@
 		justify-content: space-between;
 		gap: 1.5rem;
 		transition: border-color 0.2s;
+		max-width: 380px;
 	}
 	.suggestion-card:hover {
 		border-color: rgba(99, 102, 241, 0.4);
