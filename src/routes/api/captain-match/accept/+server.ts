@@ -5,6 +5,7 @@ import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { inngest } from '$lib/inngest/client';
 import { sendNotification } from '$lib/notifications';
+import { generateCaptainToken } from '$lib/security';
 
 export const GET: RequestHandler = async ({ url }) => {
 	const tripId = url.searchParams.get('tripId');
@@ -71,6 +72,21 @@ export const GET: RequestHandler = async ({ url }) => {
 					trip_date: tripDateStr,
 					trip_type: tripDetails?.trip_type || '',
 					passenger_list: passengerInfoList
+				}
+			);
+
+			// Send the secure trip details link via a second SMS
+			const detailsToken = generateCaptainToken(tripId, captainId);
+			const detailsUrl = `${url.origin}/captain-match/trip-details?tripId=${tripId}&captainId=${captainId}&token=${detailsToken}`;
+
+			await sendNotification(
+				'captain_details_link',
+				{ phone: captain.phone, name: captain.name },
+				{
+					trip_date: tripDateStr,
+					trip_type: tripDetails?.trip_type || '',
+					location: tripDetails?.location || '',
+					details_url: detailsUrl
 				}
 			);
 		}
