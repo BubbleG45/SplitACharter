@@ -432,14 +432,15 @@
 	.sidebar-item {
 		width: 100%;
 		text-align: left;
-		padding: 1.15rem 1.5rem;
+		padding: 0.6rem 1rem;
 		background: transparent;
 		border: none;
 		border-bottom: 1px solid var(--border-light);
 		cursor: pointer;
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		align-items: flex-start;
+		gap: 4px;
 		transition: all 0.2s ease;
 	}
 	.sidebar-item:last-child {
@@ -451,11 +452,11 @@
 	.sidebar-item.active {
 		background: rgba(6, 182, 212, 0.08);
 		border-left: 3px solid var(--primary);
-		padding-left:calc(1.5rem - 3px);
+		padding-left: calc(1rem - 3px);
 	}
 	.item-title {
 		font-weight: 600;
-		font-size: 0.95rem;
+		font-size: 0.88rem;
 		color: var(--text-primary);
 	}
 	.sidebar-item.active .item-title {
@@ -464,20 +465,21 @@
 	.item-meta {
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		font-size: 0.75rem;
+		gap: 6px;
+		font-size: 0.72rem;
 		color: var(--text-muted);
 	}
 	.meta-code {
 		font-family: monospace;
 	}
 	.status-dot {
-		width: 8px;
-		height: 8px;
+		width: 7px;
+		height: 7px;
 		border-radius: 50%;
 		background: rgba(239, 68, 68, 0.4);
 		border: 1px solid rgba(239, 68, 68, 0.6);
 		display: inline-block;
+		flex-shrink: 0;
 	}
 	.status-dot.enabled {
 		background: var(--success);
