@@ -59,23 +59,8 @@ export const GET: RequestHandler = async ({ url }) => {
 		const captainName = captain?.name || 'Matched Captain';
 		const captainPhone = captain?.phone || 'N/A';
 
-		// Trigger notification to the winning Captain
+		// Trigger notification to the winning Captain with the secure details link
 		if (captain?.phone) {
-			const passengerInfoList = bookings?.map(
-				(b: any) => `${b.customers?.name || 'Customer'}: group of ${b.group_size} (${b.customers?.phone || 'no phone'})`
-			).join(', ') || 'None';
-
-			await sendNotification(
-				'captain_secured',
-				{ phone: captain.phone, name: captain.name },
-				{
-					trip_date: tripDateStr,
-					trip_type: tripDetails?.trip_type || '',
-					passenger_list: passengerInfoList
-				}
-			);
-
-			// Send the secure trip details link via a second SMS
 			const detailsToken = generateCaptainToken(tripId, captainId);
 			const detailsUrl = `${url.origin}/captain-match/trip-details?tripId=${tripId}&captainId=${captainId}&token=${detailsToken}`;
 

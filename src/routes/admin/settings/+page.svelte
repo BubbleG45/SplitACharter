@@ -5,6 +5,16 @@
 
 	let savingId = $state<string | null>(null);
 	let saveSuccessId = $state<string | null>(null);
+	let selectedId = $state<string | null>(null);
+
+	// Automatically select the first template once the settings are loaded
+	$effect(() => {
+		if (!selectedId && data.settings.length > 0) {
+			selectedId = data.settings[0].id;
+		}
+	});
+
+	const selectedSetting = $derived(data.settings.find(s => s.id === selectedId));
 
 	const triggerPlaceholders: Record<string, string[]> = {
 		match_detected: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
@@ -44,126 +54,156 @@
 {/if}
 
 <div class="settings-grid">
-	{#each data.settings as setting (setting.id)}
-		<div class="template-card glass">
-			<div class="card-header">
-				<h2>{formatTriggerName(setting.trigger_name)}</h2>
-				<span class="code-ref">{setting.trigger_name}</span>
-			</div>
-			
-			<form 
-				method="POST" 
-				action="?/saveTemplate"
-				use:enhance={() => {
-					savingId = setting.id;
-					saveSuccessId = null;
-					return async ({ update, result }) => {
-						await update();
-						savingId = null;
-						if (result.type === 'success') {
-							saveSuccessId = setting.id;
-							setTimeout(() => {
-								if (saveSuccessId === setting.id) {
-									saveSuccessId = null;
-								}
-							}, 3000);
-						}
-					};
-				}}
-				class="card-body"
-			>
-				<input type="hidden" name="id" value={setting.id} />
-
-				<!-- Channel Status Toggles -->
-				<div class="channels-row">
-					<div class="toggle-group">
-						<label class="toggle-label">
-							<input 
-								type="checkbox" 
-								checked={setting.email_enabled}
-								onchange={(e) => {
-									setting.email_enabled = (e.target as HTMLInputElement).checked;
-								}}
-							/>
-							<span class="toggle-text">Email Channel</span>
-						</label>
-						<input type="hidden" name="email_enabled" value={setting.email_enabled ? 'true' : 'false'} />
-					</div>
-
-					<div class="toggle-group">
-						<label class="toggle-label">
-							<input 
-								type="checkbox" 
-								checked={setting.sms_enabled}
-								onchange={(e) => {
-									setting.sms_enabled = (e.target as HTMLInputElement).checked;
-								}}
-							/>
-							<span class="toggle-text">SMS Channel</span>
-						</label>
-						<input type="hidden" name="sms_enabled" value={setting.sms_enabled ? 'true' : 'false'} />
-					</div>
-				</div>
-
-				<div class="divider"></div>
-
-				<!-- Email Template Editor -->
-				<div class="form-group" class:disabled={!setting.email_enabled}>
-					<label for="email-template-{setting.id}">Email Body Template</label>
-					<textarea 
-						id="email-template-{setting.id}" 
-						name="email_template" 
-						disabled={!setting.email_enabled}
-						rows="4"
-						placeholder="Disabled (toggled off)"
-						value={setting.email_template || ''}
-					></textarea>
-				</div>
-
-				<!-- SMS Template Editor -->
-				<div class="form-group" class:disabled={!setting.sms_enabled}>
-					<label for="sms-template-{setting.id}">SMS Text Template</label>
-					<textarea 
-						id="sms-template-{setting.id}" 
-						name="sms_template" 
-						disabled={!setting.sms_enabled}
-						rows="3"
-						placeholder="Disabled (toggled off)"
-						value={setting.sms_template || ''}
-					></textarea>
-				</div>
-
-				<!-- Placeholders Cheat-sheet -->
-				<div class="placeholders-info">
-					<span class="info-title">Supported Placeholders:</span>
-					<div class="placeholders-chips">
-						{#each triggerPlaceholders[setting.trigger_name] || ['{customer_name}'] as ph}
-							<code class="ph-chip">{ph}</code>
-						{/each}
-					</div>
-				</div>
-
-				<div class="card-footer">
-					{#if saveSuccessId === setting.id}
-						<span class="status-alert success-msg">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 inline">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-							</svg>
-							Changes saved!
-						</span>
-					{/if}
-
-					<button 
-						type="submit" 
-						class="btn btn-primary"
-						disabled={savingId === setting.id}
-					>
-						{savingId === setting.id ? 'Saving...' : 'Save Configuration'}
-					</button>
-				</div>
-			</form>
+	<!-- Left Sidebar List -->
+	<div class="template-sidebar glass">
+		<div class="sidebar-header">
+			<h3>Select Template</h3>
 		</div>
-	{/each}
+		<div class="sidebar-list">
+			{#each data.settings as setting}
+				<button 
+					type="button" 
+					class="sidebar-item" 
+					class:active={selectedId === setting.id}
+					onclick={() => selectedId = setting.id}
+				>
+					<div class="item-title">{formatTriggerName(setting.trigger_name)}</div>
+					<div class="item-meta">
+						<span class="status-dot" class:enabled={setting.email_enabled || setting.sms_enabled}></span>
+						<span class="meta-code">{setting.trigger_name}</span>
+					</div>
+				</button>
+			{/each}
+		</div>
+	</div>
+
+	<!-- Right Form Editor -->
+	<div class="template-detail">
+		{#if selectedSetting}
+			<div class="template-card glass">
+				<div class="card-header">
+					<h2>{formatTriggerName(selectedSetting.trigger_name)}</h2>
+					<span class="code-ref">{selectedSetting.trigger_name}</span>
+				</div>
+				
+				<form 
+					method="POST" 
+					action="?/saveTemplate"
+					use:enhance={() => {
+						savingId = selectedSetting.id;
+						saveSuccessId = null;
+						return async ({ update, result }) => {
+							await update();
+							savingId = null;
+							if (result.type === 'success') {
+								saveSuccessId = selectedSetting.id;
+								setTimeout(() => {
+									if (saveSuccessId === selectedSetting.id) {
+										saveSuccessId = null;
+									}
+								}, 3000);
+							}
+						};
+					}}
+					class="card-body"
+				>
+					<input type="hidden" name="id" value={selectedSetting.id} />
+
+					<!-- Channel Status Toggles -->
+					<div class="channels-row">
+						<div class="toggle-group">
+							<label class="toggle-label">
+								<input 
+									type="checkbox" 
+									checked={selectedSetting.email_enabled}
+									onchange={(e) => {
+										selectedSetting.email_enabled = (e.target as HTMLInputElement).checked;
+									}}
+								/>
+								<span class="toggle-text">Email Channel</span>
+							</label>
+							<input type="hidden" name="email_enabled" value={selectedSetting.email_enabled ? 'true' : 'false'} />
+						</div>
+
+						<div class="toggle-group">
+							<label class="toggle-label">
+								<input 
+									type="checkbox" 
+									checked={selectedSetting.sms_enabled}
+									onchange={(e) => {
+										selectedSetting.sms_enabled = (e.target as HTMLInputElement).checked;
+									}}
+								/>
+								<span class="toggle-text">SMS Channel</span>
+							</label>
+							<input type="hidden" name="sms_enabled" value={selectedSetting.sms_enabled ? 'true' : 'false'} />
+						</div>
+					</div>
+
+					<div class="divider"></div>
+
+					<!-- Email Template Editor -->
+					<div class="form-group" class:disabled={!selectedSetting.email_enabled}>
+						<label for="email-template-{selectedSetting.id}">Email Body Template</label>
+						<textarea 
+							id="email-template-{selectedSetting.id}" 
+							name="email_template" 
+							disabled={!selectedSetting.email_enabled}
+							rows="5"
+							placeholder="Disabled (toggled off)"
+							value={selectedSetting.email_template || ''}
+						></textarea>
+					</div>
+
+					<!-- SMS Template Editor -->
+					<div class="form-group" class:disabled={!selectedSetting.sms_enabled}>
+						<label for="sms-template-{selectedSetting.id}">SMS Text Template</label>
+						<textarea 
+							id="sms-template-{selectedSetting.id}" 
+							name="sms_template" 
+							disabled={!selectedSetting.sms_enabled}
+							rows="4"
+							placeholder="Disabled (toggled off)"
+							value={selectedSetting.sms_template || ''}
+						></textarea>
+					</div>
+
+					<!-- Placeholders Cheat-sheet -->
+					<div class="placeholders-info">
+						<span class="info-title">Supported Placeholders:</span>
+						<div class="placeholders-chips">
+							{#each triggerPlaceholders[selectedSetting.trigger_name] || ['{customer_name}'] as ph}
+								<code class="ph-chip">{ph}</code>
+							{/each}
+						</div>
+					</div>
+
+					<div class="card-footer">
+						{#if saveSuccessId === selectedSetting.id}
+							<span class="status-alert success-msg">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 inline">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+								</svg>
+								Changes saved!
+							</span>
+						{/if}
+
+						<button 
+							type="submit" 
+							class="btn btn-primary"
+							disabled={savingId === selectedSetting.id}
+						>
+							{savingId === selectedSetting.id ? 'Saving...' : 'Save Configuration'}
+						</button>
+					</div>
+				</form>
+			</div>
+		{:else}
+			<div class="empty-state glass">
+				<p>Select a notification trigger template from the sidebar list to edit its channels and templates.</p>
+			</div>
+		{/if}
+	</div>
 </div>
 
 <div class="divider-main"></div>
@@ -356,9 +396,106 @@
 
 	.settings-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+		grid-template-columns: 280px 1fr;
 		gap: 2rem;
 		margin-bottom: 3rem;
+		align-items: start;
+	}
+
+	/* Sidebar Styles */
+	.template-sidebar {
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+	.sidebar-header {
+		padding: 1.25rem 1.5rem;
+		border-bottom: 1px solid var(--border-light);
+		background: rgba(255, 255, 255, 0.02);
+	}
+	.sidebar-header h3 {
+		font-size: 1rem;
+		font-weight: 700;
+		margin: 0;
+		color: var(--text-primary);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+	.sidebar-list {
+		display: flex;
+		flex-direction: column;
+		max-height: 550px;
+		overflow-y: auto;
+	}
+	.sidebar-item {
+		width: 100%;
+		text-align: left;
+		padding: 1.15rem 1.5rem;
+		background: transparent;
+		border: none;
+		border-bottom: 1px solid var(--border-light);
+		cursor: pointer;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		transition: all 0.2s ease;
+	}
+	.sidebar-item:last-child {
+		border-bottom: none;
+	}
+	.sidebar-item:hover {
+		background: rgba(255, 255, 255, 0.03);
+	}
+	.sidebar-item.active {
+		background: rgba(6, 182, 212, 0.08);
+		border-left: 3px solid var(--primary);
+		padding-left:calc(1.5rem - 3px);
+	}
+	.item-title {
+		font-weight: 600;
+		font-size: 0.95rem;
+		color: var(--text-primary);
+	}
+	.sidebar-item.active .item-title {
+		color: var(--primary);
+	}
+	.item-meta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 0.75rem;
+		color: var(--text-muted);
+	}
+	.meta-code {
+		font-family: monospace;
+	}
+	.status-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: rgba(239, 68, 68, 0.4);
+		border: 1px solid rgba(239, 68, 68, 0.6);
+		display: inline-block;
+	}
+	.status-dot.enabled {
+		background: var(--success);
+		box-shadow: 0 0 8px var(--success);
+		border-color: rgba(16, 185, 129, 0.5);
+	}
+
+	.template-detail {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.empty-state {
+		padding: 3rem;
+		text-align: center;
+		border-radius: 8px;
+		border: 1px dashed var(--border-light);
+		color: var(--text-muted);
 	}
 
 	.template-card {
@@ -507,7 +644,7 @@
 		color: var(--danger);
 	}
 
-	@media (max-width: 576px) {
+	@media (max-width: 992px) {
 		.settings-grid {
 			grid-template-columns: 1fr;
 		}

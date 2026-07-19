@@ -2,6 +2,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { inngest } from '$lib/inngest/client';
 import { sendNotification } from '$lib/notifications';
+import { generateCaptainToken } from '$lib/security';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
 	// Fetch the Trip Instance details
@@ -66,7 +67,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 };
 
 export const actions: Actions = {
-	manualAssignCaptain: async ({ params, request, locals: { supabase } }) => {
+	manualAssignCaptain: async ({ params, request, url, locals: { supabase } }) => {
 		const formData = await request.formData();
 		const captainId = formData.get('captainId') as string;
 
@@ -111,19 +112,19 @@ export const actions: Actions = {
 		const captainName = captain?.name || 'Assigned Captain';
 		const captainPhone = captain?.phone || 'N/A';
 
-		// Trigger notifications to winning captain
+		// Trigger notification to the winning Captain with the secure details link
 		if (captain?.phone) {
-			const passengerInfoList = bookings?.map(
-				(b: any) => `${b.customers?.name || 'Customer'}: group of ${b.group_size} (${b.customers?.phone || 'no phone'})`
-			).join(', ') || 'None';
+			const detailsToken = generateCaptainToken(params.id, captainId);
+			const detailsUrl = `${url.origin}/captain-match/trip-details?tripId=${params.id}&captainId=${captainId}&token=${detailsToken}`;
 
 			await sendNotification(
-				'captain_secured',
+				'captain_details_link',
 				{ phone: captain.phone, name: captain.name },
 				{
 					trip_date: updatedTrip.date,
 					trip_type: tripDetails?.trip_type || '',
-					passenger_list: passengerInfoList
+					location: tripDetails?.location || '',
+					details_url: detailsUrl
 				}
 			);
 		}
