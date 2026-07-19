@@ -171,11 +171,11 @@
 					<!-- Placeholders Cheat-sheet -->
 					<div class="placeholders-info">
 						<span class="info-title">Supported Placeholders:</span>
-						<div class="placeholders-chips">
-							{#each triggerPlaceholders[selectedSetting.trigger_name] || ['{customer_name}'] as ph}
-								<code class="ph-chip">{ph}</code>
+						<span class="placeholders-text">
+							{#each triggerPlaceholders[selectedSetting.trigger_name] || ['{customer_name}'] as ph, idx}
+								<code class="ph-code">{ph}</code>{#if idx < (triggerPlaceholders[selectedSetting.trigger_name] || ['{customer_name}']).length - 1}, {/if}
 							{/each}
-						</div>
+						</span>
 					</div>
 
 					<div class="card-footer">
@@ -588,30 +588,26 @@
 	}
 
 	.placeholders-info {
-		background: rgba(255, 255, 255, 0.01);
-		border: 1px solid var(--border-light);
-		padding: 1rem;
-		border-radius: 6px;
+		padding: 0.5rem 0;
 	}
 	.info-title {
 		font-size: 0.8rem;
 		font-weight: 600;
 		color: var(--text-secondary);
-		display: block;
-		margin-bottom: 8px;
+		display: inline-block;
+		margin-right: 6px;
 	}
-	.placeholders-chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
+	.placeholders-text {
+		font-size: 0.82rem;
+		color: var(--text-secondary);
 	}
-	.ph-chip {
-		font-size: 0.72rem;
+	.ph-code {
+		font-family: monospace;
+		font-size: 0.82rem;
 		color: var(--primary);
-		background: rgba(6, 182, 212, 0.05);
-		border: 1px solid rgba(6, 182, 212, 0.12);
-		padding: 2px 6px;
-		border-radius: 4px;
+		background: none;
+		border: none;
+		padding: 0;
 	}
 
 	.card-footer {
