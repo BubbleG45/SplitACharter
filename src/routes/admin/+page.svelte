@@ -40,10 +40,10 @@
 			</svg>
 		</div>
 		<div class="stat-content">
-			<span class="stat-label">Trip Instances</span>
+			<span class="stat-label">Trips & Bookings</span>
 			<span class="stat-val">{data.stats.tripsCount}</span>
 		</div>
-		<a href="/admin/trips" class="card-link" aria-label="View Trip Instances"></a>
+		<a href="/admin/trips" class="card-link" aria-label="View Trips & Bookings"></a>
 	</div>
 
 	<div class="stat-card glass glass-interactive">
@@ -56,7 +56,7 @@
 			<span class="stat-label">Total Bookings</span>
 			<span class="stat-val">{data.stats.bookingsCount}</span>
 		</div>
-		<a href="/admin/bookings" class="card-link" aria-label="View Bookings"></a>
+		<a href="/admin/trips" class="card-link" aria-label="View Bookings"></a>
 	</div>
 
 	<div class="stat-card glass glass-interactive">
