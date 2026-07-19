@@ -16,8 +16,14 @@
 		});
 
 		// Developer Console SMS logger
-		const printedLogs = new Set<string>();
-		let initialFetch = true;
+		let printedLogs = new Set<string>();
+		try {
+			const stored = sessionStorage.getItem('printed_sms_logs');
+			if (stored) {
+				printedLogs = new Set(JSON.parse(stored));
+			}
+		} catch (e) {}
+
 		let intervalId: any;
 
 		async function pollSmsLogs() {
@@ -26,15 +32,19 @@
 				if (response.ok) {
 					const { logs } = await response.json();
 					if (logs && Array.isArray(logs)) {
-						for (const log of logs) {
+						let updated = false;
+						// Sort ascending by timestamp so they print in chronological order
+						const sortedLogs = [...logs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+						for (const log of sortedLogs) {
 							if (!printedLogs.has(log.id)) {
 								printedLogs.add(log.id);
-								if (!initialFetch) {
-									console.log(`%c[MOCK SMS BLAST] To: ${log.recipient}\nText: ${log.content}`, 'color: #06b6d4; font-weight: bold; font-size: 11px; padding: 4px; border: 1px dashed #06b6d4; border-radius: 4px; background: rgba(6, 182, 212, 0.05);');
-								}
+								updated = true;
+								console.log(`%c[MOCK SMS] To: ${log.recipient}\nText: ${log.content}`, 'color: #06b6d4; font-weight: bold; font-size: 11px; padding: 6px; border: 1px dashed #06b6d4; border-radius: 4px; background: rgba(6, 182, 212, 0.05);');
 							}
 						}
-						initialFetch = false;
+						if (updated) {
+							sessionStorage.setItem('printed_sms_logs', JSON.stringify(Array.from(printedLogs)));
+						}
 					}
 				}
 			} catch (e) {

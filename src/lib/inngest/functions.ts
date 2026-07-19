@@ -136,14 +136,14 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 				.update({ status: 'forfeited' })
 				.eq('booking_id', bookingId);
 
-			// Retrieve counterpart bookings on the same trip instance
+			// Retrieve counterpart bookings on the same trip instance with customer info
 			const { data: otherBookings } = await supabaseAdmin
 				.from('bookings')
-				.select('id, status')
+				.select('id, status, customers(name, email, phone)')
 				.eq('trip_instance_id', booking.trip_instance_id)
 				.neq('id', bookingId);
 
-			// Update counterpart bookings to 'held'
+			// Update counterpart bookings to 'held' and notify them
 			if (otherBookings && otherBookings.length > 0) {
 				for (const other of otherBookings) {
 					if (other.status === 'reconfirmed' || other.status === 'paid' || other.status === 'awaiting-reconfirm') {
@@ -151,6 +151,15 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 							.from('bookings')
 							.update({ status: 'held' })
 							.eq('id', other.id);
+
+						const otherCustomer = (other as any).customers;
+						if (otherCustomer) {
+							await sendNotification(
+								'counterpart_forfeited',
+								{ email: otherCustomer.email, phone: otherCustomer.phone, name: otherCustomer.name },
+								{ trip_date: tripDateTime.split('T')[0] }
+							);
+						}
 					}
 				}
 			}
@@ -340,5 +349,101 @@ export const captainMatchingWorkflow = inngest.createFunction(
 	}
 );
 
+// Unmatched Trip Timeout Workflow (when a group registers but no match is found before departure date)
+export const unmatchedTripTimeoutWorkflow = inngest.createFunction(
+	{
+		id: 'unmatched-trip-timeout-workflow',
+		name: 'Unmatched Trip Timeout Workflow',
+		triggers: [{ event: 'booking/unmatched.timeout.schedule' }],
+		cancelOn: [
+			{
+				event: 'trip/confirmed',
+				match: 'data.tripInstanceId'
+			},
+			{
+				event: 'booking/cancelled',
+				match: 'data.bookingId'
+			}
+		]
+	},
+	async ({ event, step }) => {
+		const { bookingId, tripInstanceId, tripDateTime } = event.data;
+
+		// Sleep until 24 hours before trip departure date
+		const departureDate = new Date(tripDateTime);
+		const timeoutTime = new Date(departureDate.getTime() - 24 * 60 * 60 * 1000);
+
+		await step.sleepUntil('sleep-until-notice-deadline', timeoutTime);
+
+		const result = await step.run('check-and-enforce-unmatched-timeout', async () => {
+			const { data: booking, error: bookingErr } = await supabaseAdmin
+				.from('bookings')
+				.select('id, status, customer_id, customers(name, phone, email)')
+				.eq('id', bookingId)
+				.single();
+
+			if (bookingErr || !booking) {
+				return { status: 'skipped', reason: 'Booking not found' };
+			}
+
+			// If the booking is already confirmed, canceled, or forfeited, do nothing
+			if (booking.status === 'reconfirmed' || booking.status === 'canceled' || booking.status === 'forfeited') {
+				return { status: 'skipped', reason: `Booking is in state: ${booking.status}` };
+			}
+
+			// Check if the trip is unmatched (open or half-booked status, no captain)
+			const { data: trip } = await supabaseAdmin
+				.from('trip_instances')
+				.select('id, status, date, listing_templates(trip_type)')
+				.eq('id', tripInstanceId)
+				.single();
+
+			if (!trip || trip.status === 'confirmed' || trip.status === 'completed') {
+				return { status: 'skipped', reason: `Trip is in status: ${trip?.status}` };
+			}
+
+			// Cancel the booking and the trip instance
+			await supabaseAdmin
+				.from('bookings')
+				.update({ status: 'canceled' })
+				.eq('id', bookingId);
+
+			await supabaseAdmin
+				.from('trip_instances')
+				.update({ status: 'canceled' })
+				.eq('id', tripInstanceId);
+
+			// Record refund
+			const stripeRefundId = `re_mock_unmatched_${Math.random().toString(36).substring(2, 15)}`;
+			await supabaseAdmin
+				.from('payment_records')
+				.insert({
+					booking_id: bookingId,
+					stripe_payment_intent_id: stripeRefundId,
+					amount: 50.00, // Positive amount to satisfy DB constraints
+					status: 'refunded'
+				});
+
+			// Send notification to customer
+			const customer = (booking as any).customers;
+			const tripDetails = (trip as any).listing_templates;
+			if (customer) {
+				await sendNotification(
+					'unmatched_trip_timeout',
+					{ email: customer.email, phone: customer.phone, name: customer.name },
+					{
+						trip_date: trip.date,
+						trip_type: tripDetails?.trip_type || ''
+					}
+				);
+			}
+
+			return { status: 'unmatched_timeout_enforced', bookingId, tripInstanceId };
+		});
+
+		return result;
+	}
+);
+
 // Export all functions as an array for the serve handler
-export const functions = [helloWorld, reconfirmBookingWorkflow, captainMatchingWorkflow];
+export const functions = [helloWorld, reconfirmBookingWorkflow, captainMatchingWorkflow, unmatchedTripTimeoutWorkflow];

@@ -258,6 +258,17 @@ export const actions: Actions = {
 			return fail(500, { message: 'Failed to finalize booking payment state.' });
 		}
 
+		// Trigger unmatched trip timeout scheduler for this booking
+		const tripDateTime = `${date}T08:00:00.000Z`; // Default departure 8:00 AM
+		await inngest.send({
+			name: 'booking/unmatched.timeout.schedule',
+			data: {
+				bookingId: booking.id,
+				tripInstanceId,
+				tripDateTime
+			}
+		});
+
 		// 6. Resolve TripInstance status based on new paid bookings count
 		const { data: paidBookings } = await supabaseAdmin
 			.from('bookings')
