@@ -50,10 +50,18 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 		.eq('active', true)
 		.order('name', { ascending: true });
 
+	// Fetch notification logs associated with this trip instance (filtered by trip ID in SMS/email content)
+	const { data: logs } = await supabase
+		.from('notification_logs')
+		.select('id, recipient, channel, template, content, status, created_at')
+		.ilike('content', `%${params.id}%`)
+		.order('created_at', { ascending: false });
+
 	return {
 		trip,
 		bookings: bookings || [],
-		captains: captains || []
+		captains: captains || [],
+		logs: logs || []
 	};
 };
 

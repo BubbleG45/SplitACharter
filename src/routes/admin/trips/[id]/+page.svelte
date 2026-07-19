@@ -225,6 +225,61 @@
 				</button>
 			</form>
 		</div>
+
+		<!-- Skipper SMS Blast & Claim Auditing Card -->
+		<div class="card glass">
+			<div class="card-header">
+				<h2>Skipper SMS Blast & Claim Auditing</h2>
+			</div>
+			<div class="card-body">
+				<p class="description">Review SMS notifications dispatched to skippers for this trip, verify delivery status, and access claim/details links for testing.</p>
+
+				{#if data.logs.length === 0}
+					<p class="empty-msg">No SMS blast logs or details links found for this trip.</p>
+				{:else}
+					<div class="audit-list">
+						{#each data.logs as log}
+							{@const link = log.content.match(/https?:\/\/[^\s"'\s]+/)?.[0]}
+							<div class="audit-item glass">
+								<div class="audit-header">
+									<span class="badge audit-template-badge {log.template}">{log.template.replace(/_/g, ' ')}</span>
+									<span class="badge status-badge log-{log.status}">{log.status}</span>
+								</div>
+								<div class="audit-meta">
+									<span><strong>Recipient:</strong> {log.recipient}</span>
+									<span><strong>Sent:</strong> {new Date(log.created_at).toLocaleString()}</span>
+								</div>
+								<div class="audit-content">
+									<p>{log.content}</p>
+								</div>
+								
+								{#if link}
+									<div class="audit-actions">
+										<a href={link} target="_blank" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:4px; font-size:0.8rem; padding:4px 8px; text-decoration:none; margin-right:8px;">
+											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+											</svg>
+											Test Link
+										</a>
+										<button 
+											type="button" 
+											class="btn btn-secondary btn-sm" 
+											style="font-size:0.8rem; padding:4px 8px;"
+											onclick={() => {
+												navigator.clipboard.writeText(link);
+												alert('Copied link to clipboard!');
+											}}
+										>
+											Copy Link
+										</button>
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -460,6 +515,75 @@
 		border-radius: 6px;
 		border: 1px solid rgba(239, 68, 68, 0.2);
 		color: var(--danger);
+	}
+
+	/* Auditing Card Styles */
+	.audit-list {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		margin-top: 1rem;
+	}
+	.audit-item {
+		padding: 1.25rem;
+		border: 1px solid rgba(255, 255, 255, 0.05);
+		border-radius: 8px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.audit-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.audit-template-badge {
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		background: rgba(99, 102, 241, 0.12);
+		color: #a5b4fc;
+		border: 1px solid rgba(99, 102, 241, 0.2);
+	}
+	.audit-template-badge.captain_details_link {
+		background: rgba(6, 182, 212, 0.12);
+		color: #cffafe;
+		border: 1px solid rgba(6, 182, 212, 0.2);
+	}
+	.log-delivered {
+		background: rgba(16, 185, 129, 0.12);
+		color: var(--success);
+		border: 1px solid rgba(16, 185, 129, 0.2);
+	}
+	.log-failed {
+		background: rgba(239, 68, 68, 0.12);
+		color: var(--danger);
+		border: 1px solid rgba(239, 68, 68, 0.2);
+	}
+	.log-suppressed {
+		background: rgba(156, 163, 175, 0.12);
+		color: var(--text-muted);
+		border: 1px solid rgba(156, 163, 175, 0.2);
+	}
+	.audit-meta {
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+	}
+	.audit-content {
+		font-size: 0.85rem;
+		line-height: 1.5;
+		color: var(--text-primary);
+		background: rgba(0, 0, 0, 0.15);
+		padding: 10px;
+		border-radius: 6px;
+		border: 1px solid rgba(255, 255, 255, 0.02);
+		word-break: break-all;
+	}
+	.audit-actions {
+		display: flex;
+		margin-top: 4px;
 	}
 
 	@media (max-width: 768px) {
