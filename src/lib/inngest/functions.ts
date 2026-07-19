@@ -112,23 +112,14 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 				);
 			}
 
-			// Increment customer strike count
-			const { data: customer } = await supabaseAdmin
-				.from('customers')
-				.select('strike_count')
-				.eq('id', booking.customer_id)
-				.single();
-
-			const newStrikeCount = (customer?.strike_count || 0) + 1;
-			const flagged = newStrikeCount >= 3;
-
+			// Record the strike in customer_strikes (triggering auto strike_count & flagged sync)
 			await supabaseAdmin
-				.from('customers')
-				.update({
-					strike_count: newStrikeCount,
-					flagged
-				})
-				.eq('id', booking.customer_id);
+				.from('customer_strikes')
+				.insert({
+					customer_id: booking.customer_id,
+					trip_instance_id: booking.trip_instance_id,
+					reason: 'Failed to reconfirm booking in window'
+				});
 
 			// Mark payment record as forfeited
 			await supabaseAdmin
@@ -170,11 +161,18 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 				.update({ status: 'open' })
 				.eq('id', booking.trip_instance_id);
 
+			// Query the updated customer record to return the correct count and flag state
+			const { data: updatedCustomer } = await supabaseAdmin
+				.from('customers')
+				.select('strike_count, flagged')
+				.eq('id', booking.customer_id)
+				.single();
+
 			return {
 				status: 'enforced',
 				bookingId,
-				newStrikeCount,
-				flagged
+				newStrikeCount: updatedCustomer?.strike_count || 0,
+				flagged: !!updatedCustomer?.flagged
 			};
 		});
 
