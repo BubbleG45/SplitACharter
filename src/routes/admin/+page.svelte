@@ -46,18 +46,6 @@
 		<a href="/admin/trips" class="card-link" aria-label="View Trips & Bookings"></a>
 	</div>
 
-	<div class="stat-card glass glass-interactive">
-		<div class="icon-wrapper success-glow">
-			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.214.139a3.407 3.407 0 003.572 0l.214-.139a3.408 3.408 0 013.572 0l.214.139a3.407 3.407 0 003.572 0l.214-.139a3.408 3.408 0 013.572 0" />
-			</svg>
-		</div>
-		<div class="stat-content">
-			<span class="stat-label">Total Bookings</span>
-			<span class="stat-val">{data.stats.bookingsCount}</span>
-		</div>
-		<a href="/admin/trips" class="card-link" aria-label="View Bookings"></a>
-	</div>
 
 	<div class="stat-card glass glass-interactive">
 		<div class="icon-wrapper accent-glow">
