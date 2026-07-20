@@ -1,4 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { createClient } from '@supabase/supabase-js';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { sendEmail } from '$lib/notifications';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
@@ -16,7 +20,7 @@ export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
 };
 
 export const actions: Actions = {
-	signInWithEmail: async ({ request, url, locals: { supabase } }) => {
+	signInWithEmail: async ({ request, url }) => {
 		const formData = await request.formData();
 		const email = formData.get('email') as string;
 
@@ -24,16 +28,32 @@ export const actions: Actions = {
 			return fail(400, { message: 'Email address is required.' });
 		}
 
-		const { error } = await supabase.auth.signInWithOtp({
+		// Use Admin Client to generate a passwordless sign-in link
+		const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+		const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+			type: 'magiclink',
 			email,
 			options: {
-				emailRedirectTo: `${url.origin}/auth/callback`
+				redirectTo: `${url.origin}/auth/callback`
 			}
 		});
 
-		if (error) {
-			console.error('Email OTP sign in error:', error);
-			return fail(500, { message: error.message || 'Failed to send magic link.' });
+		if (error || !data?.properties?.action_link) {
+			console.error('Email OTP sign in link generation error:', error);
+			return fail(500, { message: error?.message || 'Failed to generate magic link.' });
+		}
+
+		const magicLink = data.properties.action_link;
+
+		// Send email using our custom template and Resend
+		const subject = 'Sign In to SplitACharter';
+		const contentHtml = `Hello,\n\nPlease click the button below to sign in to your SplitACharter account. This link is only valid for 1 hour:\n\n${magicLink}\n\nIf you did not request this email, you can safely ignore it.`;
+
+		const emailRes = await sendEmail(email, subject, contentHtml, 'auth_magic_link');
+
+		if (!emailRes.success) {
+			console.error('Email OTP sign in sending error:', emailRes.error);
+			return fail(500, { message: emailRes.error || 'Failed to send magic link email.' });
 		}
 
 		return { success: true, method: 'email', message: 'Check your email inbox for the magic link!' };

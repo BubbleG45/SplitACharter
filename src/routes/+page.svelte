@@ -16,21 +16,18 @@
 			<span class="logo-text">SplitACharter</span>
 			<nav class="nav-links">
 				<a href="/how-it-works" class="nav-link-custom">How It Works</a>
+				<a href="/browse" class="nav-link-custom">Browse Charters</a>
 				{#if data.session}
 					{#if data.isAdmin}
-						<a href="/browse" class="nav-link-custom">Browse Charters</a>
 						<a href="/admin" class="nav-link-custom">Admin Dashboard</a>
 					{:else}
-						<span class="user-greeting">Hello, {data.user?.email}</span>
-						<form action="/login?/signOut" method="POST" style="display: inline;">
-							<button type="submit" class="nav-link-custom" style="cursor: pointer;">Sign Out</button>
-						</form>
+						<a href="/dashboard" class="nav-link-custom">My Dashboard</a>
 					{/if}
+					<form action="/login?/signOut" method="POST" style="display: inline;">
+						<button type="submit" class="nav-link-custom" style="cursor: pointer; background: none; border: 1px solid var(--border-light);">Sign Out</button>
+					</form>
 				{:else}
 					<a href="/login" class="nav-btn-primary">Sign In</a>
-				{#if !data.session}
-					<a href="/browse" class="nav-link-custom">Browse Charters</a>
-				{/if}
 				{/if}
 			</nav>
 		</header>
@@ -162,11 +159,6 @@
 		transform: translateY(-2px);
 		box-shadow: 0 6px 20px rgba(6, 182, 212, 0.45);
 	}
-	.user-greeting {
-		font-size: 0.9rem;
-		color: var(--text-secondary);
-		font-weight: 500;
-	}
 
 	.hero {
 		flex: 1;
@@ -226,6 +218,36 @@
 		}
 		.landing-header {
 			margin-bottom: 3rem;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.landing-header {
+			flex-direction: column;
+			gap: 1rem;
+			margin-bottom: 2.5rem;
+			align-items: center;
+		}
+		.nav-links {
+			flex-wrap: wrap;
+			justify-content: center;
+			gap: 0.75rem;
+		}
+		.nav-link-custom {
+			padding: 6px 12px;
+			font-size: 0.85rem;
+		}
+		.nav-btn-primary {
+			padding: 6px 14px;
+			font-size: 0.85rem;
+		}
+		.hero-actions {
+			flex-direction: column;
+			align-items: stretch;
+			width: 100%;
+		}
+		.btn-large {
+			text-align: center;
 		}
 	}
 </style>

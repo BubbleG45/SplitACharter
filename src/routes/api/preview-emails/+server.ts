@@ -55,10 +55,11 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	if (!templateName) {
 		// Render index / menu
-		const links = settings
+		let links = settings
 			.filter((s) => s.email_template)
 			.map((s) => `<li><a href="/api/preview-emails?template=${s.trigger_name}">${s.trigger_name.replace(/_/g, ' ').toUpperCase()}</a></li>`)
 			.join('\n');
+		links += `\n<li><a href="/api/preview-emails?template=auth_magic_link">AUTH MAGIC LINK</a></li>`;
 
 		const htmlMenu = `
 			<!DOCTYPE html>
@@ -94,6 +95,14 @@ export const GET: RequestHandler = async ({ url }) => {
 			</html>
 		`;
 		return new Response(htmlMenu, { headers: { 'Content-Type': 'text/html' } });
+	}
+
+	if (templateName === 'auth_magic_link') {
+		const rawBody = `Hello,\n\nPlease click the button below to sign in to your SplitACharter account. This link is only valid for 1 hour:\n\n${mockData.dashboard_url}/auth/callback?token=mock_magic_link_token`;
+		const subject = 'Sign In to SplitACharter';
+		const formattedInnerContent = formatEmailBody(rawBody);
+		const fullHtmlLayout = wrapInEmailLayout(formattedInnerContent, subject);
+		return new Response(fullHtmlLayout, { headers: { 'Content-Type': 'text/html' } });
 	}
 
 	const setting = settings.find((s) => s.trigger_name === templateName);

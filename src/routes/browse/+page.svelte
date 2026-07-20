@@ -377,8 +377,8 @@
 	/* Suggestions Panel */
 	.suggestions-panel {
 		border: 1px solid rgba(99, 102, 241, 0.2);
-		padding: 2rem;
-		margin-bottom: 3rem;
+		padding: 1.25rem;
+		margin-bottom: 2rem;
 		border-radius: 12px;
 		background: rgba(99, 102, 241, 0.02);
 	}
@@ -386,17 +386,17 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 12px;
-		margin-bottom: 1.5rem;
+		margin-bottom: 1rem;
 	}
 	.suggestions-header h2 {
-		font-size: 1.5rem;
+		font-size: 1.35rem;
 		font-weight: 800;
 		color: var(--text-primary);
 	}
 	.suggestions-header p {
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 		color: var(--text-secondary);
-		margin-top: 4px;
+		margin-top: 2px;
 	}
 	.pulse-dot {
 		width: 10px;
@@ -404,7 +404,7 @@
 		background: var(--secondary);
 		border-radius: 50%;
 		flex-shrink: 0;
-		margin-top: 8px;
+		margin-top: 6px;
 		animation: pulse 2s infinite;
 		box-shadow: 0 0 10px var(--secondary);
 	}
@@ -424,16 +424,16 @@
 	}
 	.suggestions-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-		gap: 1.5rem;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 1rem;
 	}
 	.suggestion-card {
 		border: 1px solid var(--border-light);
-		padding: 1.5rem;
+		padding: 1rem;
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
-		gap: 1.5rem;
+		gap: 1rem;
 		transition: border-color 0.2s;
 		max-width: 380px;
 	}
@@ -628,21 +628,21 @@
 	/* Grid and Cards */
 	.cards-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-		gap: 2rem;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 1.25rem;
 	}
 	.listing-card {
-		padding: 1.75rem;
+		padding: 1.25rem;
 		display: flex;
 		flex-direction: column;
 		border: 1px solid var(--border-light);
-		min-height: 420px;
+		min-height: 320px;
 	}
 	.card-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 1.25rem;
+		margin-bottom: 0.75rem;
 	}
 	.location-badge {
 		background: rgba(255, 255, 255, 0.04);
@@ -666,29 +666,29 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		margin-bottom: 1.75rem;
+		margin-bottom: 1rem;
 	}
 	.card-body h3 {
-		font-size: 1.35rem;
+		font-size: 1.2rem;
 		font-weight: 700;
-		margin-bottom: 0.75rem;
+		margin-bottom: 0.5rem;
 		letter-spacing: -0.2px;
 	}
 	.description {
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 		color: var(--text-secondary);
-		line-height: 1.5;
-		margin-bottom: 1.5rem;
+		line-height: 1.4;
+		margin-bottom: 0.75rem;
 		display: -webkit-box;
-		-webkit-line-clamp: 3;
+		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
 	.meta-row {
 		display: flex;
-		gap: 1.5rem;
+		gap: 1.25rem;
 		border-top: 1px solid var(--border-light);
-		padding-top: 1rem;
+		padding-top: 0.75rem;
 		margin-top: auto;
 	}
 	.meta-item {
@@ -697,14 +697,14 @@
 		min-width: 0;
 	}
 	.meta-label {
-		font-size: 0.75rem;
+		font-size: 0.7rem;
 		color: var(--text-muted);
 		text-transform: uppercase;
 		font-weight: 600;
 		letter-spacing: 0.5px;
 	}
 	.meta-value {
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 		font-weight: 500;
 		color: var(--text-primary);
 		text-overflow: ellipsis;
@@ -714,12 +714,13 @@
 
 	.card-footer {
 		display: flex;
-		flex-direction: column;
-		align-items: stretch;
-		text-align: left;
-		gap: 1.25rem;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 0.75rem;
 		border-top: 1px solid var(--border-light);
-		padding-top: 1.25rem;
+		padding-top: 1rem;
 	}
 	.price-info {
 		display: flex;
@@ -730,19 +731,19 @@
 	.price-split {
 		font-family: var(--font-heading);
 		font-weight: 700;
-		font-size: 1.25rem;
+		font-size: 1.15rem;
 		color: var(--text-primary);
 	}
 	.per-group {
-		font-size: 0.75rem;
+		font-size: 0.7rem;
 		color: var(--text-muted);
 		font-weight: 400;
 		font-family: var(--font-body);
 	}
 	.price-total {
-		font-size: 0.75rem;
+		font-size: 0.7rem;
 		color: var(--text-muted);
-		margin-top: 2px;
+		margin-top: 1px;
 	}
 
 	/* Centered custom pill buttons */
@@ -753,9 +754,9 @@
 		text-transform: uppercase;
 		font-size: 0.85rem;
 		letter-spacing: 0.8px;
-		padding: 12px 28px;
+		padding: 10px 20px;
 		border-radius: 30px;
-		min-width: 170px;
+		min-width: 130px;
 		text-align: center;
 		border: 1px solid rgba(255, 255, 255, 0.15);
 		box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
@@ -774,9 +775,9 @@
 		text-transform: uppercase;
 		font-size: 0.85rem;
 		letter-spacing: 0.8px;
-		padding: 12px 28px;
+		padding: 10px 20px;
 		border-radius: 30px;
-		min-width: 170px;
+		min-width: 130px;
 		text-align: center;
 		box-shadow: 0 4px 15px rgba(6, 182, 212, 0.25);
 		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -819,10 +820,17 @@
 	}
 	@media (max-width: 576px) {
 		.browse-wrapper {
-			padding: 2rem 1rem;
+			padding: 1.5rem 0.75rem;
 		}
 		.cards-grid {
 			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+		.listing-card {
+			padding: 1rem;
+		}
+		.card-footer {
+			gap: 0.5rem;
 		}
 		.filters-group {
 			flex-direction: column;

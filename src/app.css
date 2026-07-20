@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
+  color-scheme: dark;
   /* Color Palette - Premium Slate & Electric Cyan/Indigo */
   --bg-base-dark: #0a0f1d;
   --bg-surface-dark: #12182b;
@@ -118,6 +119,17 @@ input, textarea, select {
 select option {
   background-color: var(--bg-surface-dark);
   color: var(--text-primary);
+}
+
+::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.9;
 }
 
 

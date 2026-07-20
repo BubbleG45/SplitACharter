@@ -489,6 +489,17 @@
 			align-items: flex-start;
 			gap: 1.5rem;
 		}
+		.header-actions {
+			display: flex;
+			gap: 1rem;
+			width: 100%;
+			flex-wrap: wrap;
+		}
+		.header-actions .btn {
+			flex: 1;
+			min-width: 130px;
+			text-align: center;
+		}
 		.profile-card {
 			flex-direction: column;
 			align-items: flex-start;
