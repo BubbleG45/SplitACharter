@@ -463,6 +463,7 @@
 	.ref-val {
 		color: var(--text-muted);
 		font-family: monospace;
+		font-size: 0.8rem;
 		word-break: break-all;
 	}
 

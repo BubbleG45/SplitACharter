@@ -1,4 +1,5 @@
 <script lang="ts">
+	import logoWhite from '$lib/assets/logo-white.svg';
 	let { data } = $props();
 </script>
 
@@ -13,7 +14,9 @@
 
 	<main class="landing-main">
 		<header class="landing-header">
-			<span class="logo-text">SplitACharter</span>
+			<a href="/" class="logo-link">
+				<img src={logoWhite} alt="SplitACharter Logo" class="header-logo" />
+			</a>
 			<nav class="nav-links">
 				<a href="/how-it-works" class="nav-link-custom">How It Works</a>
 				<a href="/browse" class="nav-link-custom">Browse Charters</a>
@@ -108,14 +111,16 @@
 		align-items: center;
 		margin-bottom: 5rem;
 	}
-	.logo-text {
-		font-family: var(--font-heading);
-		font-weight: 800;
-		font-size: 1.5rem;
-		background: linear-gradient(135deg, var(--primary), var(--secondary));
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		letter-spacing: -0.5px;
+	.logo-link {
+		display: block;
+		transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+	.logo-link:hover {
+		transform: scale(1.02);
+	}
+	.header-logo {
+		height: 48px;
+		display: block;
 	}
 	.nav-links {
 		display: flex;
@@ -227,6 +232,9 @@
 			gap: 1rem;
 			margin-bottom: 2.5rem;
 			align-items: center;
+		}
+		.header-logo {
+			height: 38px;
 		}
 		.nav-links {
 			flex-wrap: wrap;

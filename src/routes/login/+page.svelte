@@ -1,4 +1,5 @@
 <script lang="ts">
+	import logoWhite from '$lib/assets/logo-white.svg';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 
@@ -32,7 +33,9 @@
 
 	<div class="login-container glass glow-primary">
 		<div class="login-header">
-			<span class="logo-text">SplitACharter</span>
+			<a href="/" class="logo-link" style="margin: 0 auto 1.5rem auto; display: inline-block;">
+				<img src={logoWhite} alt="SplitACharter Logo" class="header-logo" style="height: 60px;" />
+			</a>
 			<h2>Welcome back</h2>
 			<p class="subtitle">Passwordless login to manage or book your shared charters</p>
 		</div>

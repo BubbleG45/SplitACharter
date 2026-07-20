@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY } from '$env/static/private';
+import { SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL } from '$env/static/private';
 import { sendSMS } from './sms';
 
 const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -206,7 +206,7 @@ export async function sendEmail(
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
-					from: 'SplitACharter <onboarding@resend.dev>', // Resend Sandbox Sender
+					from: RESEND_FROM_EMAIL || 'SplitACharter <onboarding@resend.dev>',
 					to,
 					subject,
 					html: fullHtmlLayout
