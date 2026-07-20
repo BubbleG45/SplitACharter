@@ -20,22 +20,6 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
 					name,
 					value: value ?? ''
 				}));
-			},
-			setAll(cookiesToSet) {
-				if (!isBrowser()) {
-					return;
-				}
-				cookiesToSet.forEach(({ name, value, options }) => {
-					let cookieStr = `${name}=${value}`;
-					if (options) {
-						if (options.path) cookieStr += `; path=${options.path}`;
-						if (options.maxAge !== undefined) cookieStr += `; max-age=${options.maxAge}`;
-						if (options.domain) cookieStr += `; domain=${options.domain}`;
-						if (options.sameSite) cookieStr += `; samesite=${options.sameSite}`;
-						if (options.secure) cookieStr += `; secure`;
-					}
-					document.cookie = cookieStr;
-				});
 			}
 		}
 	});
