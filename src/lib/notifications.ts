@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL } from '$env/static/private';
+import { SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { sendSMS } from './sms';
+
+const RESEND_FROM_EMAIL = env.RESEND_FROM_EMAIL;
 
 const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 

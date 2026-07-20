@@ -196,16 +196,11 @@
 		text-align: center;
 		margin-bottom: 2rem;
 	}
-	.logo-text {
-		font-family: var(--font-heading);
-		font-weight: 800;
-		font-size: 1.75rem;
-		background: linear-gradient(135deg, var(--primary), var(--secondary));
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		letter-spacing: -0.5px;
-		margin-bottom: 1rem;
-		display: inline-block;
+	.logo-link {
+		transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+	.logo-link:hover {
+		transform: scale(1.02);
 	}
 	.login-header h2 {
 		font-size: 1.5rem;
