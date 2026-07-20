@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { sendEmail } from '$lib/notifications';
+import { env } from '$env/dynamic/private';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
@@ -30,11 +31,12 @@ export const actions: Actions = {
 
 		// Use Admin Client to generate a passwordless sign-in link
 		const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+		const siteUrl = env.PUBLIC_SITE_URL || url.origin;
 		const { data, error } = await supabaseAdmin.auth.admin.generateLink({
 			type: 'magiclink',
 			email,
 			options: {
-				redirectTo: `${url.origin}/auth/callback`
+				redirectTo: `${siteUrl}/auth/callback`
 			}
 		});
 

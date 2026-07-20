@@ -257,7 +257,7 @@ export async function sendNotification(
 	recipient: { email?: string; phone?: string; name?: string },
 	data: Record<string, string>
 ): Promise<{ emailSent: boolean; smsSent: boolean }> {
-	const defaultBaseUrl = 'http://localhost:5173';
+	const defaultBaseUrl = env.PUBLIC_SITE_URL || 'http://localhost:5173';
 	const fullData = {
 		customer_name: recipient.name || 'Valued Customer',
 		dashboard_url: `${defaultBaseUrl}/dashboard`,

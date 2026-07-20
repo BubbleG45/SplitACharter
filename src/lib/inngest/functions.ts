@@ -5,6 +5,7 @@ import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { calculateReconfirmSchedule } from '../reconfirmation';
 import { sendSMS } from '../sms';
 import { sendNotification } from '../notifications';
+import { env } from '$env/dynamic/private';
 
 const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -246,7 +247,7 @@ export const captainMatchingWorkflow = inngest.createFunction(
 				return { status: 'no_captains' };
 			}
 
-			const baseUrl = 'http://localhost:5173'; // Default dev app url
+			const baseUrl = env.PUBLIC_SITE_URL || 'http://localhost:5173'; // Default dev app url
 
 			for (const c of captains) {
 				if (c.phone) {
