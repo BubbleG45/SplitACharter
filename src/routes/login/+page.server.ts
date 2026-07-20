@@ -31,12 +31,21 @@ export const actions: Actions = {
 
 		// Use Admin Client to generate a passwordless sign-in link
 		const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+		
+		// Determine target redirect path by checking if the email exists in admin_emails
+		const { data: adminEmailMatch } = await supabaseAdmin
+			.from('admin_emails')
+			.select('email')
+			.ilike('email', email)
+			.maybeSingle();
+
+		const nextPath = adminEmailMatch ? '/admin' : '/dashboard';
 		const siteUrl = env.PUBLIC_SITE_URL || url.origin;
 		const { data, error } = await supabaseAdmin.auth.admin.generateLink({
 			type: 'magiclink',
 			email,
 			options: {
-				redirectTo: `${siteUrl}/auth/callback`
+				redirectTo: `${siteUrl}/auth/callback?next=${nextPath}`
 			}
 		});
 
