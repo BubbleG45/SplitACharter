@@ -43,18 +43,16 @@ export const actions: Actions = {
 		const siteUrl = env.PUBLIC_SITE_URL || url.origin;
 		const { data, error } = await supabaseAdmin.auth.admin.generateLink({
 			type: 'magiclink',
-			email,
-			options: {
-				redirectTo: `${siteUrl}/auth/callback?next=${nextPath}`
-			}
+			email
 		});
 
-		if (error || !data?.properties?.action_link) {
+		if (error || !data?.properties?.hashed_token) {
 			console.error('Email OTP sign in link generation error:', error);
 			return fail(500, { message: error?.message || 'Failed to generate magic link.' });
 		}
 
-		const magicLink = data.properties.action_link;
+		const tokenHash = data.properties.hashed_token;
+		const magicLink = `${siteUrl}/auth/callback?token_hash=${tokenHash}&type=magiclink&next=${nextPath}`;
 
 		// Send email using our custom template and Resend
 		const subject = 'Sign In to SplitACharter';
