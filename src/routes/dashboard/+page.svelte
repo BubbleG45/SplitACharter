@@ -7,6 +7,29 @@
 		const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 		return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', options);
 	}
+
+	function formatPhoneNumber(phone: string | null | undefined) {
+		if (!phone) return 'Not provided';
+		const cleaned = ('' + phone).replace(/\D/g, '');
+		if (cleaned.length === 10) {
+			return `(${cleaned.slice(0, 3)})${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+		} else if (cleaned.length === 11 && cleaned.startsWith('1')) {
+			return `(${cleaned.slice(1, 4)})${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+		}
+		return phone;
+	}
+
+	let copiedId = $state('');
+
+	function handleCopy(id: string) {
+		navigator.clipboard.writeText(id);
+		copiedId = id;
+		setTimeout(() => {
+			if (copiedId === id) {
+				copiedId = '';
+			}
+		}, 2000);
+	}
 </script>
 
 <svelte:head>
@@ -44,7 +67,7 @@
 				</div>
 				<div class="info-group">
 					<span class="label">Phone Number</span>
-					<span class="value">{data.profile?.phone || 'Not provided'}</span>
+					<span class="value">{formatPhoneNumber(data.profile?.phone)}</span>
 				</div>
 				<div class="info-group">
 					<span class="label">Account Status</span>
@@ -124,7 +147,26 @@
 									</div>
 									<div class="detail-item">
 										<span class="lbl">Booking Reference</span>
-										<span class="val ref-val">{booking.id.substring(0, 8)}...</span>
+										<span class="val ref-val" style="display: flex; align-items: center; gap: 6px;">
+											<span style="flex: 1; word-break: break-all;">{booking.id}</span>
+											<button
+												type="button"
+												class="copy-btn"
+												title="Copy Reference ID"
+												onclick={() => handleCopy(booking.id)}
+												style="background: none; border: none; padding: 4px; display: inline-flex; align-items: center; cursor: pointer; color: {copiedId === booking.id ? 'var(--success)' : 'var(--text-muted)'}; transition: color 0.2s;"
+											>
+												{#if copiedId === booking.id}
+													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 14px; height: 14px;">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+													</svg>
+												{:else}
+													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 14px; height: 14px;">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H5.25m11.9-3.664A2.251 2.251 0 0015 2.25h-1.5a2.251 2.251 0 00-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 00-9-9z" />
+													</svg>
+												{/if}
+											</button>
+										</span>
 									</div>
 								</div>
 
@@ -421,6 +463,7 @@
 	.ref-val {
 		color: var(--text-muted);
 		font-family: monospace;
+		word-break: break-all;
 	}
 
 	/* Alerts inside cards */

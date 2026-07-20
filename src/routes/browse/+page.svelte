@@ -9,6 +9,7 @@
 	let minDate = $state('');
 
 	import { onMount } from 'svelte';
+	import CustomSelect from '$lib/components/CustomSelect.svelte';
 	onMount(() => {
 		const today = new Date();
 		const yyyy = today.getFullYear();
@@ -150,6 +151,22 @@
 		}
 		return dateStr;
 	}
+
+	const durationOptions = [
+		{ value: 'all', label: 'Any Duration' },
+		{ value: 'half-day', label: 'Half Day (≤ 4 hrs)' },
+		{ value: 'full-day', label: 'Full Day (> 4 hrs)' }
+	];
+	const capacityOptions = [
+		{ value: 'all', label: 'Any Capacity' },
+		{ value: 'small', label: 'Small Group (1–4 pax)' },
+		{ value: 'medium', label: 'Medium Group (5–8 pax)' },
+		{ value: 'large', label: 'Large Group (9+ pax)' }
+	];
+	const tripTypeOptions = $derived([
+		{ value: 'all', label: 'Any Trip Type' },
+		...data.tripTypes.map((t) => ({ value: t.name, label: t.name }))
+	]);
 </script>
 
 <svelte:head>
@@ -186,34 +203,26 @@
 					/>
 				</div>
 
-				<div class="select-wrapper">
-					<label for="duration">Duration</label>
-					<select id="duration" bind:value={filterDuration}>
-						<option value="all">Any Duration</option>
-						<option value="half-day">Half Day (≤ 4 hrs)</option>
-						<option value="full-day">Full Day (> 4 hrs)</option>
-					</select>
-				</div>
+				<CustomSelect
+					id="duration"
+					label="Duration"
+					bind:value={filterDuration}
+					options={durationOptions}
+				/>
 
-				<div class="select-wrapper">
-					<label for="capacity">Capacity</label>
-					<select id="capacity" bind:value={filterPax}>
-						<option value="all">Any Capacity</option>
-						<option value="small">Small Group (1–4 pax)</option>
-						<option value="medium">Medium Group (5–8 pax)</option>
-						<option value="large">Large Group (9+ pax)</option>
-					</select>
-				</div>
+				<CustomSelect
+					id="capacity"
+					label="Capacity"
+					bind:value={filterPax}
+					options={capacityOptions}
+				/>
 
-				<div class="select-wrapper">
-					<label for="trip-type">Trip Type</label>
-					<select id="trip-type" bind:value={filterTripType}>
-						<option value="all">Any Trip Type</option>
-						{#each data.tripTypes as type}
-							<option value={type.name}>{type.name}</option>
-						{/each}
-					</select>
-				</div>
+				<CustomSelect
+					id="trip-type"
+					label="Trip Type"
+					bind:value={filterTripType}
+					options={tripTypeOptions}
+				/>
 
 				<div class="select-wrapper location-search-wrapper">
 					<label for="search-query">Location Search</label>
@@ -620,9 +629,6 @@
 		color: var(--text-secondary);
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
-	}
-	.select-wrapper select {
-		width: 100%;
 	}
 
 	/* Grid and Cards */
