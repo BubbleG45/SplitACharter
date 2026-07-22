@@ -178,12 +178,12 @@
 								</div>
 
 								<!-- Action/Helper Info boxes based on status -->
-								{#if booking.status === 'paid' && trip.status === 'half-booked'}
+								{#if booking.status === 'paid' && trip?.status === 'half-booked'}
 									<div class="info-alert info-primary glass">
 										<span class="pulse-dot"></span>
 										<p><strong>Waiting for a second group to join.</strong> Once another group books this date, both groups will receive a text and email request to reconfirm. If no group joins by the trip date, your deposit is automatically refunded.</p>
 									</div>
-								{:else if booking.status === 'paid' && trip.status === 'pending-reconfirm'}
+								{:else if booking.status === 'paid' && trip?.status === 'pending-reconfirm'}
 									<div class="info-alert info-warning glass">
 										<p><strong>Reconfirmation Pending.</strong> The charter has reached 2-of-2 groups. You will receive an SMS and email notification shortly to reconfirm your attendance. Check your phone!</p>
 									</div>
@@ -208,7 +208,7 @@
 								<!-- Reservation Question Action -->
 								<div class="booking-card-footer">
 									<a
-										href="mailto:info@splitacharter.com?subject={encodeURIComponent(`Trip Question - Booking Ref: ${booking.id}`)}&body={encodeURIComponent(`Hello SplitACharter Support,\n\nI have a question regarding my trip reservation.\n\nBooking Reference: ${booking.id}\nTrip Type: ${template.trip_type}\nDate: ${trip.date}\nLocation: ${template.location}\n\nMy Question:\n`)}"
+										href="mailto:info@splitacharter.com?subject={encodeURIComponent(`Trip Question - Booking Ref: ${booking.id}`)}&body={encodeURIComponent(`Hello SplitACharter Support,\n\nI have a question regarding my trip reservation.\n\nBooking Reference: ${booking.id}\nTrip Type: ${template?.trip_type || 'N/A'}\nDate: ${trip?.date || 'N/A'}\nLocation: ${template?.location || 'N/A'}\n\nMy Question:\n`)}"
 										target="_blank"
 										rel="noopener noreferrer"
 										class="btn btn-secondary btn-question"

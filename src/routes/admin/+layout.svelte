@@ -64,13 +64,10 @@
 					SplitACharter <span class="badge">Admin</span>
 				{/if}
 			</span>
-			<button class="collapse-btn" onclick={toggleCondensed} title={isCondensed ? "Expand Navigation Menu" : "Collapse Navigation Menu"}>
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="collapse-icon">
-					<path stroke-linecap="round" stroke-linejoin="round" d={isCondensed ? "M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" : "M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"} />
+			<button class="collapse-btn" onclick={toggleCondensed} title={isCondensed ? "Expand Navigation Menu" : "Collapse Navigation Menu"} aria-label="Toggle Condensed Mode">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+					<path stroke-linecap="round" stroke-linejoin="round" d={isCondensed ? "M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" : "M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5"} />
 				</svg>
-				{#if !isCondensed}
-					<span class="collapse-text">Collapse</span>
-				{/if}
 			</button>
 			<button class="menu-close-mobile" onclick={toggleSidebar} aria-label="Close menu">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -248,6 +245,27 @@
 		margin-left: 4px;
 		vertical-align: middle;
 	}
+	.collapse-btn {
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid var(--border-light);
+		color: var(--text-secondary);
+		width: 32px;
+		height: 32px;
+		border-radius: 6px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		padding: 0;
+		flex-shrink: 0;
+	}
+	.collapse-btn:hover {
+		background: rgba(6, 182, 212, 0.15);
+		color: var(--primary);
+		border-color: var(--primary);
+	}
+
 	.menu-close-mobile {
 		display: none;
 		background: transparent;
