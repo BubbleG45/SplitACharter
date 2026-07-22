@@ -636,12 +636,6 @@
 				</div>
 			</div>
 		</div>
-
-		<div class="modal-footer">
-			<button type="button" class="btn btn-primary" onclick={() => (showStatusHelpModal = false)}>
-				Got it
-			</button>
-		</div>
 	</div>
 {/if}
 
@@ -677,7 +671,7 @@
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		width: 620px;
+		width: 580px;
 		max-width: 92vw;
 		max-height: 85vh;
 		background: var(--bg-surface-dark);
@@ -699,21 +693,22 @@
 		margin-top: 4px;
 	}
 	.status-help-body {
-		padding: 1.5rem;
+		padding: 1.25rem 1.5rem 1.5rem 1.5rem;
 		overflow-y: auto;
 	}
 	.status-help-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-		gap: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
 	}
 	.status-help-item {
-		padding: 1rem;
+		padding: 0.85rem 1.1rem;
 		border-radius: 8px;
+		background: rgba(255, 255, 255, 0.02);
 		border: 1px solid var(--border-light);
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 6px;
 	}
 	.status-item-header {
 		display: flex;
