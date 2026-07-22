@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
 	import CustomSelect from '$lib/components/CustomSelect.svelte';
 
 	let { data } = $props();
@@ -19,10 +18,24 @@
 		const mm = String(today.getMonth() + 1).padStart(2, '0');
 		const dd = String(today.getDate()).padStart(2, '0');
 		minDate = `${yyyy}-${mm}-${dd}`;
+
+		const handlePopState = () => {
+			const urlParams = new URLSearchParams(window.location.search);
+			searchDate = urlParams.get('date') || '';
+			filterLocation = urlParams.get('location') || 'all';
+			filterDuration = urlParams.get('duration') || 'all';
+			filterPax = urlParams.get('capacity') || 'all';
+			filterTripType = urlParams.get('trip_type') || 'all';
+		};
+
+		window.addEventListener('popstate', handlePopState);
+		return () => window.removeEventListener('popstate', handlePopState);
 	});
 
-	// Sync local state to URL query parameters
+	// Sync local state to URL query parameters without triggering route navigation reloads
 	$effect(() => {
+		if (typeof window === 'undefined') return;
+
 		const params = new URLSearchParams();
 		if (searchDate) params.set('date', searchDate);
 		if (filterLocation !== 'all') params.set('location', filterLocation);
@@ -31,27 +44,12 @@
 		if (filterTripType !== 'all') params.set('trip_type', filterTripType);
 
 		const queryString = params.toString();
-		const targetUrl = queryString ? `${page.url.pathname}?${queryString}` : page.url.pathname;
-		const currentUrl = `${page.url.pathname}${page.url.search}`;
+		const targetUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
+		const currentUrl = `${window.location.pathname}${window.location.search}`;
 
 		if (targetUrl !== currentUrl) {
-			goto(targetUrl, { replaceState: true, keepFocus: true, noScroll: true });
+			window.history.replaceState(history.state, '', targetUrl);
 		}
-	});
-
-	// Sync URL search params back to local state on browser navigation
-	$effect(() => {
-		const urlDate = page.url.searchParams.get('date') || '';
-		const urlLoc = page.url.searchParams.get('location') || 'all';
-		const urlDur = page.url.searchParams.get('duration') || 'all';
-		const urlPax = page.url.searchParams.get('capacity') || 'all';
-		const urlType = page.url.searchParams.get('trip_type') || 'all';
-
-		if (urlDate !== searchDate) searchDate = urlDate;
-		if (urlLoc !== filterLocation) filterLocation = urlLoc;
-		if (urlDur !== filterDuration) filterDuration = urlDur;
-		if (urlPax !== filterPax) filterPax = urlPax;
-		if (urlType !== filterTripType) filterTripType = urlType;
 	});
 
 	function matchesLocationFilter(locString: string, filterVal: string) {
