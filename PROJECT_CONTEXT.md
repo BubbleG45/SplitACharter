@@ -155,37 +155,28 @@ just writing it.
 ### TripInstance states
 
 ```
-open ──────────────► half-booked ──────────────► pending-reconfirm
- ▲                                                       │
- │                                          ┌────────────┴────────────┐
- │                                          ▼                         ▼
- │                                   confirmed                  (one side fails
- │                                       │                       to reconfirm)
- │                                       ▼                            │
- │                                  completed                         │
- │                                                                     │
- └─────────────────── reset to open ◄────────────────────────────────┘
-                  (auto-spawn fires when confirmed reaches 2-of-2,
-                   creating a NEW open instance — the old one proceeds
-                   to captain matching, it does not become the new instance)
+(First Group Pays) ──► half-booked ──────────────► pending-reconfirm
+                            ▲                               │
+                            │                  ┌────────────┴────────────┐
+                            │                  ▼                         ▼
+                            │           confirmed                  (one side fails
+                            │               │                       to reconfirm)
+                            │               ▼                            │
+                            │          completed                         │
+                            │                                            │
+                            └────────── reset to ◄───────────────────────┘
+                                     half-booked
 
  Any state ──► canceled   (admin override, no-match-by-trip-date, no-captain-found,
                             weather cancellation — always a manual review, never automatic)
 ```
 
-- `open` → `half-booked`: first group pays.
-- `half-booked` → `pending-reconfirm`: second group pays (this is what triggers the
-  reconfirmation request to both groups).
+- **Trip Instance Creation** → `half-booked`: created dynamically when the first customer group completes payment.
+- `half-booked` → `pending-reconfirm`: second group pays (this triggers the reconfirmation request to both groups).
 - `pending-reconfirm` → `confirmed`: both groups reconfirm within their window.
-- `pending-reconfirm` → `open` (reset): one group fails to reconfirm. Non-confirmer is
-  forfeited + struck; confirmer's fee is held (see Section 6 — do not auto-refund).
-- `confirmed` → `completed`: captain accepted and trip occurred. **The instant a trip
-  enters `confirmed`, spawn a brand-new `open` instance for the same
-  date/type/location** — this is the auto-spawn rule, and it reuses the same
-  find-or-create logic as normal browsing, not a separate implementation.
-- Any state → `canceled`: admin override, no match found by trip date, no captain found
-  after match, or approved weather cancellation. All of these are full automatic refunds
-  except weather cancellation, which is manual-only.
+- `pending-reconfirm` → `half-booked` (reset): one group fails to reconfirm. Non-confirmer is forfeited + struck; confirmer's fee is held (see Section 6 — do not auto-refund).
+- `confirmed` → `completed`: captain accepted and trip occurred.
+- Any state → `canceled`: admin override, no match found by trip date, no captain found after match, or approved weather cancellation. All of these are full automatic refunds except weather cancellation, which is manual-only.
 
 ### Booking states (per group, within a TripInstance)
 

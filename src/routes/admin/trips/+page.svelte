@@ -194,7 +194,6 @@
 			<label for="status-filter">Trip Status:</label>
 			<select id="status-filter" bind:value={selectedStatus}>
 				<option value="all">All Trips</option>
-				<option value="open">Open (0 of 2 Booked)</option>
 				<option value="half-booked">Half-Booked (1 of 2 Booked)</option>
 				<option value="pending-reconfirm">Pending Reconfirm</option>
 				<option value="confirmed">Confirmed</option>
@@ -588,21 +587,11 @@
 			<div class="status-help-grid">
 				<div class="status-help-item glass">
 					<div class="status-item-header">
-						<span class="badge status-badge trip-open">Open</span>
-						<span class="status-capacity">0 of 2 Groups</span>
-					</div>
-					<p class="status-desc">
-						Fresh charter instance available on the marketplace. No customer groups have placed a deposit yet.
-					</p>
-				</div>
-
-				<div class="status-help-item glass">
-					<div class="status-item-header">
 						<span class="badge status-badge trip-half-booked">Half-Booked</span>
 						<span class="status-capacity">1 of 2 Groups</span>
 					</div>
 					<p class="status-desc">
-						First customer group has paid their $50 reservation fee. Waiting for a second group to join the charter.
+						Created when the first customer group pays their $50 reservation fee. Waiting for a second group to join the charter.
 					</p>
 				</div>
 

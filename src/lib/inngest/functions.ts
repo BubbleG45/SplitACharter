@@ -156,10 +156,10 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 				}
 			}
 
-			// Reset TripInstance to open
+			// Reset TripInstance back to half-booked (holding the confirming group)
 			await supabaseAdmin
 				.from('trip_instances')
-				.update({ status: 'open' })
+				.update({ status: 'half-booked' })
 				.eq('id', booking.trip_instance_id);
 
 			// Query the updated customer record to return the correct count and flag state

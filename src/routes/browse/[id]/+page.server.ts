@@ -16,12 +16,12 @@ export const load: PageServerLoad = async ({ params, url, locals: { supabase } }
 	}
 
 	// Fetch existing active trip instances for this listing template
-	// Only fetch instances that are 'open' or 'half-booked' so the customer can book them
+	// Only fetch instances that are 'half-booked' so the 2nd customer group can join them
 	const { data: tripInstances, error: tripsError } = await supabase
 		.from('trip_instances')
 		.select('id, date, status')
 		.eq('listing_template_id', params.id)
-		.in('status', ['open', 'half-booked']);
+		.eq('status', 'half-booked');
 
 	if (tripsError) {
 		console.error('Error fetching trip instances:', tripsError);

@@ -81,7 +81,7 @@ export const POST: RequestHandler = async ({ request }) => {
 						const tripInstance = (fullBooking as any).trip_instances;
 						const listingTemplate = tripInstance?.listing_templates;
 
-						if (customer && (tripInstance?.status === 'half-booked' || tripInstance?.status === 'open')) {
+						if (customer && tripInstance?.status === 'half-booked') {
 							await sendNotification(
 								'reservation_pending_match',
 								{ email: customer.email, phone: customer.phone, name: customer.name },
