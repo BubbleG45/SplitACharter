@@ -211,7 +211,9 @@
 		<!-- Filters Controls -->
 		<div class="controls-card glass">
 			<div class="controls-card-header">
-				<span class="controls-title">Filter Charters</span>
+				<div class="controls-title-group">
+					<span class="controls-title">Filter Charters</span>
+				</div>
 				{#if searchDate || filterLocation !== 'all' || filterDuration !== 'all' || filterPax !== 'all' || filterTripType !== 'all'}
 					<button type="button" class="btn-clear-all" onclick={resetAllFilters}>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
@@ -221,7 +223,7 @@
 					</button>
 				{/if}
 			</div>
-			<div class="filters-group" style="width: 100%; flex: 1;">
+			<div class="filters-group">
 				<div class="select-wrapper">
 					<div class="label-row">
 						<label for="search-date">Trip Date</label>
@@ -706,18 +708,59 @@
 	/* Controls Card */
 	.controls-card {
 		display: flex;
-		gap: 2rem;
+		flex-direction: column;
+		gap: 1.25rem;
 		padding: 1.5rem;
 		margin-bottom: 3rem;
-		align-items: flex-end;
 		border: 1px solid var(--border-light);
 		position: relative;
 		z-index: 50;
 	}
-	.filters-group {
-		flex: 3;
+	.controls-card-header {
 		display: flex;
-		gap: 1.5rem;
+		justify-content: space-between;
+		align-items: center;
+		width: 100%;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--border-light);
+	}
+	.controls-title-group {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.controls-title {
+		font-size: 0.85rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+		color: var(--primary);
+	}
+	.btn-clear-all {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid var(--border-light);
+		color: var(--text-secondary);
+		padding: 6px 12px;
+		border-radius: 6px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.btn-clear-all:hover {
+		background: rgba(239, 68, 68, 0.12);
+		border-color: rgba(239, 68, 68, 0.3);
+		color: var(--danger);
+	}
+	.filters-group {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+		gap: 1.25rem;
+		width: 100%;
+		align-items: flex-end;
 	}
 	.select-wrapper {
 		flex: 1;

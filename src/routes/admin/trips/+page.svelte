@@ -8,6 +8,16 @@
 	let selectedStatus = $state('all');
 	let selectedListing = $state('all');
 
+	let hasActiveFilters = $derived(
+		searchQuery.trim() !== '' || selectedStatus !== 'all' || selectedListing !== 'all'
+	);
+
+	function resetFilters() {
+		searchQuery = '';
+		selectedStatus = 'all';
+		selectedListing = 'all';
+	}
+
 	// Expanded trip ids tracking
 	let expandedTripIds = $state(new Set<string>());
 
@@ -158,6 +168,21 @@
 				<option value="completed">Completed</option>
 				<option value="canceled">Canceled</option>
 			</select>
+		</div>
+
+		<div class="filter-group filter-actions">
+			<span class="filter-label-placeholder" aria-hidden="true">&nbsp;</span>
+			<button
+				type="button"
+				class="btn btn-secondary clear-filters-btn"
+				onclick={resetFilters}
+				disabled={!hasActiveFilters}
+			>
+				<svg class="clear-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+				Clear Filters
+			</button>
 		</div>
 	</div>
 </div>
@@ -397,6 +422,30 @@
 		width: 100%;
 		padding: 8px 12px;
 		font-size: 0.9rem;
+	}
+	.filter-label-placeholder {
+		font-size: 0.8rem;
+		user-select: none;
+	}
+	.clear-filters-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		height: 37px;
+		padding: 0 14px;
+		font-size: 0.85rem;
+		white-space: nowrap;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.clear-filters-btn:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+	.clear-icon {
+		width: 14px;
+		height: 14px;
 	}
 
 	.table-container {
