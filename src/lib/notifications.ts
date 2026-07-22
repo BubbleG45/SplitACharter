@@ -26,12 +26,31 @@ export function compileTemplate(template: string, data: Record<string, string>):
  * logs a mock email to the console. Logs results to public.notification_logs.
  */
 /**
+ * Resolves the primary site URL dynamically based on environment variables (PUBLIC_SITE_URL,
+ * VERCEL_PROJECT_PRODUCTION_URL, VERCEL_URL) with default fallback to https://splitacharter.boats.
+ */
+export function getSiteUrl(origin?: string): string {
+	let rawUrl =
+		env.PUBLIC_SITE_URL ||
+		env.VERCEL_PROJECT_PRODUCTION_URL ||
+		env.VERCEL_URL ||
+		origin ||
+		'https://splitacharter.boats';
+
+	rawUrl = rawUrl.trim().replace(/\/+$/, '');
+	if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+		rawUrl = `https://${rawUrl}`;
+	}
+	return rawUrl;
+}
+
+/**
  * Wraps dynamic body HTML inside a premium responsive HTML email template
  * styled with the SplitACharter Slate, Cyan, and Indigo theme.
  */
 export function wrapInEmailLayout(contentHtml: string, title: string): string {
 	const currentYear = new Date().getFullYear();
-	const baseUrl = env.PUBLIC_SITE_URL || 'https://splitacharter.com';
+	const baseUrl = getSiteUrl();
 	const logoUrl = `${baseUrl}/logo-white.svg`;
 
 	return `<!DOCTYPE html>
@@ -280,7 +299,7 @@ export async function sendNotification(
 	recipient: { email?: string; phone?: string; name?: string },
 	data: Record<string, string>
 ): Promise<{ emailSent: boolean; smsSent: boolean }> {
-	const defaultBaseUrl = env.PUBLIC_SITE_URL || 'http://localhost:5173';
+	const defaultBaseUrl = getSiteUrl();
 	const fullData = {
 		customer_name: recipient.name || 'Valued Customer',
 		dashboard_url: `${defaultBaseUrl}/dashboard`,

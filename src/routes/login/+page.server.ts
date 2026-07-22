@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
-import { sendEmail } from '$lib/notifications';
+import { sendEmail, getSiteUrl } from '$lib/notifications';
 import { env } from '$env/dynamic/private';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -40,7 +40,7 @@ export const actions: Actions = {
 			.maybeSingle();
 
 		const nextPath = adminEmailMatch ? '/admin' : '/dashboard';
-		const siteUrl = env.PUBLIC_SITE_URL || url.origin;
+		const siteUrl = getSiteUrl(url.origin);
 		const { data, error } = await supabaseAdmin.auth.admin.generateLink({
 			type: 'magiclink',
 			email
