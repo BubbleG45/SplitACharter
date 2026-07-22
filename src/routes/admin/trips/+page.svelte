@@ -6,16 +6,29 @@
 	// Search & filtering state
 	let searchQuery = $state('');
 	let selectedStatus = $state('all');
-	let selectedListing = $state('all');
+	let selectedTripType = $state('all');
+	let selectedLocation = $state('all');
+
+	// Unique trip types & locations derived from listing templates
+	let availableTripTypes = $derived(
+		Array.from(new Set(data.listingTemplates.map((t: any) => t.trip_type))).sort()
+	);
+	let availableLocations = $derived(
+		Array.from(new Set(data.listingTemplates.map((t: any) => t.location))).sort()
+	);
 
 	let hasActiveFilters = $derived(
-		searchQuery.trim() !== '' || selectedStatus !== 'all' || selectedListing !== 'all'
+		searchQuery.trim() !== '' ||
+		selectedStatus !== 'all' ||
+		selectedTripType !== 'all' ||
+		selectedLocation !== 'all'
 	);
 
 	function resetFilters() {
 		searchQuery = '';
 		selectedStatus = 'all';
-		selectedListing = 'all';
+		selectedTripType = 'all';
+		selectedLocation = 'all';
 	}
 
 	// Admin Trip Cancel modal state
@@ -23,6 +36,9 @@
 	let cancelWithRefund = $state(true);
 	let cancelReason = $state('');
 	let cancelingInProgress = $state(false);
+
+	// Status Explanation modal state
+	let showStatusHelpModal = $state(false);
 
 	// Expanded trip ids tracking
 	let expandedTripIds = $state(new Set<string>());
@@ -33,11 +49,12 @@
 	let loadingLogs = $state(false);
 	let logs = $state<any[]>([]);
 
-	// Derived filtered trips based on status, listing, and search query
+	// Derived filtered trips based on status, trip type, location, and search query
 	let filteredTrips = $derived(
 		data.trips.filter((t: any) => {
 			const statusMatch = selectedStatus === 'all' || t.status === selectedStatus;
-			const templateMatch = selectedListing === 'all' || t.listing_templates?.id === selectedListing;
+			const tripTypeMatch = selectedTripType === 'all' || t.listing_templates?.trip_type === selectedTripType;
+			const locationMatch = selectedLocation === 'all' || t.listing_templates?.location === selectedLocation;
 
 			let searchMatch = true;
 			const query = searchQuery.toLowerCase().trim();
@@ -49,12 +66,12 @@
 					b.customers?.phone?.includes(query)
 				);
 				const captainMatch = t.captains?.name?.toLowerCase().includes(query);
-				const tripTypeMatch = t.listing_templates?.trip_type?.toLowerCase().includes(query);
-				const locationMatch = t.listing_templates?.location?.toLowerCase().includes(query);
-				searchMatch = !!(customerMatch || captainMatch || tripTypeMatch || locationMatch || (t.id && t.id.toLowerCase().includes(query)));
+				const queryTripTypeMatch = t.listing_templates?.trip_type?.toLowerCase().includes(query);
+				const queryLocationMatch = t.listing_templates?.location?.toLowerCase().includes(query);
+				searchMatch = !!(customerMatch || captainMatch || queryTripTypeMatch || queryLocationMatch || (t.id && t.id.toLowerCase().includes(query)));
 			}
 
-			return statusMatch && templateMatch && searchMatch;
+			return statusMatch && tripTypeMatch && locationMatch && searchMatch;
 		})
 	);
 
@@ -154,11 +171,21 @@
 		</div>
 
 		<div class="filter-group">
-			<label for="listing-filter">Listing Template:</label>
-			<select id="listing-filter" bind:value={selectedListing}>
-				<option value="all">All Listings</option>
-				{#each data.listingTemplates as template}
-					<option value={template.id}>{template.trip_type} ({template.location})</option>
+			<label for="trip-type-filter">Trip Type:</label>
+			<select id="trip-type-filter" bind:value={selectedTripType}>
+				<option value="all">All Trip Types</option>
+				{#each availableTripTypes as type}
+					<option value={type}>{type}</option>
+				{/each}
+			</select>
+		</div>
+
+		<div class="filter-group">
+			<label for="location-filter">Location:</label>
+			<select id="location-filter" bind:value={selectedLocation}>
+				<option value="all">All Locations</option>
+				{#each availableLocations as loc}
+					<option value={loc}>{loc}</option>
 				{/each}
 			</select>
 		</div>
@@ -208,7 +235,24 @@
 					<th>Charter Specs</th>
 					<th>Assigned Captain</th>
 					<th>Bookings</th>
-					<th>Status</th>
+					<th>
+						<div class="th-with-help">
+							<span>Status</span>
+							<button
+								type="button"
+								class="help-icon-btn"
+								onclick={() => (showStatusHelpModal = true)}
+								title="Click for Status definitions"
+								aria-label="Status Definitions Help"
+							>
+								<svg class="help-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<circle cx="12" cy="12" r="10" />
+									<path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+									<line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3" stroke-linecap="round" />
+								</svg>
+							</button>
+						</div>
+					</th>
 					<th style="width: 110px;">Actions</th>
 				</tr>
 			</thead>
@@ -523,7 +567,182 @@
 	</div>
 {/if}
 
+<!-- Trip Status Explanation Modal -->
+{#if showStatusHelpModal}
+	<button class="drawer-backdrop" onclick={() => (showStatusHelpModal = false)} aria-label="Close status help modal"></button>
+	<div class="status-help-modal glass glow-primary" role="dialog" aria-modal="true">
+		<div class="modal-header">
+			<div>
+				<span class="drawer-subtitle">State Machine Guide</span>
+				<h2>Trip Status Definitions</h2>
+				<p class="modal-subtext">Explanation of operational lifecycle states for charter trip instances.</p>
+			</div>
+			<button class="close-btn" onclick={() => (showStatusHelpModal = false)} aria-label="Close Modal">
+				<svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
+		</div>
+
+		<div class="modal-body status-help-body">
+			<div class="status-help-grid">
+				<div class="status-help-item glass">
+					<div class="status-item-header">
+						<span class="badge status-badge trip-open">Open</span>
+						<span class="status-capacity">0 of 2 Groups</span>
+					</div>
+					<p class="status-desc">
+						Fresh charter instance available on the marketplace. No customer groups have placed a deposit yet.
+					</p>
+				</div>
+
+				<div class="status-help-item glass">
+					<div class="status-item-header">
+						<span class="badge status-badge trip-half-booked">Half-Booked</span>
+						<span class="status-capacity">1 of 2 Groups</span>
+					</div>
+					<p class="status-desc">
+						First customer group has paid their $50 reservation fee. Waiting for a second group to join the charter.
+					</p>
+				</div>
+
+				<div class="status-help-item glass">
+					<div class="status-item-header">
+						<span class="badge status-badge trip-pending-reconfirm">Pending Reconfirm</span>
+						<span class="status-capacity">2 of 2 Groups Paid</span>
+					</div>
+					<p class="status-desc">
+						Second customer group paid. Both groups are currently inside their reconfirmation window to confirm attendance before captain notification.
+					</p>
+				</div>
+
+				<div class="status-help-item glass">
+					<div class="status-item-header">
+						<span class="badge status-badge trip-confirmed">Confirmed</span>
+						<span class="status-capacity">Matched & Spawned</span>
+					</div>
+					<p class="status-desc">
+						Both customer groups reconfirmed. Simultaneous captain text blast is initiated and a new open instance is auto-spawned.
+					</p>
+				</div>
+
+				<div class="status-help-item glass">
+					<div class="status-item-header">
+						<span class="badge status-badge trip-completed">Completed</span>
+						<span class="status-capacity">Trip Finished</span>
+					</div>
+					<p class="status-desc">
+						A captain accepted the booking (first YES reply) and the trip charter has been successfully fulfilled.
+					</p>
+				</div>
+
+				<div class="status-help-item glass">
+					<div class="status-item-header">
+						<span class="badge status-badge trip-canceled">Canceled</span>
+						<span class="status-capacity">Refunded / Closed</span>
+					</div>
+					<p class="status-desc">
+						Trip instance was canceled due to admin override, weather advisory, or lack of captain match by trip date.
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="modal-footer">
+			<button type="button" class="btn btn-primary" onclick={() => (showStatusHelpModal = false)}>
+				Got it
+			</button>
+		</div>
+	</div>
+{/if}
+
 <style>
+	.th-with-help {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.help-icon-btn {
+		background: none;
+		border: none;
+		color: var(--text-muted);
+		padding: 2px;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		transition: color 0.2s ease, transform 0.2s ease;
+	}
+	.help-icon-btn:hover {
+		color: var(--primary);
+		transform: scale(1.1);
+	}
+	.help-icon {
+		width: 15px;
+		height: 15px;
+	}
+
+	.status-help-modal {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 620px;
+		max-width: 92vw;
+		max-height: 85vh;
+		background: var(--bg-surface-dark);
+		border: 1px solid var(--border-light);
+		border-radius: 12px;
+		z-index: 220;
+		display: flex;
+		flex-direction: column;
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+		animation: modal-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+	}
+	@keyframes modal-pop {
+		from { opacity: 0; transform: translate(-50%, -46%) scale(0.96); }
+		to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+	}
+	.modal-subtext {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		margin-top: 4px;
+	}
+	.status-help-body {
+		padding: 1.5rem;
+		overflow-y: auto;
+	}
+	.status-help-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		gap: 1rem;
+	}
+	.status-help-item {
+		padding: 1rem;
+		border-radius: 8px;
+		border: 1px solid var(--border-light);
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.status-item-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.status-capacity {
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--text-muted);
+	}
+	.status-desc {
+		font-size: 0.83rem;
+		line-height: 1.45;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+
 	.admin-header {
 		margin-bottom: 2rem;
 	}
