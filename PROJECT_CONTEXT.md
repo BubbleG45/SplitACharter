@@ -244,8 +244,8 @@ specifically, since it's the easiest row to get subtly wrong:
 
 | Scenario | Outcome | Automatic? |
 |---|---|---|
-| Cancel before any match | Full refund | Automatic |
-| Reconfirmed, cancels before captain assigned | Full refund | Automatic |
+| Cancel before reconfirming trip | Full refund | Automatic |
+| **Cancels after reconfirming trip** | **$50 forfeited / Non-refundable** | Automatic |
 | **Failed to reconfirm — non-confirming group** | **$50 forfeited + strike issued** | Automatic |
 | **Failed to reconfirm — confirming group** | **$50 HELD, not refunded** — applies to new match, or refunded only on explicit customer request from dashboard | Held automatically; refund is manual-on-request |
 | No match found before trip date | Full refund | Automatic |

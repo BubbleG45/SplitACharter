@@ -12,6 +12,20 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const templates = [
   {
+    trigger_name: 'admin_trip_cancellation',
+    email_enabled: true,
+    sms_enabled: true,
+    email_template: 'Hello {customer_name},\n\nYour charter reservation on {trip_date} ({trip_type}) has been canceled by SplitACharter operations.\n\nReason for Cancellation:\n{cancellation_reason}\n\nRefund Status:\n{refund_status_text}\n\nYou can view your account and book another date anytime on your dashboard: {dashboard_url}',
+    sms_template: 'SplitACharter Alert: Your charter on {trip_date} ({trip_type}) was canceled. Reason: {cancellation_reason}. {refund_status_text}'
+  },
+  {
+    trigger_name: 'reservation_pending_match',
+    email_enabled: true,
+    sms_enabled: true,
+    email_template: 'Hello {customer_name},\n\nThank you for your reservation! Your payment has been received for the {trip_type} charter on {trip_date}.\n\nYour group is confirmed and we are actively matching your charter with a second group. Once another group joins, you will receive a notification to reconfirm your trip slot.\n\nYou can view and manage your reservation anytime on your dashboard: {dashboard_url}',
+    sms_template: 'SplitACharter: Your reservation for {trip_type} on {trip_date} is confirmed! We are waiting for a 2nd group to join. Details: {dashboard_url}'
+  },
+  {
     trigger_name: 'match_detected', 
     email_enabled: true, 
     sms_enabled: true,

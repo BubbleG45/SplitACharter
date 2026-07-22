@@ -17,6 +17,8 @@
 	const selectedSetting = $derived(data.settings.find(s => s.id === selectedId));
 
 	const triggerPlaceholders: Record<string, string[]> = {
+		admin_trip_cancellation: ['{customer_name}', '{trip_date}', '{trip_type}', '{cancellation_reason}', '{refund_status_text}', '{dashboard_url}'],
+		reservation_pending_match: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
 		match_detected: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
 		reconfirm_reminder: ['{customer_name}', '{trip_date}', '{deadline_time}', '{dashboard_url}'],
 		reconfirm_forfeited: ['{customer_name}', '{trip_date}'],

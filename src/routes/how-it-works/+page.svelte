@@ -1,17 +1,23 @@
 <script lang="ts">
 	import { fade, slide } from 'svelte/transition';
+	import { onMount } from 'svelte';
 
 	let activeTab = $state<'groups' | 'captains'>('groups');
 
 	// FAQ structure for Groups/Adventurers
 	const groupFaqs = [
 		{
+			id: "cancellation-policy",
+			q: "What is the cancellation and refund policy?",
+			a: "If you cancel your booking BEFORE reconfirming your trip slot, you will receive a full automatic refund of your $50 reservation fee. However, if you cancel AFTER you have reconfirmed your trip, the $50 reservation fee becomes non-refundable to protect the second group's booking commitment."
+		},
+		{
 			q: "What is the $50 reservation fee?",
-			a: "It is a non-refundable reservation fee to secure your group's booking and confirm your commitment to sharing the charter. If no second group matches with you before the trip date, this fee is automatically refunded in full."
+			a: "It is a reservation fee to secure your group's booking and confirm your commitment to sharing the charter. If no second group matches with you before the trip date, this fee is automatically refunded in full."
 		},
 		{
 			q: "How does cost sharing work?",
-			a: "SplitACharter lets you book private charters for exactly half the price. Each group pays the non-refundable $50 reservation fee to SplitACharter. On the day of the trip, each group pays exactly half of the captain's charter rate directly to the captain at the dock."
+			a: "SplitACharter lets you book private charters for exactly half the price. Each group pays the $50 reservation fee to SplitACharter. On the day of the trip, each group pays exactly half of the captain's charter rate directly to the captain at the dock."
 		},
 		{
 			q: "What is the reconfirmation window?",
@@ -26,6 +32,16 @@
 			a: "If the captain or administrator cancels the trip due to bad weather or safety concerns, both groups receive a full refund of their reservation fee. Weather cancellations are reviewed and handled manually by our support team."
 		}
 	];
+
+	onMount(() => {
+		if (typeof window !== 'undefined' && window.location.hash === '#cancellation-policy') {
+			activeTab = 'groups';
+			const index = groupFaqs.findIndex(f => f.id === 'cancellation-policy');
+			if (index !== -1) {
+				openGroupFaq = index;
+			}
+		}
+	});
 
 	// FAQ structure for Captains
 	const captainFaqs = [
@@ -152,7 +168,7 @@
 					<h2 class="section-title">Adventurer FAQs</h2>
 					<div class="faq-list">
 						{#each groupFaqs as faq, i}
-							<div class="faq-item glass">
+							<div class="faq-item glass" id={faq.id || null}>
 								<button class="faq-question" onclick={() => toggleGroupFaq(i)}>
 									<span>{faq.q}</span>
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 chevron" class:open={openGroupFaq === i}>

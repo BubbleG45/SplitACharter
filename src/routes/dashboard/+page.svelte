@@ -27,6 +27,8 @@
 	}
 
 	let copiedId = $state('');
+	let cancelingBooking = $state<any>(null);
+	let cancellingInProgress = $state(false);
 
 	function handleCopy(id: string) {
 		navigator.clipboard.writeText(id);
@@ -205,7 +207,7 @@
 									</div>
 								{/if}
 
-								<!-- Reservation Question Action -->
+								<!-- Reservation Question & Cancel Action -->
 								<div class="booking-card-footer">
 									<a
 										href="mailto:info@splitacharter.com?subject={encodeURIComponent(`Trip Question - Booking Ref: ${booking.id}`)}&body={encodeURIComponent(`Hello SplitACharter Support,\n\nI have a question regarding my trip reservation.\n\nBooking Reference: ${booking.id}\nTrip Type: ${template?.trip_type || 'N/A'}\nDate: ${trip?.date || 'N/A'}\nLocation: ${template?.location || 'N/A'}\n\nMy Question:\n`)}"
@@ -218,6 +220,24 @@
 										</svg>
 										<span>Have Questions? Email Support</span>
 									</a>
+
+									{#if !['canceled', 'forfeited', 'completed'].includes(booking.status)}
+										<div class="cancel-action-group">
+											<button
+												type="button"
+												class="btn btn-danger-outline btn-cancel"
+												onclick={() => (cancelingBooking = { booking, trip, template })}
+											>
+												<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+												</svg>
+												<span>Cancel Booking</span>
+											</button>
+											<a href="/how-it-works#cancellation-policy" target="_blank" class="faq-policy-link">
+												FAQ Cancellation Policy
+											</a>
+										</div>
+									{/if}
 								</div>
 							</div>
 						</div>
@@ -227,6 +247,78 @@
 		</section>
 	</div>
 </div>
+
+<!-- Double Confirmation Cancellation Modal -->
+{#if cancelingBooking}
+	<div class="modal-backdrop" onclick={() => (cancelingBooking = null)} role="presentation"></div>
+	<div class="cancel-modal glass glow-danger" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
+		<div class="modal-header">
+			<div class="modal-title-group">
+				<div class="warning-icon-wrapper">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+					</svg>
+				</div>
+				<div>
+					<h3 id="cancel-modal-title">Confirm Cancellation</h3>
+					<span class="modal-subtitle">{cancelingBooking.template?.trip_type || 'Charter Reservation'}</span>
+				</div>
+			</div>
+			<button type="button" class="close-modal-btn" onclick={() => (cancelingBooking = null)} aria-label="Close modal">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
+		</div>
+
+		<div class="modal-body">
+			<p class="modal-text">Are you sure you want to cancel your charter reservation for <strong>{formatDate(cancelingBooking.trip?.date)}</strong>?</p>
+			
+			<div class="refund-notice-card" class:refundable={cancelingBooking.booking.status !== 'reconfirmed'} class:non-refundable={cancelingBooking.booking.status === 'reconfirmed'}>
+				{#if cancelingBooking.booking.status !== 'reconfirmed'}
+					<div class="notice-badge badge-success">✓ Eligible for Refund</div>
+					<p>Since you have <strong>not reconfirmed</strong> your trip slot yet, your <strong>$50.00 reservation deposit will be fully refunded</strong> to your original payment method.</p>
+				{:else}
+					<div class="notice-badge badge-danger">⚠️ Non-Refundable</div>
+					<p>Since you have <strong>already reconfirmed</strong> this trip slot, your <strong>$50.00 reservation deposit is non-refundable</strong> per our cancellation policy.</p>
+				{/if}
+			</div>
+
+			<div class="faq-link-row">
+				<a href="/how-it-works#cancellation-policy" target="_blank" class="faq-policy-link modal-faq-link">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+					</svg>
+					Read our full Cancellation & Refund Policy in FAQ
+				</a>
+			</div>
+		</div>
+
+		<div class="modal-actions">
+			<button type="button" class="btn btn-secondary" onclick={() => (cancelingBooking = null)} disabled={cancellingInProgress}>
+				Keep My Booking
+			</button>
+			<form
+				method="POST"
+				action="?/cancelBooking"
+				use:enhance={() => {
+					cancellingInProgress = true;
+					return async ({ update }) => {
+						await update();
+						cancellingInProgress = false;
+						cancelingBooking = null;
+					};
+				}}
+				style="display: inline;"
+			>
+				<input type="hidden" name="bookingId" value={cancelingBooking.booking.id} />
+				<button type="submit" class="btn btn-danger" disabled={cancellingInProgress}>
+					{cancellingInProgress ? 'Canceling...' : 'Yes, Confirm Cancellation'}
+				</button>
+			</form>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.dashboard-wrapper {
@@ -530,7 +622,10 @@
 		padding-top: 1.25rem;
 		border-top: 1px solid var(--border-light);
 		display: flex;
-		justify-content: flex-end;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 1rem;
 	}
 	.btn-question {
 		font-size: 0.85rem;
@@ -544,6 +639,165 @@
 		color: var(--text-primary);
 		border-color: var(--primary);
 		background: rgba(6, 182, 212, 0.08);
+	}
+
+	.cancel-action-group {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+	.btn-danger-outline {
+		background: rgba(239, 68, 68, 0.05);
+		border: 1px solid rgba(239, 68, 68, 0.25);
+		color: var(--danger);
+		font-size: 0.85rem;
+		padding: 8px 16px;
+		border-radius: 6px;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.btn-danger-outline:hover {
+		background: rgba(239, 68, 68, 0.18);
+		border-color: var(--danger);
+	}
+	.faq-policy-link {
+		color: var(--text-muted);
+		font-size: 0.8rem;
+		text-decoration: underline;
+		transition: color 0.2s ease;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.faq-policy-link:hover {
+		color: var(--primary);
+	}
+
+	/* Modal Backdrop & Dialog */
+	.modal-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background: rgba(0, 0, 0, 0.75);
+		backdrop-filter: blur(6px);
+		z-index: 300;
+	}
+	.cancel-modal {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 520px;
+		max-width: 92vw;
+		background: #0a0f1d;
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		border-radius: 12px;
+		padding: 1.75rem;
+		z-index: 310;
+		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+	}
+	.modal-title-group {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+	.warning-icon-wrapper {
+		width: 42px;
+		height: 42px;
+		border-radius: 50%;
+		background: rgba(239, 68, 68, 0.15);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		color: var(--danger);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.modal-header h3 {
+		font-size: 1.25rem;
+		font-weight: 700;
+		margin: 0;
+	}
+	.modal-subtitle {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+	}
+	.close-modal-btn {
+		background: none;
+		border: none;
+		color: var(--text-muted);
+		cursor: pointer;
+		padding: 4px;
+	}
+	.close-modal-btn:hover {
+		color: var(--text-primary);
+	}
+
+	.modal-body {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.modal-text {
+		font-size: 0.95rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+		margin: 0;
+	}
+	.refund-notice-card {
+		padding: 1rem;
+		border-radius: 8px;
+		font-size: 0.85rem;
+		line-height: 1.5;
+	}
+	.refund-notice-card.refundable {
+		background: rgba(16, 185, 129, 0.08);
+		border: 1px solid rgba(16, 185, 129, 0.3);
+		color: #a7f3d0;
+	}
+	.refund-notice-card.non-refundable {
+		background: rgba(239, 68, 68, 0.08);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		color: #fca5a5;
+	}
+	.notice-badge {
+		display: inline-block;
+		font-weight: 700;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		margin-bottom: 6px;
+	}
+	.badge-success { color: #34d399; }
+	.badge-danger { color: #f87171; }
+
+	.faq-link-row {
+		margin-top: 4px;
+	}
+	.modal-faq-link {
+		font-size: 0.85rem;
+		color: var(--primary);
+	}
+
+	.modal-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 12px;
+		margin-top: 0.5rem;
 	}
 
 	.empty-state {

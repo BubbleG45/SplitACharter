@@ -151,5 +151,103 @@ export const actions: Actions = {
 		}
 
 		return { success: true };
+	},
+	cancelBooking: async ({ request, locals: { safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+
+		if (!session || !user) {
+			return fail(401, { message: 'Unauthorized. Please sign in.' });
+		}
+
+		const formData = await request.formData();
+		const bookingId = formData.get('bookingId') as string;
+
+		if (!bookingId) {
+			return fail(400, { message: 'Booking ID is required.' });
+		}
+
+		const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+		// Fetch booking details to check ownership and state
+		const { data: booking, error: fetchErr } = await supabaseAdmin
+			.from('bookings')
+			.select('id, customer_id, trip_instance_id, status')
+			.eq('id', bookingId)
+			.single();
+
+		if (fetchErr || !booking) {
+			return fail(404, { message: 'Booking not found.' });
+		}
+
+		if (booking.customer_id !== user.id) {
+			return fail(403, { message: 'Forbidden. You do not own this booking.' });
+		}
+
+		if (['canceled', 'forfeited', 'completed'].includes(booking.status)) {
+			return fail(400, { message: `Booking cannot be canceled in its current status: ${booking.status}` });
+		}
+
+		const isReconfirmed = booking.status === 'reconfirmed';
+
+		// Update booking status to 'canceled'
+		const { error: cancelErr } = await supabaseAdmin
+			.from('bookings')
+			.update({ status: 'canceled' })
+			.eq('id', bookingId);
+
+		if (cancelErr) {
+			console.error('Error canceling booking:', cancelErr);
+			return fail(500, { message: 'Failed to cancel booking.' });
+		}
+
+		// Process automatic refund if canceled BEFORE reconfirming
+		if (!isReconfirmed) {
+			const { data: payRecord } = await supabaseAdmin
+				.from('payment_records')
+				.select('id, stripe_payment_intent_id, amount')
+				.eq('booking_id', bookingId)
+				.eq('status', 'succeeded')
+				.maybeSingle();
+
+			if (payRecord) {
+				await supabaseAdmin
+					.from('payment_records')
+					.insert({
+						booking_id: bookingId,
+						stripe_payment_intent_id: `ref_${payRecord.stripe_payment_intent_id}_${Math.random().toString(36).substring(2, 8)}`,
+						amount: payRecord.amount,
+						status: 'refunded'
+					});
+			}
+		}
+
+		// Re-evaluate remaining active bookings on the trip instance
+		const { data: remainingBookings } = await supabaseAdmin
+			.from('bookings')
+			.select('id, status')
+			.eq('trip_instance_id', booking.trip_instance_id)
+			.not('status', 'in', '("canceled","forfeited")');
+
+		const activeCount = remainingBookings?.length || 0;
+		let newTripStatus = 'open';
+		if (activeCount === 1) {
+			newTripStatus = 'half-booked';
+		} else if (activeCount === 2) {
+			const bothReconfirmed = remainingBookings?.every((b) => b.status === 'reconfirmed');
+			newTripStatus = bothReconfirmed ? 'confirmed' : 'pending-reconfirm';
+		}
+
+		await supabaseAdmin
+			.from('trip_instances')
+			.update({ status: newTripStatus })
+			.eq('id', booking.trip_instance_id);
+
+		return {
+			success: true,
+			wasRefunded: !isReconfirmed,
+			message: !isReconfirmed
+				? 'Your booking has been canceled and your $50 reservation deposit has been fully refunded.'
+				: 'Your booking has been canceled. Per our policy, fees for reconfirmed trips are non-refundable.'
+		};
 	}
 };

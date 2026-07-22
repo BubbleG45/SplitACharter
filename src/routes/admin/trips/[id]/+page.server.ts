@@ -152,7 +152,11 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	cancelTrip: async ({ params, locals: { supabase } }) => {
+	cancelTrip: async ({ params, request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const withRefund = formData.get('withRefund') !== 'false';
+		const reason = (formData.get('reason') as string)?.trim() || 'Operations cancellation';
+
 		// Update trip instance status to canceled
 		const { error: cancelErr } = await supabase
 			.from('trip_instances')
@@ -164,7 +168,7 @@ export const actions: Actions = {
 			return fail(500, { message: 'Failed to cancel trip instance.' });
 		}
 
-		// Retrieve active bookings on this trip to cancel and refund
+		// Retrieve active bookings on this trip to cancel and process refund if requested
 		const { data: bookings } = await supabase
 			.from('bookings')
 			.select('id, customers(name, phone, email), trip_instances(date, listing_templates(trip_type))')
@@ -173,37 +177,46 @@ export const actions: Actions = {
 
 		if (bookings && bookings.length > 0) {
 			for (const b of bookings) {
-				// Cancel booking
 				await supabase
 					.from('bookings')
 					.update({ status: 'canceled' })
 					.eq('id', b.id);
 
-				// Insert simulated Stripe refund payment record
-				const refundId = `re_admin_${Math.random().toString(36).substring(2, 12)}`;
-				await supabase
-					.from('payment_records')
-					.insert({
-						booking_id: b.id,
-						stripe_payment_intent_id: refundId,
-						amount: 50.00, // Positive amount to satisfy DB constraints
-						status: 'refunded'
-					});
+				if (withRefund) {
+					const refundId = `ref_admin_${Math.random().toString(36).substring(2, 12)}`;
+					await supabase
+						.from('payment_records')
+						.insert({
+							booking_id: b.id,
+							stripe_payment_intent_id: refundId,
+							amount: 50.00,
+							status: 'refunded'
+						});
+				}
 
 				const customer = (b as any).customers;
 				const trip = (b as any).trip_instances;
 				const tripDetails = trip?.listing_templates;
 
-				// Notify customer of admin cancellation and refund
 				if (customer) {
-					await sendNotification(
-						'matching_timeout', // Reuses the refund notification template
-						{ email: customer.email, phone: customer.phone, name: customer.name },
-						{
-							trip_date: trip?.date || '',
-							trip_type: tripDetails?.trip_type || ''
-						}
-					);
+					const refundText = withRefund
+						? 'Your $50.00 reservation fee has been fully refunded to your original payment method.'
+						: 'Per platform policy, this cancellation is non-refundable.';
+
+					try {
+						await sendNotification(
+							'admin_trip_cancellation',
+							{ email: customer.email, phone: customer.phone, name: customer.name },
+							{
+								trip_date: trip?.date || '',
+								trip_type: tripDetails?.trip_type || '',
+								cancellation_reason: reason,
+								refund_status_text: refundText
+							}
+						);
+					} catch (notifErr) {
+						console.error('Error sending admin_trip_cancellation notification:', notifErr);
+					}
 				}
 			}
 		}

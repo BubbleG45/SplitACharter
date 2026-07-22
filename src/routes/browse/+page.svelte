@@ -1,21 +1,57 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import CustomSelect from '$lib/components/CustomSelect.svelte';
+
 	let { data } = $props();
 
-	let filterLocation = $state('all');
-	let filterDuration = $state('all'); // 'all', 'half-day', 'full-day'
-	let filterPax = $state('all'); // 'all', 'small', 'medium', 'large'
-	let filterTripType = $state('all');
-	let searchDate = $state('');
+	let filterLocation = $state(page.url.searchParams.get('location') || 'all');
+	let filterDuration = $state(page.url.searchParams.get('duration') || 'all'); // 'all', 'half-day', 'full-day'
+	let filterPax = $state(page.url.searchParams.get('capacity') || 'all'); // 'all', 'small', 'medium', 'large'
+	let filterTripType = $state(page.url.searchParams.get('trip_type') || 'all');
+	let searchDate = $state(page.url.searchParams.get('date') || '');
 	let minDate = $state('');
 
-	import { onMount } from 'svelte';
-	import CustomSelect from '$lib/components/CustomSelect.svelte';
 	onMount(() => {
 		const today = new Date();
 		const yyyy = today.getFullYear();
 		const mm = String(today.getMonth() + 1).padStart(2, '0');
 		const dd = String(today.getDate()).padStart(2, '0');
 		minDate = `${yyyy}-${mm}-${dd}`;
+	});
+
+	// Sync local state to URL query parameters
+	$effect(() => {
+		const params = new URLSearchParams();
+		if (searchDate) params.set('date', searchDate);
+		if (filterLocation !== 'all') params.set('location', filterLocation);
+		if (filterDuration !== 'all') params.set('duration', filterDuration);
+		if (filterPax !== 'all') params.set('capacity', filterPax);
+		if (filterTripType !== 'all') params.set('trip_type', filterTripType);
+
+		const queryString = params.toString();
+		const targetUrl = queryString ? `${page.url.pathname}?${queryString}` : page.url.pathname;
+		const currentUrl = `${page.url.pathname}${page.url.search}`;
+
+		if (targetUrl !== currentUrl) {
+			goto(targetUrl, { replaceState: true, keepFocus: true, noScroll: true });
+		}
+	});
+
+	// Sync URL search params back to local state on browser navigation
+	$effect(() => {
+		const urlDate = page.url.searchParams.get('date') || '';
+		const urlLoc = page.url.searchParams.get('location') || 'all';
+		const urlDur = page.url.searchParams.get('duration') || 'all';
+		const urlPax = page.url.searchParams.get('capacity') || 'all';
+		const urlType = page.url.searchParams.get('trip_type') || 'all';
+
+		if (urlDate !== searchDate) searchDate = urlDate;
+		if (urlLoc !== filterLocation) filterLocation = urlLoc;
+		if (urlDur !== filterDuration) filterDuration = urlDur;
+		if (urlPax !== filterPax) filterPax = urlPax;
+		if (urlType !== filterTripType) filterTripType = urlType;
 	});
 
 	function matchesLocationFilter(locString: string, filterVal: string) {
@@ -186,6 +222,22 @@
 		filterPax = 'all';
 		filterTripType = 'all';
 	}
+
+	function getListingHref(listing: any) {
+		const params = new URLSearchParams(page.url.searchParams);
+		if (listing.matchedInstance && !params.get('date')) {
+			params.set('date', listing.matchedInstance.date);
+		}
+		const qs = params.toString();
+		return `/browse/${listing.id}${qs ? `?${qs}` : ''}`;
+	}
+
+	function getSuggestionHref(trip: any, template: any) {
+		const params = new URLSearchParams(page.url.searchParams);
+		params.set('date', trip.date);
+		const qs = params.toString();
+		return `/browse/${template.id}?${qs}`;
+	}
 </script>
 
 <svelte:head>
@@ -213,24 +265,19 @@
 			<div class="controls-card-header">
 				<div class="controls-title-group">
 					<span class="controls-title">Filter Charters</span>
+					{#if searchDate || filterLocation !== 'all' || filterDuration !== 'all' || filterPax !== 'all' || filterTripType !== 'all'}
+						<button type="button" class="btn-clear-all" onclick={resetAllFilters}>
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+							</svg>
+							<span>Clear Filters</span>
+						</button>
+					{/if}
 				</div>
-				{#if searchDate || filterLocation !== 'all' || filterDuration !== 'all' || filterPax !== 'all' || filterTripType !== 'all'}
-					<button type="button" class="btn-clear-all" onclick={resetAllFilters}>
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-						</svg>
-						<span>Clear Filters</span>
-					</button>
-				{/if}
 			</div>
 			<div class="filters-group">
 				<div class="select-wrapper">
-					<div class="label-row">
-						<label for="search-date">Trip Date</label>
-						{#if searchDate}
-							<button type="button" class="clear-date-btn" onclick={() => searchDate = ''}>Clear Date</button>
-						{/if}
-					</div>
+					<label for="search-date">Trip Date</label>
 					<input
 						type="date"
 						id="search-date"
@@ -310,7 +357,7 @@
 									<p class="suggestion-loc">{template.location} — {template.meeting_area}</p>
 									<p class="suggestion-price">${Math.round(template.low_price / 2)} – ${Math.round(template.high_price / 2)} <span class="price-lbl">/ group</span></p>
 								</div>
-								<a href="/browse/{template.id}?date={trip.date}" class="btn btn-join">
+								<a href={getSuggestionHref(trip, template)} class="btn btn-join">
 									Join Group
 								</a>
 							</div>
@@ -387,7 +434,7 @@
 								<span class="price-split">${Math.round(listing.low_price / 2)} – ${Math.round(listing.high_price / 2)} <span class="per-group">/ group</span></span>
 								<span class="price-total">Total: ${Math.round(listing.low_price)}–${Math.round(listing.high_price)}</span>
 							</div>
-							<a href="/browse/{listing.id}{listing.matchedInstance ? `?date=${listing.matchedInstance.date}` : (searchDate ? `?date=${searchDate}` : '')}" class="btn {listing.matchedInstance ? 'btn-join' : 'btn-book'}">
+							<a href={getListingHref(listing)} class="btn {listing.matchedInstance ? 'btn-join' : 'btn-book'}">
 								{listing.matchedInstance ? 'Join Group' : 'Book Charter'}
 							</a>
 						</div>
@@ -822,25 +869,6 @@
 		font-size: 0.72rem;
 		color: var(--text-muted);
 		font-weight: 400;
-	}
-	.label-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-	.clear-date-btn {
-		background: none;
-		border: none;
-		color: var(--primary);
-		font-size: 0.75rem;
-		font-weight: 600;
-		cursor: pointer;
-		padding: 0;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-	.clear-date-btn:hover {
-		text-decoration: underline;
 	}
 	.pax-badge {
 		font-size: 0.8rem;

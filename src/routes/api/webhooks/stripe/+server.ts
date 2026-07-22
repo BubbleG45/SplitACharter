@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { sendNotification } from '$lib/notifications';
 
 export const POST: RequestHandler = async ({ request }) => {
 	let event: any;
@@ -67,6 +68,33 @@ export const POST: RequestHandler = async ({ request }) => {
 					.from('bookings')
 					.update({ status: 'paid' })
 					.eq('id', bookingId);
+
+				try {
+					const { data: fullBooking } = await supabaseAdmin
+						.from('bookings')
+						.select('id, customers(name, email, phone), trip_instances(date, status, listing_templates(trip_type))')
+						.eq('id', bookingId)
+						.maybeSingle();
+
+					if (fullBooking) {
+						const customer = (fullBooking as any).customers;
+						const tripInstance = (fullBooking as any).trip_instances;
+						const listingTemplate = tripInstance?.listing_templates;
+
+						if (customer && (tripInstance?.status === 'half-booked' || tripInstance?.status === 'open')) {
+							await sendNotification(
+								'reservation_pending_match',
+								{ email: customer.email, phone: customer.phone, name: customer.name },
+								{
+									trip_date: tripInstance.date,
+									trip_type: listingTemplate?.trip_type || 'Charter'
+								}
+							);
+						}
+					}
+				} catch (notifErr) {
+					console.error('Error sending Stripe webhook reservation_pending_match notification:', notifErr);
+				}
 			}
 
 			// Register payment record

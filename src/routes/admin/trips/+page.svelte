@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { deserialize } from '$app/forms';
+	import { deserialize, enhance } from '$app/forms';
 
 	let { data } = $props();
 
@@ -17,6 +17,12 @@
 		selectedStatus = 'all';
 		selectedListing = 'all';
 	}
+
+	// Admin Trip Cancel modal state
+	let cancelingTrip = $state<any>(null);
+	let cancelWithRefund = $state(true);
+	let cancelReason = $state('');
+	let cancelingInProgress = $state(false);
 
 	// Expanded trip ids tracking
 	let expandedTripIds = $state(new Set<string>());
@@ -203,6 +209,7 @@
 					<th>Assigned Captain</th>
 					<th>Bookings</th>
 					<th>Status</th>
+					<th style="width: 110px;">Actions</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -252,12 +259,29 @@
 								{/if}
 							</span>
 						</td>
+						<td>
+							<div class="row-actions" onclick={(e) => e.stopPropagation()} role="presentation">
+								{#if trip.status !== 'canceled' && trip.status !== 'completed'}
+									<button
+										type="button"
+										class="btn btn-xs btn-danger"
+										onclick={() => {
+											cancelingTrip = trip;
+											cancelWithRefund = true;
+											cancelReason = '';
+										}}
+									>
+										Cancel Trip
+									</button>
+								{/if}
+							</div>
+						</td>
 					</tr>
 
 					<!-- Expandable Nested Bookings Row -->
 					{#if isExpanded}
 						<tr class="nested-row">
-							<td colspan="6">
+							<td colspan="7">
 								<div class="nested-container glass">
 									<h4>Customer Bookings for this Trip</h4>
 									{#if bookingsCount === 0}
@@ -376,6 +400,119 @@
 				</div>
 			{/if}
 		</div>
+	</div>
+{/if}
+
+<!-- Admin Double Confirmation Cancellation Modal -->
+{#if cancelingTrip}
+	{@const modalTemplate = (Array.isArray(cancelingTrip.listing_templates) ? cancelingTrip.listing_templates[0] : cancelingTrip.listing_templates) as any}
+	{@const modalBookings = cancelingTrip.bookings || []}
+	
+	<button class="drawer-backdrop" onclick={() => (cancelingTrip = null)} aria-label="Close modal"></button>
+	<div class="admin-cancel-modal glass glow-danger" role="dialog" aria-modal="true">
+		<div class="modal-header">
+			<div>
+				<span class="drawer-subtitle">Operations Overrides</span>
+				<h2>Cancel Trip Instance</h2>
+				<p class="modal-trip-meta">{modalTemplate?.trip_type || 'Charter'} — {formatDate(cancelingTrip.date)} ({modalTemplate?.location || 'Unknown'})</p>
+			</div>
+			<button class="close-btn" onclick={() => (cancelingTrip = null)} aria-label="Close Modal">
+				<svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
+		</div>
+
+		<form
+			method="POST"
+			action="?/cancelTrip"
+			use:enhance={() => {
+				cancelingInProgress = true;
+				return async ({ update }) => {
+					await update();
+					cancelingInProgress = false;
+					cancelingTrip = null;
+				};
+			}}
+			class="modal-form"
+		>
+			<input type="hidden" name="tripId" value={cancelingTrip.id} />
+			<input type="hidden" name="withRefund" value={cancelWithRefund ? 'true' : 'false'} />
+
+			<div class="modal-body">
+				<div class="affected-summary-card glass">
+					<p class="affected-title"><strong>Affected Customer Bookings ({modalBookings.length}):</strong></p>
+					{#if modalBookings.length === 0}
+						<p class="no-bookings">No customer groups currently booked on this trip instance.</p>
+					{:else}
+						<ul class="customer-list">
+							{#each modalBookings as b}
+								{@const cust = (Array.isArray(b.customers) ? b.customers[0] : b.customers) as any}
+								<li>
+									<span><strong>{cust?.name || 'Customer'}</strong> ({cust?.email || 'N/A'})</span>
+									<span class="badge badge-size">{b.group_size} Pax — {b.status}</span>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
+
+				<!-- Refund Option Selector -->
+				<div class="form-group">
+					<label class="form-label">Refund Policy for this Cancellation:</label>
+					<div class="radio-options-grid">
+						<button
+							type="button"
+							class="radio-card"
+							class:active={cancelWithRefund}
+							onclick={() => (cancelWithRefund = true)}
+						>
+							<span class="radio-dot" class:selected={cancelWithRefund}></span>
+							<div class="radio-content">
+								<span class="radio-title">Cancel WITH Full Refund</span>
+								<span class="radio-sub">Automatically records a $50.00 refund for each customer booking and notifies them via email/SMS.</span>
+							</div>
+						</button>
+
+						<button
+							type="button"
+							class="radio-card"
+							class:active={!cancelWithRefund}
+							onclick={() => (cancelWithRefund = false)}
+						>
+							<span class="radio-dot" class:selected={!cancelWithRefund}></span>
+							<div class="radio-content">
+								<span class="radio-title">Cancel WITHOUT Refund</span>
+								<span class="radio-sub">Cancels the trip instance without issuing refunds (fees forfeited per policy). Notifies customers.</span>
+							</div>
+						</button>
+					</div>
+				</div>
+
+				<!-- Cancellation Reason Input -->
+				<div class="form-group">
+					<label for="cancel-reason" class="form-label">Reason for Cancellation (Required — Included in customer email):</label>
+					<textarea
+						id="cancel-reason"
+						name="reason"
+						bind:value={cancelReason}
+						rows="3"
+						placeholder="e.g. Small Craft Advisory issued due to high seas / vessel mechanical maintenance..."
+						class="reason-textarea"
+						required
+					></textarea>
+				</div>
+			</div>
+
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" onclick={() => (cancelingTrip = null)} disabled={cancelingInProgress}>
+					Keep Trip Active
+				</button>
+				<button type="submit" class="btn btn-danger" disabled={cancelingInProgress || !cancelReason.trim()}>
+					{cancelingInProgress ? 'Processing Cancellation...' : 'Confirm & Cancel Trip'}
+				</button>
+			</div>
+		</form>
 	</div>
 {/if}
 
@@ -824,6 +961,169 @@
 		padding: 3rem 1.5rem;
 		text-align: center;
 		color: var(--text-muted);
+	}
+
+	.row-actions {
+		display: flex;
+		gap: 6px;
+	}
+	.btn-danger {
+		background: rgba(239, 68, 68, 0.15);
+		border: 1px solid rgba(239, 68, 68, 0.35);
+		color: #fca5a5;
+		font-weight: 600;
+	}
+	.btn-danger:hover {
+		background: rgba(239, 68, 68, 0.3);
+		border-color: var(--danger);
+		color: #ffffff;
+	}
+
+	/* Admin Cancel Modal */
+	.admin-cancel-modal {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 580px;
+		max-width: 92vw;
+		background: var(--bg-surface-dark);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		border-radius: 12px;
+		padding: 2rem;
+		z-index: 300;
+		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+	.modal-trip-meta {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		margin-top: 4px;
+	}
+	.modal-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+	.modal-body {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+	.affected-summary-card {
+		padding: 1rem;
+		border-radius: 8px;
+		border: 1px solid var(--border-light);
+		background: rgba(0, 0, 0, 0.2);
+		font-size: 0.85rem;
+	}
+	.affected-title {
+		margin-bottom: 8px;
+		color: var(--text-primary);
+	}
+	.no-bookings {
+		color: var(--text-muted);
+		font-style: italic;
+	}
+	.customer-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	.customer-list li {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		background: rgba(255, 255, 255, 0.02);
+		padding: 6px 10px;
+		border-radius: 6px;
+	}
+
+	.form-label {
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		margin-bottom: 8px;
+		display: block;
+	}
+	.radio-options-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	.radio-card {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		padding: 12px 14px;
+		border-radius: 8px;
+		border: 1px solid var(--border-light);
+		background: rgba(255, 255, 255, 0.02);
+		cursor: pointer;
+		text-align: left;
+		transition: all 0.2s ease;
+		width: 100%;
+	}
+	.radio-card.active {
+		border-color: var(--primary);
+		background: rgba(6, 182, 212, 0.06);
+	}
+	.radio-dot {
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		border: 2px solid var(--text-muted);
+		display: inline-block;
+		margin-top: 2px;
+		flex-shrink: 0;
+	}
+	.radio-dot.selected {
+		border-color: var(--primary);
+		background: var(--primary);
+		box-shadow: inset 0 0 0 3px var(--bg-surface-dark);
+	}
+	.radio-content {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+	.radio-title {
+		font-size: 0.9rem;
+		font-weight: 700;
+		color: var(--text-primary);
+	}
+	.radio-sub {
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		line-height: 1.3;
+	}
+
+	.reason-textarea {
+		width: 100%;
+		padding: 10px 12px;
+		background: rgba(0, 0, 0, 0.3);
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		color: var(--text-primary);
+		font-family: inherit;
+		font-size: 0.9rem;
+		outline: none;
+	}
+	.reason-textarea:focus {
+		border-color: var(--primary);
+	}
+
+	.modal-footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 12px;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--border-light);
 	}
 </style>
 

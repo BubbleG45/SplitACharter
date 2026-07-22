@@ -305,6 +305,22 @@ export const actions: Actions = {
 				console.error('Error updating trip instance status:', tripUpdateError);
 			}
 
+			// If the trip instance is half-booked (1 group paid, waiting for group 2), send reservation_pending_match email
+			if (nextTripStatus === 'half-booked') {
+				try {
+					await sendNotification(
+						'reservation_pending_match',
+						{ email: user.email || '', phone, name },
+						{
+							trip_date: date,
+							trip_type: listing.trip_type
+						}
+					);
+				} catch (notifErr) {
+					console.error('Error sending reservation_pending_match notification:', notifErr);
+				}
+			}
+
 			// If the trip instance is now pending-reconfirm, transition bookings and start Inngest reconfirmation timers
 			if (nextTripStatus === 'pending-reconfirm') {
 				const { data: matchedBookings } = await supabaseAdmin
