@@ -1,9 +1,8 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
-import { compileTemplate, wrapInEmailLayout } from '$lib/notifications';
+import { compileTemplate, wrapInEmailLayout, formatEmailBody } from '$lib/notifications';
 
 const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -19,27 +18,6 @@ const mockData = {
 	dashboard_url: 'http://localhost:5173/dashboard',
 	passenger_list: 'Alex Johnson (group of 4), Sam Smith (group of 2)'
 };
-
-function formatEmailBody(text: string): string {
-	let html = text.replace(/\n/g, '<br />');
-
-	// Upgrade URLs to styled CTA buttons or links
-	const urlRegex = /https?:\/\/[^\s<]+/g;
-	html = html.replace(urlRegex, (url) => {
-		const isDashboard = url.endsWith('/dashboard');
-		const isAccept = url.includes('/api/captain-match/accept');
-		
-		if (isDashboard) {
-			return `<br/><a href="${url}" class="btn" style="display: inline-block; background-color: #06b6d4; color: #0a0f1d; font-weight: 600; font-size: 16px; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 15px; margin-bottom: 15px; text-align: center;">Go to Dashboard</a>`;
-		} else if (isAccept) {
-			return `<br/><a href="${url}" class="btn" style="display: inline-block; background-color: #6366f1; color: #f8fafc; font-weight: 600; font-size: 16px; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 15px; margin-bottom: 15px; text-align: center;">Accept Charter</a>`;
-		} else {
-			return `<a href="${url}" style="color: #06b6d4; text-decoration: underline;">${url}</a>`;
-		}
-	});
-
-	return html;
-}
 
 export const GET: RequestHandler = async ({ url }) => {
 	const templateName = url.searchParams.get('template');

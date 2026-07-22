@@ -119,7 +119,7 @@
 		transform: scale(1.02);
 	}
 	.header-logo {
-		height: 48px;
+		height: 84px;
 		display: block;
 	}
 	.nav-links {
@@ -234,7 +234,7 @@
 			align-items: center;
 		}
 		.header-logo {
-			height: 38px;
+			height: 56px;
 		}
 		.nav-links {
 			flex-wrap: wrap;

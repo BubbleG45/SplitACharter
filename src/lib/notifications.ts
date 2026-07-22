@@ -31,6 +31,9 @@ export function compileTemplate(template: string, data: Record<string, string>):
  */
 export function wrapInEmailLayout(contentHtml: string, title: string): string {
 	const currentYear = new Date().getFullYear();
+	const baseUrl = env.PUBLIC_SITE_URL || 'https://splitacharter.com';
+	const logoUrl = `${baseUrl}/logo-white.svg`;
+
 	return `<!DOCTYPE html>
 <html>
 <head>
@@ -69,14 +72,12 @@ export function wrapInEmailLayout(contentHtml: string, title: string): string {
 		.content {
 			padding: 40px;
 		}
-		.logo {
-			font-size: 24px;
-			font-weight: 700;
-			color: #f8fafc;
-			text-decoration: none;
-			margin-bottom: 24px;
-			display: inline-block;
-			letter-spacing: -0.5px;
+		.logo-img {
+			height: 44px;
+			max-height: 44px;
+			width: auto;
+			display: block;
+			border: 0;
 		}
 		.logo-cyan {
 			color: #06b6d4;
@@ -126,7 +127,11 @@ export function wrapInEmailLayout(contentHtml: string, title: string): string {
 						<td>
 							<div class="header-bar"></div>
 							<div class="content" align="left">
-								<span class="logo">Split<span class="logo-cyan">A</span>Charter</span>
+								<div style="margin-bottom: 24px;">
+									<a href="${baseUrl}" style="text-decoration: none; display: inline-block;">
+										<img src="${logoUrl}" alt="SplitACharter" height="44" class="logo-img" style="display: block; height: 44px; width: auto; max-width: 240px; border: 0;" />
+									</a>
+								</div>
 								<div class="body-text">
 									${contentHtml}
 								</div>
@@ -135,7 +140,7 @@ export function wrapInEmailLayout(contentHtml: string, title: string): string {
 								<tr>
 									<td align="center">
 										<p class="footer-text">
-											This is an automated notification from <a href="https://splitacharter.com" class="footer-link">SplitACharter</a>.<br>
+											This is an automated notification from <a href="${baseUrl}" class="footer-link">SplitACharter</a>.<br>
 											© ${currentYear} SplitACharter. All rights reserved.
 										</p>
 									</td>
@@ -154,23 +159,41 @@ export function wrapInEmailLayout(contentHtml: string, title: string): string {
 /**
  * Formats a plain text email body into HTML by replacing newlines and upgrading URLs to buttons.
  */
-function formatEmailBody(text: string): string {
-	let html = text.replace(/\n/g, '<br />');
+export function formatEmailBody(text: string): string {
+	if (!text) return '';
 
-	// Upgrade URLs to styled CTA buttons or links
+	// 1. Normalize literal escaped '\\n' and '\\r\\n' sequences (from DB strings/SQL) to actual newlines
+	let normalized = text
+		.replace(/\\r\\n/g, '\n')
+		.replace(/\\n/g, '\n')
+		.replace(/\r\n/g, '\n');
+
+	// 2. Convert newlines to HTML break tags
+	let html = normalized.replace(/\n/g, '<br />');
+
+	// 3. Clean up 3 or more consecutive <br /> tags into 2
+	html = html.replace(/(<br\s*\/?>\s*){3,}/gi, '<br /><br />');
+
+	// 4. Upgrade URLs to styled CTA buttons or links
 	const urlRegex = /https?:\/\/[^\s<]+/g;
 	html = html.replace(urlRegex, (url) => {
 		const isDashboard = url.endsWith('/dashboard');
 		const isAccept = url.includes('/api/captain-match/accept');
+		const isAuthCallback = url.includes('/auth/callback') || url.includes('magiclink');
 		
 		if (isDashboard) {
-			return `<br/><a href="${url}" class="btn">Go to Dashboard</a>`;
+			return `<a href="${url}" class="btn">Go to Dashboard</a>`;
 		} else if (isAccept) {
-			return `<br/><a href="${url}" class="btn" style="background-color: #6366f1;">Accept Charter</a>`;
+			return `<a href="${url}" class="btn" style="background-color: #6366f1; color: #ffffff !important;">Accept Charter</a>`;
+		} else if (isAuthCallback) {
+			return `<a href="${url}" class="btn">Sign In to Account</a>`;
 		} else {
 			return `<a href="${url}" style="color: #06b6d4; text-decoration: underline;">${url}</a>`;
 		}
 	});
+
+	// 5. Trim trailing break tags right before CTA buttons for clean spacing
+	html = html.replace(/(<br\s*\/?>\s*)+(?=<a [^>]*class="btn")/gi, '<br /><br />');
 
 	return html;
 }
