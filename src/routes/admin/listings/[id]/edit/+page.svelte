@@ -81,15 +81,17 @@
 			</div>
 
 			<div class="form-group">
-				<label for="location">Location / Marina</label>
-				<input
-					type="text"
+				<label for="location">Location / Region</label>
+				<select
 					id="location"
 					name="location"
-					value={data.listing.location}
-					placeholder="e.g., Islamorada, FL"
 					required
-				/>
+				>
+					<option value="" disabled>Select a Location</option>
+					<option value="Lower Keys (Key West, Big Pine Key)" selected={data.listing.location === 'Lower Keys (Key West, Big Pine Key)' || data.listing.location?.includes('Lower') || data.listing.location?.includes('West')}>Lower Keys (Key West, Big Pine Key)</option>
+					<option value="Middle Keys (Marathon, Pigeon Key)" selected={data.listing.location === 'Middle Keys (Marathon, Pigeon Key)' || data.listing.location?.includes('Middle') || data.listing.location?.includes('Marathon')}>Middle Keys (Marathon, Pigeon Key)</option>
+					<option value="Upper Keys (Key Largo, Islamorada)" selected={data.listing.location === 'Upper Keys (Key Largo, Islamorada)' || data.listing.location?.includes('Upper') || data.listing.location?.includes('Islamorada') || data.listing.location?.includes('Largo')}>Upper Keys (Key Largo, Islamorada)</option>
+				</select>
 			</div>
 
 			<!-- Row 2: Duration, Passenger Cap & Status -->

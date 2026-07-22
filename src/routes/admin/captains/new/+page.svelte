@@ -6,12 +6,9 @@
 	let active = $state(true);
 
 	const locationOptions = [
-		'Miami Beach Marina',
-		'Key West Bight Marina',
-		'Marathon Marina',
-		'Bahia Honda Marina',
-		'Tampa Bay Yacht Club',
-		'Destin Harbor Marina'
+		'Lower Keys (Key West, Big Pine Key)',
+		'Middle Keys (Marathon, Pigeon Key)',
+		'Upper Keys (Key Largo, Islamorada)'
 	];
 </script>
 

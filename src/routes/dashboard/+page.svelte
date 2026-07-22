@@ -202,6 +202,8 @@
 								<div class="booking-card-footer">
 									<a
 										href="mailto:info@splitacharter.com?subject={encodeURIComponent(`Trip Question - Booking Ref: ${booking.id}`)}&body={encodeURIComponent(`Hello SplitACharter Support,\n\nI have a question regarding my trip reservation.\n\nBooking Reference: ${booking.id}\nTrip Type: ${template.trip_type}\nDate: ${trip.date}\nLocation: ${template.location}\n\nMy Question:\n`)}"
+										target="_blank"
+										rel="noopener noreferrer"
 										class="btn btn-secondary btn-question"
 									>
 										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">

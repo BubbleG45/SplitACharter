@@ -80,14 +80,17 @@
 			</div>
 
 			<div class="form-group">
-				<label for="location">Location / Marina</label>
-				<input
-					type="text"
+				<label for="location">Location / Region</label>
+				<select
 					id="location"
 					name="location"
-					placeholder="e.g., Islamorada, FL"
 					required
-				/>
+				>
+					<option value="" disabled selected>Select a Location</option>
+					<option value="Lower Keys (Key West, Big Pine Key)">Lower Keys (Key West, Big Pine Key)</option>
+					<option value="Middle Keys (Marathon, Pigeon Key)">Middle Keys (Marathon, Pigeon Key)</option>
+					<option value="Upper Keys (Key Largo, Islamorada)">Upper Keys (Key Largo, Islamorada)</option>
+				</select>
 			</div>
 
 			<!-- Row 2: Duration, Passenger Cap & Status -->

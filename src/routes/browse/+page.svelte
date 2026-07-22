@@ -33,112 +33,90 @@
 		return true;
 	}
 
+	function matchesFilters(template: any) {
+		const matchesLocation = matchesLocationFilter(template.location, filterLocation);
+		
+		let isHalfDay = false;
+		let isFullDay = false;
+		if (template.duration && typeof template.duration === 'string') {
+			const parts = template.duration.split(':');
+			const hours = parseInt(parts[0], 10);
+			isHalfDay = hours <= 4;
+			isFullDay = hours > 4;
+		} else if (template.duration && typeof template.duration === 'object') {
+			const hours = template.duration.hours || 0;
+			isHalfDay = hours <= 4;
+			isFullDay = hours > 4;
+		}
+		const matchesDuration =
+			filterDuration === 'all' ||
+			(filterDuration === 'half-day' && isHalfDay) ||
+			(filterDuration === 'full-day' && isFullDay);
+
+		const pax = template.max_passengers;
+		let matchesPax = true;
+		if (filterPax === 'small') matchesPax = pax <= 4;
+		else if (filterPax === 'medium') matchesPax = pax > 4 && pax <= 8;
+		else if (filterPax === 'large') matchesPax = pax > 8;
+
+		const matchesTripType = filterTripType === 'all' || template.trip_type === filterTripType;
+
+		return matchesLocation && matchesDuration && matchesPax && matchesTripType;
+	}
+
 	// Client-side filtering
-	let filteredListings = $derived(
-		data.listings
-			.filter((listing) => {
-				const matchesLocation = matchesLocationFilter(listing.location, filterLocation);
-				
-				// Duration category
-				let isHalfDay = false;
-				let isFullDay = false;
-				if (listing.duration && typeof listing.duration === 'string') {
-					const parts = listing.duration.split(':');
-					const hours = parseInt(parts[0], 10);
-					isHalfDay = hours <= 4;
-					isFullDay = hours > 4;
-				} else if (listing.duration && typeof listing.duration === 'object') {
-					const hours = listing.duration.hours || 0;
-					isHalfDay = hours <= 4;
-					isFullDay = hours > 4;
-				}
-				const matchesDuration =
-					filterDuration === 'all' ||
-					(filterDuration === 'half-day' && isHalfDay) ||
-					(filterDuration === 'full-day' && isFullDay);
-
-				// Passenger size category
-				const pax = listing.max_passengers;
-				let matchesPax = true;
-				if (filterPax === 'small') matchesPax = pax <= 4;
-				else if (filterPax === 'medium') matchesPax = pax > 4 && pax <= 8;
-				else if (filterPax === 'large') matchesPax = pax > 8;
-
-				// Trip Type filter
-				const matchesTripType = filterTripType === 'all' || listing.trip_type === filterTripType;
-
-				return matchesLocation && matchesDuration && matchesPax && matchesTripType;
-			})
-			.map((listing) => {
-				// Find if there is a half-booked instance for this template
-				let matchedInstance = null;
-				if (searchDate) {
-					matchedInstance = data.halfBookedTrips.find(
-						(trip) => trip.listing_template_id === listing.id && trip.date === searchDate
-					);
-				} else {
-					matchedInstance = data.halfBookedTrips.find(
-						(trip) => trip.listing_template_id === listing.id && trip.date >= minDate
+	let filteredListings = $derived.by(() => {
+		if (!searchDate) {
+			// Mode A: NO Date Selected -> Only display active half-booked trip instances
+			return data.halfBookedTrips
+				.filter((trip) => {
+					if (trip.date < minDate) return false;
+					const template = data.listings.find((l) => l.id === trip.listing_template_id);
+					if (!template) return false;
+					return matchesFilters(template);
+				})
+				.map((trip) => {
+					const template = data.listings.find((l) => l.id === trip.listing_template_id)!;
+					return {
+						...template,
+						matchedInstance: trip
+					};
+				});
+		} else {
+			// Mode B: Date IS Selected -> Display 1 instance per template (Location + Trip Type + Duration combo)
+			// Show half-filled trip instance if available on searchDate, otherwise show blank open listing template
+			return data.listings
+				.filter((template) => matchesFilters(template))
+				.map((template) => {
+					const matchedInstance = data.halfBookedTrips.find(
+						(trip) => trip.listing_template_id === template.id && trip.date === searchDate
 					) || null;
-				}
 
-				return {
-					...listing,
-					matchedInstance
-				};
-			})
-	);
+					return {
+						...template,
+						matchedInstance
+					};
+				});
+		}
+	});
 
-	// Suggestions derived list
-	let suggestedTrips = $derived(
-		data.halfBookedTrips.filter((trip) => {
+	// Suggestions derived list (Only when a date IS selected)
+	let suggestedTrips = $derived.by(() => {
+		if (!searchDate) return [];
+
+		return data.halfBookedTrips.filter((trip) => {
 			const template = data.listings.find((l) => l.id === trip.listing_template_id);
 			if (!template) return false;
+			if (!matchesFilters(template)) return false;
 
-			const matchesLocation = matchesLocationFilter(template.location, filterLocation);
-			
-			// Duration category
-			let isHalfDay = false;
-			let isFullDay = false;
-			if (template.duration && typeof template.duration === 'string') {
-				const parts = template.duration.split(':');
-				const hours = parseInt(parts[0], 10);
-				isHalfDay = hours <= 4;
-				isFullDay = hours > 4;
-			} else if (template.duration && typeof template.duration === 'object') {
-				const hours = template.duration.hours || 0;
-				isHalfDay = hours <= 4;
-				isFullDay = hours > 4;
-			}
-			const matchesDuration =
-				filterDuration === 'all' ||
-				(filterDuration === 'half-day' && isHalfDay) ||
-				(filterDuration === 'full-day' && isFullDay);
+			const sDate = new Date(searchDate + 'T00:00:00');
+			const tDate = new Date(trip.date + 'T00:00:00');
+			const diffTime = Math.abs(tDate.getTime() - sDate.getTime());
+			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-			// Passenger size category
-			const pax = template.max_passengers;
-			let matchesPax = true;
-			if (filterPax === 'small') matchesPax = pax <= 4;
-			else if (filterPax === 'medium') matchesPax = pax > 4 && pax <= 8;
-			else if (filterPax === 'large') matchesPax = pax > 8;
-
-			// Trip Type filter
-			const matchesTripType = filterTripType === 'all' || template.trip_type === filterTripType;
-
-			const matchesFilters = matchesLocation && matchesDuration && matchesPax && matchesTripType;
-			if (!matchesFilters) return false;
-
-			if (searchDate) {
-				const sDate = new Date(searchDate + 'T00:00:00');
-				const tDate = new Date(trip.date + 'T00:00:00');
-				const diffTime = Math.abs(tDate.getTime() - sDate.getTime());
-				const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-				return diffDays <= 2 && trip.date !== searchDate && trip.date >= minDate;
-			} else {
-				return trip.date >= minDate;
-			}
-		})
-	);
+			return diffDays <= 3 && trip.date !== searchDate && trip.date >= minDate;
+		});
+	});
 
 	function formatDuration(intervalStr: string | any) {
 		if (typeof intervalStr === 'string') {
@@ -257,14 +235,29 @@
 			</div>
 		</div>
 
+		<!-- Encouraging Banner when no date selected -->
+		{#if !searchDate}
+			<div class="encouragement-banner glass">
+				<div class="banner-content">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="banner-icon">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+					</svg>
+					<div>
+						<h3>Showing Active Shared Charters Looking for a Group</h3>
+						<p>Want to open a new trip or see all charter options? <strong>Select a Trip Date</strong> in the filters above to unlock all available charters for your date!</p>
+					</div>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Suggestions Section -->
 		{#if suggestedTrips.length > 0}
 			<div class="suggestions-panel glass glow-secondary">
 				<div class="suggestions-header">
 					<span class="pulse-dot"></span>
 					<div>
-						<h2>{searchDate ? 'Suggested Trips to Join' : 'Popular Trips Looking for Groups'}</h2>
-						<p>{searchDate ? 'These active charters are scheduled within 2 days of your searched date. Join one of them to complete the booking!' : 'These active charters are already open and waiting for another group. Book now to join them!'}</p>
+						<h2>Suggested Trips to Join</h2>
+						<p>These active charters are scheduled within 3 days of your searched date. Join one of them to complete the booking!</p>
 					</div>
 				</div>
 
@@ -298,8 +291,13 @@
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 empty-icon">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.008 1.24l.885 1.77a2.25 2.25 0 002.007 1.24h1.98a2.25 2.25 0 002.007-1.24l.885-1.77a2.25 2.25 0 012.007-1.24h3.86m-18 0h18a2.25 2.25 0 012.25 2.25v4.25a2.25 2.25 0 01-2.25 2.25H2.25A2.25 2.25 0 010 20v-4.25a2.25 2.25 0 012.25-2.25z" />
 				</svg>
-				<h3>No Charters Match Your Search</h3>
-				<p>Try resetting the filters or modifying your search query.</p>
+				{#if !searchDate}
+					<h3>No Active Shared Charters Found</h3>
+					<p>There are currently no half-filled charters matching these filters. Select a <strong>Trip Date</strong> in the filters above to explore all charter templates and open a new booking!</p>
+				{:else}
+					<h3>No Charters Match Your Search</h3>
+					<p>Try resetting the filters or selecting a different date.</p>
+				{/if}
 			</div>
 		{:else}
 			<div class="cards-grid">
@@ -375,6 +373,39 @@
 	}
 	.date-input-field:focus {
 		border-color: var(--primary);
+	}
+
+	/* Encouragement Banner */
+	.encouragement-banner {
+		padding: 1.25rem 1.75rem;
+		margin-bottom: 2.5rem;
+		border-radius: 12px;
+		background: linear-gradient(135deg, rgba(6, 182, 212, 0.08), rgba(99, 102, 241, 0.08));
+		border: 1px solid var(--border-glow);
+	}
+	.banner-content {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+	}
+	.banner-icon {
+		width: 32px;
+		height: 32px;
+		color: var(--primary);
+		flex-shrink: 0;
+	}
+	.banner-content h3 {
+		font-size: 1.1rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin-bottom: 2px;
+	}
+	.banner-content p {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+	}
+	.banner-content strong {
+		color: var(--primary);
 	}
 
 	/* Suggestions Panel */
