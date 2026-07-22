@@ -197,6 +197,19 @@
 										<p><strong>Booking Held.</strong> Your counterpart group failed to reconfirm, so the trip has reset. Your $50.00 fee is being held. You can apply it to a new match or request a manual refund from support.</p>
 									</div>
 								{/if}
+
+								<!-- Reservation Question Action -->
+								<div class="booking-card-footer">
+									<a
+										href="mailto:info@splitacharter.com?subject={encodeURIComponent(`Trip Question - Booking Ref: ${booking.id}`)}&body={encodeURIComponent(`Hello SplitACharter Support,\n\nI have a question regarding my trip reservation.\n\nBooking Reference: ${booking.id}\nTrip Type: ${template.trip_type}\nDate: ${trip.date}\nLocation: ${template.location}\n\nMy Question:\n`)}"
+										class="btn btn-secondary btn-question"
+									>
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+										</svg>
+										<span>Have Questions? Email Support</span>
+									</a>
+								</div>
 							</div>
 						</div>
 					{/each}
@@ -501,6 +514,27 @@
 		padding: 6px 12px;
 		font-size: 0.8rem;
 		align-self: flex-start;
+	}
+
+	.booking-card-footer {
+		margin-top: 1.5rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--border-light);
+		display: flex;
+		justify-content: flex-end;
+	}
+	.btn-question {
+		font-size: 0.85rem;
+		padding: 8px 16px;
+		color: var(--text-secondary);
+		border: 1px solid var(--border-light);
+		background: rgba(255, 255, 255, 0.02);
+		transition: all 0.2s ease;
+	}
+	.btn-question:hover {
+		color: var(--text-primary);
+		border-color: var(--primary);
+		background: rgba(6, 182, 212, 0.08);
 	}
 
 	.empty-state {

@@ -131,14 +131,17 @@
 		top: calc(100% + 6px);
 		left: 0;
 		right: 0;
-		z-index: 100;
+		z-index: 1000;
 		list-style: none;
 		margin: 0;
 		padding: 6px;
 		max-height: 250px;
 		overflow-y: auto;
 		border-radius: 8px !important;
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		background: #12182b !important;
+		backdrop-filter: blur(16px);
+		box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.7), 0 0 20px 0 rgba(6, 182, 212, 0.15);
 	}
 
 	.custom-select-option {

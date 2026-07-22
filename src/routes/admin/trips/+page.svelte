@@ -27,6 +27,7 @@
 			const query = searchQuery.toLowerCase().trim();
 			if (query) {
 				const customerMatch = t.bookings?.some((b: any) => 
+					(b.id && b.id.toLowerCase().includes(query)) ||
 					b.customers?.name?.toLowerCase().includes(query) ||
 					b.customers?.email?.toLowerCase().includes(query) ||
 					b.customers?.phone?.includes(query)
@@ -34,12 +35,24 @@
 				const captainMatch = t.captains?.name?.toLowerCase().includes(query);
 				const tripTypeMatch = t.listing_templates?.trip_type?.toLowerCase().includes(query);
 				const locationMatch = t.listing_templates?.location?.toLowerCase().includes(query);
-				searchMatch = !!(customerMatch || captainMatch || tripTypeMatch || locationMatch || t.id.includes(query));
+				searchMatch = !!(customerMatch || captainMatch || tripTypeMatch || locationMatch || (t.id && t.id.toLowerCase().includes(query)));
 			}
 
 			return statusMatch && templateMatch && searchMatch;
 		})
 	);
+
+	// Auto-expand matched trip rows when searching
+	$effect(() => {
+		const query = searchQuery.toLowerCase().trim();
+		if (query && filteredTrips.length > 0) {
+			const newSet = new Set<string>();
+			for (const t of filteredTrips) {
+				newSet.add(t.id);
+			}
+			expandedTripIds = newSet;
+		}
+	});
 
 	function formatDate(dateStr: string) {
 		if (!dateStr) return 'N/A';
@@ -118,7 +131,7 @@
 			<input
 				id="search-filter"
 				type="text"
-				placeholder="Search customer, captain, location..."
+				placeholder="Search booking ref #, customer, captain, location..."
 				bind:value={searchQuery}
 				class="search-input"
 			/>
@@ -228,6 +241,7 @@
 										<table class="nested-table">
 											<thead>
 												<tr>
+													<th>Booking Ref #</th>
 													<th>Customer Name</th>
 													<th>Contact Details</th>
 													<th>Group Size</th>
@@ -240,6 +254,9 @@
 												{#each trip.bookings as booking (booking.id)}
 													{@const customer = (Array.isArray(booking.customers) ? booking.customers[0] : booking.customers) as any}
 													<tr>
+														<td>
+															<code class="ref-code" title={booking.id}>{booking.id}</code>
+														</td>
 														<td>
 															<span class="nested-name">{customer?.name || 'N/A'}</span>
 														</td>
@@ -297,7 +314,7 @@
 	<div class="drawer glass glow-primary">
 		<div class="drawer-header">
 			<div>
-				<span class="drawer-subtitle">Customer History</span>
+				<span class="drawer-subtitle">Trip Communications</span>
 				<h2>{selectedCustomer?.name}</h2>
 				<span class="drawer-email">{selectedCustomer?.email}</span>
 			</div>
@@ -312,10 +329,10 @@
 			{#if loadingLogs}
 				<div class="spinner-container">
 					<div class="spinner"></div>
-					<p>Loading communication history...</p>
+					<p>Loading trip communications...</p>
 				</div>
 			{:else if logs.length === 0}
-				<p class="empty-state">No recorded notifications or messages sent to this customer.</p>
+				<p class="empty-state">No trip-related notifications or messages found for this customer.</p>
 			{:else}
 				<div class="timeline">
 					{#each logs as log (log.id)}
@@ -530,6 +547,21 @@
 	}
 	.nested-table tr:last-child td {
 		border-bottom: none;
+	}
+	.ref-code {
+		font-family: monospace;
+		font-size: 0.78rem;
+		color: var(--primary);
+		background: rgba(6, 182, 212, 0.08);
+		padding: 3px 6px;
+		border-radius: 4px;
+		border: 1px solid rgba(6, 182, 212, 0.2);
+		word-break: break-all;
+		display: inline-block;
+		max-width: 140px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.nested-name {
 		font-weight: 600;

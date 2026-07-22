@@ -9,7 +9,7 @@ const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KE
 const mockData = {
 	customer_name: 'Alex Johnson',
 	trip_date: '2026-08-24',
-	trip_type: 'Deep Sea Sportfishing (8hr)',
+	trip_type: 'Offshore Fishing (8hr)',
 	deadline_time: '2026-08-21 08:00 AM',
 	captain_name: 'Jack Sparrow',
 	captain_phone: '+1 (555) 019-2834',

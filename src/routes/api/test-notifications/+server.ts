@@ -19,7 +19,7 @@ export const GET: RequestHandler = async () => {
 	const testData = {
 		trip_date: '2029-08-15',
 		deadline_time: 'August 14, 2029, 8:00 AM',
-		trip_type: 'Test Fishing Deep Sea'
+		trip_type: 'Test Offshore Fishing'
 	};
 
 	const trigger = 'reconfirm_reminder';

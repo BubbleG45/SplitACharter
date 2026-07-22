@@ -125,7 +125,7 @@
 					<div class="step-card glass">
 						<span class="step-number">2</span>
 						<h3>Reserve Your Half</h3>
-						<p>Secure your spot by paying a non-refundable $50 reservation fee. This opens or joins a 2-group matching instance for your selected date.</p>
+						<p>Secure your spot by paying a $50 reservation fee. You'll either be the first group on a charter for your selected date, or join another group that's already looking for a match.</p>
 					</div>
 
 					<div class="step-card glass">
@@ -201,7 +201,7 @@
 				<div class="cta-banner glass">
 					<h2>Want to join our captain network?</h2>
 					<p>If you're a licensed commercial captain looking to fill your empty dates, get in touch with us.</p>
-					<a href="mailto:support@splitacharter.com?subject=Captain Registration Inquiry" class="btn btn-primary btn-large">Contact Admin to Onboard</a>
+					<a href="mailto:info@splitacharter.com?subject=Captain Registration Inquiry" class="btn btn-primary btn-large">Contact Admin to Onboard</a>
 				</div>
 
 				<!-- FAQs for Captains -->

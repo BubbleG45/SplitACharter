@@ -1,7 +1,7 @@
 <script lang="ts">
 	let { data } = $props();
 
-	let searchQuery = $state('');
+	let filterLocation = $state('all');
 	let filterDuration = $state('all'); // 'all', 'half-day', 'full-day'
 	let filterPax = $state('all'); // 'all', 'small', 'medium', 'large'
 	let filterTripType = $state('all');
@@ -18,12 +18,26 @@
 		minDate = `${yyyy}-${mm}-${dd}`;
 	});
 
+	function matchesLocationFilter(locString: string, filterVal: string) {
+		if (filterVal === 'all') return true;
+		const loc = (locString || '').toLowerCase();
+		if (filterVal === 'lower-keys') {
+			return loc.includes('lower key') || loc.includes('key west') || loc.includes('big pine');
+		}
+		if (filterVal === 'middle-keys') {
+			return loc.includes('middle key') || loc.includes('marathon') || loc.includes('pigeon key');
+		}
+		if (filterVal === 'upper-keys') {
+			return loc.includes('upper key') || loc.includes('key largo') || loc.includes('islamorada');
+		}
+		return true;
+	}
+
 	// Client-side filtering
 	let filteredListings = $derived(
 		data.listings
 			.filter((listing) => {
-				const matchesSearch =
-					listing.location.toLowerCase().includes(searchQuery.toLowerCase());
+				const matchesLocation = matchesLocationFilter(listing.location, filterLocation);
 				
 				// Duration category
 				let isHalfDay = false;
@@ -53,15 +67,20 @@
 				// Trip Type filter
 				const matchesTripType = filterTripType === 'all' || listing.trip_type === filterTripType;
 
-				return matchesSearch && matchesDuration && matchesPax && matchesTripType;
+				return matchesLocation && matchesDuration && matchesPax && matchesTripType;
 			})
 			.map((listing) => {
-				// Find if there is a half-booked instance for this template on searchDate
-				const matchedInstance = searchDate
-					? data.halfBookedTrips.find(
-							(trip) => trip.listing_template_id === listing.id && trip.date === searchDate
-						)
-					: null;
+				// Find if there is a half-booked instance for this template
+				let matchedInstance = null;
+				if (searchDate) {
+					matchedInstance = data.halfBookedTrips.find(
+						(trip) => trip.listing_template_id === listing.id && trip.date === searchDate
+					);
+				} else {
+					matchedInstance = data.halfBookedTrips.find(
+						(trip) => trip.listing_template_id === listing.id && trip.date >= minDate
+					) || null;
+				}
 
 				return {
 					...listing,
@@ -76,8 +95,7 @@
 			const template = data.listings.find((l) => l.id === trip.listing_template_id);
 			if (!template) return false;
 
-			const matchesSearch =
-				template.location.toLowerCase().includes(searchQuery.toLowerCase());
+			const matchesLocation = matchesLocationFilter(template.location, filterLocation);
 			
 			// Duration category
 			let isHalfDay = false;
@@ -107,7 +125,7 @@
 			// Trip Type filter
 			const matchesTripType = filterTripType === 'all' || template.trip_type === filterTripType;
 
-			const matchesFilters = matchesSearch && matchesDuration && matchesPax && matchesTripType;
+			const matchesFilters = matchesLocation && matchesDuration && matchesPax && matchesTripType;
 			if (!matchesFilters) return false;
 
 			if (searchDate) {
@@ -152,6 +170,12 @@
 		return dateStr;
 	}
 
+	const locationOptions = [
+		{ value: 'all', label: 'All Locations' },
+		{ value: 'lower-keys', label: 'Lower Keys (Key West, Big Pine Key)' },
+		{ value: 'middle-keys', label: 'Middle Keys (Marathon, Pigeon Key)' },
+		{ value: 'upper-keys', label: 'Upper Keys (Key Largo, Islamorada)' }
+	];
 	const durationOptions = [
 		{ value: 'all', label: 'Any Duration' },
 		{ value: 'half-day', label: 'Half Day (≤ 4 hrs)' },
@@ -204,6 +228,13 @@
 				</div>
 
 				<CustomSelect
+					id="location"
+					label="Location"
+					bind:value={filterLocation}
+					options={locationOptions}
+				/>
+
+				<CustomSelect
 					id="duration"
 					label="Duration"
 					bind:value={filterDuration}
@@ -223,22 +254,6 @@
 					bind:value={filterTripType}
 					options={tripTypeOptions}
 				/>
-
-				<div class="select-wrapper location-search-wrapper">
-					<label for="search-query">Location Search</label>
-					<div class="search-input-container">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="search-input-icon">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-						</svg>
-						<input
-							type="text"
-							id="search-query"
-							placeholder="Search by location..."
-							bind:value={searchQuery}
-							class="location-search-input"
-						/>
-					</div>
-				</div>
 			</div>
 		</div>
 
@@ -308,7 +323,9 @@
 						<div class="card-body">
 							<div class="title-row">
 								<h3>{listing.trip_type}</h3>
-								{#if searchDate}
+								{#if listing.matchedInstance}
+									<span class="date-badge">{formatDateDisplay(listing.matchedInstance.date)}</span>
+								{:else if searchDate}
 									<span class="date-badge">{formatDateDisplay(searchDate)}</span>
 								{/if}
 							</div>
@@ -331,7 +348,7 @@
 								<span class="price-split">${Math.round(listing.low_price / 2)} – ${Math.round(listing.high_price / 2)} <span class="per-group">/ group</span></span>
 								<span class="price-total">Total: ${Math.round(listing.low_price)}–${Math.round(listing.high_price)}</span>
 							</div>
-							<a href="/browse/{listing.id}{searchDate ? `?date=${searchDate}` : ''}" class="btn {listing.matchedInstance ? 'btn-join' : 'btn-book'}">
+							<a href="/browse/{listing.id}{listing.matchedInstance ? `?date=${listing.matchedInstance.date}` : (searchDate ? `?date=${searchDate}` : '')}" class="btn {listing.matchedInstance ? 'btn-join' : 'btn-book'}">
 								{listing.matchedInstance ? 'Join Group' : 'Book Charter'}
 							</a>
 						</div>
@@ -358,29 +375,6 @@
 	}
 	.date-input-field:focus {
 		border-color: var(--primary);
-	}
-
-	/* Location Search input styling */
-	.location-search-wrapper {
-		flex: 1.5 !important;
-	}
-	.search-input-container {
-		position: relative;
-		display: flex;
-		align-items: center;
-		width: 100%;
-	}
-	.search-input-icon {
-		position: absolute;
-		left: 12px;
-		width: 18px;
-		height: 18px;
-		color: var(--text-muted);
-		pointer-events: none;
-	}
-	.location-search-input {
-		width: 100%;
-		padding-left: 38px !important;
 	}
 
 	/* Suggestions Panel */
@@ -611,6 +605,8 @@
 		margin-bottom: 3rem;
 		align-items: flex-end;
 		border: 1px solid var(--border-light);
+		position: relative;
+		z-index: 50;
 	}
 	.filters-group {
 		flex: 3;

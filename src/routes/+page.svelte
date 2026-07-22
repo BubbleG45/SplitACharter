@@ -36,11 +36,9 @@
 		</header>
 
 		<section class="hero">
-			<span class="badge">Phase 1 Release</span>
-			<h1>Share a Boat Charter.<br/><span class="highlight">Pay Half the Price.</span></h1>
+			<h1>You came all the way to the Keys.<br/><span class="highlight">Get on the water.</span></h1>
 			<p class="hero-desc">
-				SplitACharter connects small groups who want to share a private boat charter. 
-				Each group pays exactly half. No login passwords, just smooth sailing.
+				SplitACharter matches two small groups on the same private charter. Each pays half. No party boats. No crowds. Just you, one other group, and open water.
 			</p>
 			<div class="hero-actions">
 				{#if data.session}
@@ -172,19 +170,6 @@
 		justify-content: center;
 		max-width: 650px;
 		padding-bottom: 5rem;
-	}
-	.badge {
-		background: rgba(6, 182, 212, 0.12);
-		color: var(--primary);
-		border: 1px solid rgba(6, 182, 212, 0.25);
-		padding: 6px 14px;
-		border-radius: 20px;
-		font-size: 0.8rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 1px;
-		align-self: flex-start;
-		margin-bottom: 1.5rem;
 	}
 	.hero h1 {
 		font-size: 3.5rem;

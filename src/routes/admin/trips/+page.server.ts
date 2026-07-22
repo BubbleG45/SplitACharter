@@ -82,6 +82,17 @@ export const actions: Actions = {
 			return fail(500, { message: 'Failed to fetch logs' });
 		}
 
-		return { logs: logs || [] };
+		// Filter out login/auth communications and only return trip-related communications
+		const tripLogs = (logs || []).filter((l: any) => {
+			const template = (l.template || '').toLowerCase();
+			const isLoginOrAuth =
+				template.includes('auth') ||
+				template.includes('login') ||
+				template.includes('magic') ||
+				template.includes('otp');
+			return !isLoginOrAuth;
+		});
+
+		return { logs: tripLogs };
 	}
 };
