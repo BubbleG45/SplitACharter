@@ -59,15 +59,18 @@
 		<div class="sidebar-header">
 			<span class="logo">
 				{#if isCondensed}
-					<span class="logo-short" title="SplitACharter Admin">S</span>
+					<span class="logo-short" title="SplitACharter Admin">SAC</span>
 				{:else}
 					SplitACharter <span class="badge">Admin</span>
 				{/if}
 			</span>
-			<button class="collapse-btn" onclick={toggleCondensed} title={isCondensed ? "Expand Sidebar" : "Condense Sidebar"} aria-label="Toggle Condensed Mode">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="collapse-icon">
-					<path stroke-linecap="round" stroke-linejoin="round" d={isCondensed ? "M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" : "M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5"} />
+			<button class="collapse-btn" onclick={toggleCondensed} title={isCondensed ? "Expand Navigation Menu" : "Collapse Navigation Menu"}>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="collapse-icon">
+					<path stroke-linecap="round" stroke-linejoin="round" d={isCondensed ? "M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" : "M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"} />
 				</svg>
+				{#if !isCondensed}
+					<span class="collapse-text">Collapse</span>
+				{/if}
 			</button>
 			<button class="menu-close-mobile" onclick={toggleSidebar} aria-label="Close menu">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -353,17 +356,27 @@
 	/* Main Content Area */
 	.admin-main {
 		flex: 1;
-		margin-left: 280px;
+		margin-left: 280px !important;
+		width: calc(100% - 280px) !important;
 		padding: 2.5rem;
 		position: relative;
 		z-index: 2;
 		overflow-y: auto;
 		height: 100vh;
+		transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+	.admin-main.main-condensed {
+		margin-left: 80px !important;
+		width: calc(100% - 80px) !important;
 	}
 	.main-content-container {
-		max-width: 1200px;
+		max-width: 1400px;
 		margin: 0 auto;
 		width: 100%;
+		transition: max-width 0.3s ease;
+	}
+	.admin-main.main-condensed .main-content-container {
+		max-width: 100% !important;
 	}
 
 	/* Responsive design */

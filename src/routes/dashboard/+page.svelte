@@ -3,9 +3,16 @@
 
 	let { data } = $props();
 
-	function formatDate(dateStr: string) {
-		const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-		return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', options);
+	function formatDate(dateStr: string | null | undefined) {
+		if (!dateStr) return 'Date Pending';
+		try {
+			const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+			const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+			if (isNaN(d.getTime())) return dateStr;
+			return d.toLocaleDateString('en-US', options);
+		} catch (e) {
+			return dateStr;
+		}
 	}
 
 	function formatPhoneNumber(phone: string | null | undefined) {
@@ -106,9 +113,9 @@
 						<div class="booking-card glass">
 							<div class="booking-card-header">
 								<div class="trip-meta">
-									<span class="trip-date">{formatDate(trip.date)}</span>
-									<h3>{template.trip_type}</h3>
-									<span class="trip-loc">{template.location} — {template.meeting_area}</span>
+									<span class="trip-date">{formatDate(trip?.date)}</span>
+									<h3>{template?.trip_type || 'Charter Reservation'}</h3>
+									<span class="trip-loc">{template?.location || 'Florida Keys'} — {template?.meeting_area || 'Provided by captain'}</span>
 								</div>
 								
 								<div class="status-meta">
@@ -120,15 +127,15 @@
 									</div>
 									<div class="status-group">
 										<span class="status-lbl">Charter Share</span>
-										<span class="status-badge trip-{trip.status}">
-											{#if trip.status === 'open'}
+										<span class="status-badge trip-{trip?.status || 'open'}">
+											{#if trip?.status === 'open'}
 												0 of 2 Booked
-											{:else if trip.status === 'half-booked'}
+											{:else if trip?.status === 'half-booked'}
 												1 of 2 Booked (Half-Booked)
-											{:else if trip.status === 'pending-reconfirm'}
+											{:else if trip?.status === 'pending-reconfirm'}
 												2 of 2 Booked (Pending Reconfirmation)
 											{:else}
-												{trip.status}
+												{trip?.status || 'open'}
 											{/if}
 										</span>
 									</div>
