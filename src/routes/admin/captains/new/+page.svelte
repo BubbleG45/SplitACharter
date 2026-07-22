@@ -10,6 +10,24 @@
 		'Middle Keys (Marathon, Pigeon Key)',
 		'Upper Keys (Key Largo, Islamorada)'
 	];
+	let selectedTripTypes = $state<string[]>([]);
+	let selectedLocations = $state<string[]>([]);
+
+	function toggleAllTripTypes() {
+		if (selectedTripTypes.length === data.tripTypes.length) {
+			selectedTripTypes = [];
+		} else {
+			selectedTripTypes = data.tripTypes.map((t: { name: string }) => t.name);
+		}
+	}
+
+	function toggleAllLocations() {
+		if (selectedLocations.length === locationOptions.length) {
+			selectedLocations = [];
+		} else {
+			selectedLocations = [...locationOptions];
+		}
+	}
 </script>
 
 <svelte:head>
@@ -85,12 +103,26 @@
 				<h3>Qualifications & Eligibility</h3>
 
 				<div class="form-group">
-					<!-- svelte-ignore a11y_label_has_associated_control -->
-					<label>Trip Types Approved</label>
+					<div class="section-label-header">
+						<!-- svelte-ignore a11y_label_has_associated_control -->
+						<label>Trip Types Approved</label>
+						<button
+							type="button"
+							class="btn-select-all"
+							onclick={toggleAllTripTypes}
+						>
+							{selectedTripTypes.length === data.tripTypes.length ? 'Deselect All' : 'Select All'}
+						</button>
+					</div>
 					<div class="options-grid">
 						{#each data.tripTypes as type}
 							<label class="checkbox-option">
-								<input type="checkbox" name="trip_types" value={type.name} />
+								<input
+									type="checkbox"
+									name="trip_types"
+									value={type.name}
+									bind:group={selectedTripTypes}
+								/>
 								<span>{type.name}</span>
 							</label>
 						{/each}
@@ -98,12 +130,26 @@
 				</div>
 
 				<div class="form-group">
-					<!-- svelte-ignore a11y_label_has_associated_control -->
-					<label>Locations / Marinas Approved</label>
+					<div class="section-label-header">
+						<!-- svelte-ignore a11y_label_has_associated_control -->
+						<label>Locations / Marinas Approved</label>
+						<button
+							type="button"
+							class="btn-select-all"
+							onclick={toggleAllLocations}
+						>
+							{selectedLocations.length === locationOptions.length ? 'Deselect All' : 'Select All'}
+						</button>
+					</div>
 					<div class="options-grid">
 						{#each locationOptions as loc}
 							<label class="checkbox-option">
-								<input type="checkbox" name="locations" value={loc} />
+								<input
+									type="checkbox"
+									name="locations"
+									value={loc}
+									bind:group={selectedLocations}
+								/>
 								<span>{loc}</span>
 							</label>
 						{/each}
@@ -172,6 +218,26 @@
 		font-size: 0.85rem;
 		font-weight: 600;
 		color: var(--text-secondary);
+	}
+	.section-label-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.btn-select-all {
+		background: none;
+		border: 1px solid var(--border-light);
+		color: var(--primary);
+		font-size: 0.75rem;
+		font-weight: 600;
+		cursor: pointer;
+		padding: 2px 8px;
+		border-radius: 4px;
+		transition: background-color 0.2s, border-color 0.2s;
+	}
+	.btn-select-all:hover {
+		background: rgba(14, 165, 233, 0.1);
+		border-color: var(--primary);
 	}
 	.form-group input[type="text"],
 	.form-group input[type="email"],

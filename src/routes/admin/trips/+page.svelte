@@ -216,6 +216,7 @@
 				{#each filteredTrips as trip (trip.id)}
 					{@const template = (Array.isArray(trip.listing_templates) ? trip.listing_templates[0] : trip.listing_templates) as any}
 					{@const captain = (Array.isArray(trip.captains) ? trip.captains[0] : trip.captains) as any}
+					{@const activeBookingsCount = trip.bookings?.filter((b: any) => b.status !== 'canceled' && b.status !== 'forfeited')?.length || 0}
 					{@const bookingsCount = trip.bookings?.length || 0}
 					{@const isExpanded = expandedTripIds.has(trip.id)}
 
@@ -244,16 +245,22 @@
 							{/if}
 						</td>
 						<td>
-							<span class="badge badge-count">{bookingsCount} / 2 Booked</span>
+							<span class="badge badge-count">{activeBookingsCount} / 2 Active</span>
 						</td>
 						<td>
 							<span class="badge status-badge trip-{trip.status}">
 								{#if trip.status === 'open'}
-									0 of 2 Booked
+									Open
 								{:else if trip.status === 'half-booked'}
-									1 of 2 Booked
+									Half-Booked
 								{:else if trip.status === 'pending-reconfirm'}
 									Pending Reconfirm
+								{:else if trip.status === 'confirmed'}
+									Confirmed
+								{:else if trip.status === 'completed'}
+									Completed
+								{:else if trip.status === 'canceled'}
+									Canceled
 								{:else}
 									{trip.status}
 								{/if}
