@@ -119,7 +119,7 @@
 		transform: scale(1.02);
 	}
 	.header-logo {
-		height: 84px;
+		height: 96px;
 		display: block;
 	}
 	.nav-links {

@@ -92,8 +92,8 @@ export function wrapInEmailLayout(contentHtml: string, title: string): string {
 			padding: 40px;
 		}
 		.logo-img {
-			height: 44px;
-			max-height: 44px;
+			height: 56px;
+			max-height: 56px;
 			width: auto;
 			display: block;
 			border: 0;
@@ -146,9 +146,9 @@ export function wrapInEmailLayout(contentHtml: string, title: string): string {
 						<td>
 							<div class="header-bar"></div>
 							<div class="content" align="left">
-								<div style="margin-bottom: 24px;">
+								<div style="margin-bottom: 20px;">
 									<a href="${baseUrl}" style="text-decoration: none; display: inline-block;">
-										<img src="${logoUrl}" alt="SplitACharter" height="44" class="logo-img" style="display: block; height: 44px; width: auto; max-width: 240px; border: 0;" />
+										<img src="${logoUrl}" alt="SplitACharter" height="56" class="logo-img" style="display: block; height: 56px; width: auto; max-width: 280px; border: 0;" />
 									</a>
 								</div>
 								<div class="body-text">
