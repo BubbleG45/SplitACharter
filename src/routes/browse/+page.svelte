@@ -178,6 +178,14 @@
 		{ value: 'all', label: 'Any Trip Type' },
 		...data.tripTypes.map((t) => ({ value: t.name, label: t.name }))
 	]);
+
+	function resetAllFilters() {
+		searchDate = '';
+		filterLocation = 'all';
+		filterDuration = 'all';
+		filterPax = 'all';
+		filterTripType = 'all';
+	}
 </script>
 
 <svelte:head>
@@ -202,6 +210,17 @@
 
 		<!-- Filters Controls -->
 		<div class="controls-card glass">
+			<div class="controls-card-header">
+				<span class="controls-title">Filter Charters</span>
+				{#if searchDate || filterLocation !== 'all' || filterDuration !== 'all' || filterPax !== 'all' || filterTripType !== 'all'}
+					<button type="button" class="btn-clear-all" onclick={resetAllFilters}>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+						</svg>
+						<span>Clear Filters</span>
+					</button>
+				{/if}
+			</div>
 			<div class="filters-group" style="width: 100%; flex: 1;">
 				<div class="select-wrapper">
 					<div class="label-row">
@@ -378,6 +397,41 @@
 </div>
 
 <style>
+	.controls-card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--border-light);
+	}
+	.controls-title {
+		font-size: 0.85rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: var(--text-secondary);
+	}
+	.btn-clear-all {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		background: rgba(6, 182, 212, 0.08);
+		border: 1px solid rgba(6, 182, 212, 0.25);
+		color: var(--primary);
+		padding: 5px 12px;
+		border-radius: 6px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.btn-clear-all:hover {
+		background: rgba(6, 182, 212, 0.2);
+		border-color: var(--primary);
+		transform: translateY(-1px);
+	}
+
 	/* Date picker input styling */
 	.date-input-field {
 		background: rgba(255, 255, 255, 0.04);

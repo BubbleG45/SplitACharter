@@ -5,9 +5,14 @@
 
 	let { data, children } = $props();
 	let sidebarOpen = $state(false);
+	let isCondensed = $state(false);
 
 	function toggleSidebar() {
 		sidebarOpen = !sidebarOpen;
+	}
+
+	function toggleCondensed() {
+		isCondensed = !isCondensed;
 	}
 
 	async function handleSignOut() {
@@ -50,9 +55,20 @@
 	</header>
 
 	<!-- Sidebar -->
-	<aside class="admin-sidebar glass {sidebarOpen ? 'sidebar-open' : ''}">
+	<aside class="admin-sidebar glass {sidebarOpen ? 'sidebar-open' : ''} {isCondensed ? 'sidebar-condensed' : ''}">
 		<div class="sidebar-header">
-			<span class="logo">SplitACharter <span class="badge">Admin</span></span>
+			<span class="logo">
+				{#if isCondensed}
+					<span class="logo-short" title="SplitACharter Admin">S</span>
+				{:else}
+					SplitACharter <span class="badge">Admin</span>
+				{/if}
+			</span>
+			<button class="collapse-btn" onclick={toggleCondensed} title={isCondensed ? "Expand Sidebar" : "Condense Sidebar"} aria-label="Toggle Condensed Mode">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="collapse-icon">
+					<path stroke-linecap="round" stroke-linejoin="round" d={isCondensed ? "M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" : "M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5"} />
+				</svg>
+			</button>
 			<button class="menu-close-mobile" onclick={toggleSidebar} aria-label="Close menu">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -63,34 +79,40 @@
 		<nav class="sidebar-nav">
 			{#each navItems as item}
 				{@const isActive = $page.url.pathname === item.path || ($page.url.pathname.startsWith(item.path) && item.path !== '/admin')}
-				<a href={item.path} class="nav-link {isActive ? 'active' : ''}" onclick={() => sidebarOpen = false}>
+				<a href={item.path} class="nav-link {isActive ? 'active' : ''}" title={isCondensed ? item.name : ''} onclick={() => sidebarOpen = false}>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
 						<path stroke-linecap="round" stroke-linejoin="round" d={item.icon} />
 					</svg>
-					<span>{item.name}</span>
+					{#if !isCondensed}
+						<span class="nav-text">{item.name}</span>
+					{/if}
 				</a>
 			{/each}
 		</nav>
 
 		<div class="sidebar-footer">
 			<div class="user-profile">
-				<div class="avatar">{data.user?.email?.charAt(0).toUpperCase()}</div>
-				<div class="info">
-					<span class="user-name">Administrator</span>
-					<span class="user-email" title={data.user?.email}>{data.user?.email}</span>
-				</div>
+				<div class="avatar" title={data.user?.email}>{data.user?.email?.charAt(0).toUpperCase()}</div>
+				{#if !isCondensed}
+					<div class="info">
+						<span class="user-name">Administrator</span>
+						<span class="user-email" title={data.user?.email}>{data.user?.email}</span>
+					</div>
+				{/if}
 			</div>
-			<button class="btn-signout" onclick={handleSignOut}>
+			<button class="btn-signout" onclick={handleSignOut} title={isCondensed ? "Sign Out" : ""}>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
 				</svg>
-				<span>Sign Out</span>
+				{#if !isCondensed}
+					<span>Sign Out</span>
+				{/if}
 			</button>
 		</div>
 	</aside>
 
 	<!-- Main Content -->
-	<main class="admin-main">
+	<main class="admin-main {isCondensed ? 'main-condensed' : ''}">
 		<div class="main-content-container">
 			{@render children()}
 		</div>
@@ -181,12 +203,23 @@
 		border-top: none;
 		border-bottom: none;
 		border-left: none;
+		transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 	}
+	.admin-sidebar.sidebar-condensed {
+		width: 80px;
+	}
+
 	.sidebar-header {
 		padding: 2rem 1.5rem;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+	}
+	.sidebar-condensed .sidebar-header {
+		padding: 1.5rem 0.5rem;
+		flex-direction: column;
+		gap: 0.75rem;
+		justify-content: center;
 	}
 	.logo {
 		font-family: var(--font-heading);
@@ -194,6 +227,12 @@
 		font-size: 1.25rem;
 		color: var(--text-primary);
 		letter-spacing: -0.5px;
+	}
+	.logo-short {
+		font-family: var(--font-heading);
+		font-weight: 800;
+		font-size: 1.4rem;
+		color: var(--primary);
 	}
 	.badge {
 		font-size: 0.7rem;

@@ -4,22 +4,73 @@
 	let { data } = $props();
 	let searchQuery = $state('');
 	let filterStatus = $state('all'); // 'all', 'active', 'inactive'
+	let sortColumn = $state<'trip_type' | 'location' | 'duration' | 'low_price' | 'active'>('trip_type');
+	let sortDirection = $state<'asc' | 'desc'>('asc');
 
-	// Client-side filtering
+	function toggleSort(col: 'trip_type' | 'location' | 'duration' | 'low_price' | 'active') {
+		if (sortColumn === col) {
+			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+		} else {
+			sortColumn = col;
+			sortDirection = 'asc';
+		}
+	}
+
+	function getDurationMinutes(intervalStr: string | any): number {
+		if (typeof intervalStr === 'string') {
+			const parts = intervalStr.split(':');
+			if (parts.length >= 2) {
+				return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+			}
+			return 0;
+		}
+		if (intervalStr && typeof intervalStr === 'object') {
+			return (intervalStr.hours || 0) * 60 + (intervalStr.minutes || 0);
+		}
+		return 0;
+	}
+
+	// Client-side filtering and sorting
 	let filteredListings = $derived(
-		data.listings.filter((listing) => {
-			const matchesSearch =
-				listing.trip_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				listing.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				listing.description.toLowerCase().includes(searchQuery.toLowerCase());
-			
-			const matchesStatus =
-				filterStatus === 'all' ||
-				(filterStatus === 'active' && listing.active) ||
-				(filterStatus === 'inactive' && !listing.active);
+		data.listings
+			.filter((listing) => {
+				const matchesSearch =
+					listing.trip_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					listing.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					listing.description.toLowerCase().includes(searchQuery.toLowerCase());
+				
+				const matchesStatus =
+					filterStatus === 'all' ||
+					(filterStatus === 'active' && listing.active) ||
+					(filterStatus === 'inactive' && !listing.active);
 
-			return matchesSearch && matchesStatus;
-		})
+				return matchesSearch && matchesStatus;
+			})
+			.sort((a, b) => {
+				let valA: any;
+				let valB: any;
+
+				if (sortColumn === 'trip_type') {
+					valA = a.trip_type.toLowerCase();
+					valB = b.trip_type.toLowerCase();
+				} else if (sortColumn === 'location') {
+					valA = a.location.toLowerCase();
+					valB = b.location.toLowerCase();
+				} else if (sortColumn === 'duration') {
+					valA = getDurationMinutes(a.duration);
+					valB = getDurationMinutes(b.duration);
+				} else if (sortColumn === 'low_price') {
+					valA = parseFloat(a.low_price);
+					valB = parseFloat(b.low_price);
+				} else if (sortColumn === 'active') {
+					valA = a.active ? 1 : 0;
+					valB = b.active ? 1 : 0;
+				}
+
+				if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+				if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+				return 0;
+			})
 	);
 
 	function formatDuration(intervalStr: string | any) {
@@ -103,12 +154,36 @@
 		<table class="listings-table">
 			<thead>
 				<tr>
-					<th>Trip Type</th>
-					<th>Location</th>
-					<th>Duration</th>
-					<th>Price Range</th>
-					<th>Max Pax</th>
-					<th>Status</th>
+					<th class="sortable-th" onclick={() => toggleSort('trip_type')}>
+						<div class="th-content">
+							<span>Trip Type</span>
+							<span class="sort-icon">{sortColumn === 'trip_type' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+						</div>
+					</th>
+					<th class="sortable-th" onclick={() => toggleSort('location')}>
+						<div class="th-content">
+							<span>Location</span>
+							<span class="sort-icon">{sortColumn === 'location' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+						</div>
+					</th>
+					<th class="sortable-th" onclick={() => toggleSort('duration')}>
+						<div class="th-content">
+							<span>Duration</span>
+							<span class="sort-icon">{sortColumn === 'duration' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+						</div>
+					</th>
+					<th class="sortable-th" onclick={() => toggleSort('low_price')}>
+						<div class="th-content">
+							<span>Price Range</span>
+							<span class="sort-icon">{sortColumn === 'low_price' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+						</div>
+					</th>
+					<th class="sortable-th" onclick={() => toggleSort('active')}>
+						<div class="th-content">
+							<span>Status</span>
+							<span class="sort-icon">{sortColumn === 'active' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+						</div>
+					</th>
 					<th class="actions-col">Actions</th>
 				</tr>
 			</thead>
@@ -126,7 +201,6 @@
 						<td class="price-cell">
 							${parseFloat(listing.low_price).toFixed(0)} – ${parseFloat(listing.high_price).toFixed(0)}
 						</td>
-						<td>{listing.max_passengers}</td>
 						<td>
 							<span class="status-badge {listing.active ? 'active-badge' : 'inactive-badge'}">
 								{listing.active ? 'Active' : 'Inactive'}
@@ -353,6 +427,26 @@
 		background: rgba(16, 185, 129, 0.15);
 		color: var(--success);
 		border-color: rgba(16, 185, 129, 0.3);
+	}
+
+	.sortable-th {
+		cursor: pointer;
+		user-select: none;
+		transition: background 0.15s ease, color 0.15s ease;
+	}
+	.sortable-th:hover {
+		color: var(--primary);
+		background: rgba(255, 255, 255, 0.03);
+	}
+	.th-content {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.sort-icon {
+		font-size: 0.75rem;
+		color: var(--primary);
+		opacity: 0.8;
 	}
 
 	.empty-state {
