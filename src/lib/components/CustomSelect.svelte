@@ -38,7 +38,7 @@
 	});
 </script>
 
-<div class="custom-select-container" bind:this={selectContainer}>
+<div class="custom-select-container" class:is-open={isOpen} bind:this={selectContainer}>
 	<label for={id}>{label}</label>
 	<button
 		type="button"
@@ -80,6 +80,11 @@
 		flex-direction: column;
 		gap: 8px;
 		flex: 1;
+		z-index: 1;
+	}
+
+	.custom-select-container.is-open {
+		z-index: 100;
 	}
 
 	.custom-select-container label {

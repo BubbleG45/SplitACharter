@@ -33,6 +33,15 @@
 		return true;
 	}
 
+	function parseLocation(locString: string): { main: string; details: string | null } {
+		if (!locString) return { main: '', details: null };
+		const match = locString.match(/^(.*?)\s*\((.*?)\)$/);
+		if (match) {
+			return { main: match[1].trim(), details: `(${match[2].trim()})` };
+		}
+		return { main: locString, details: null };
+	}
+
 	function matchesFilters(template: any) {
 		const matchesLocation = matchesLocationFilter(template.location, filterLocation);
 		
@@ -195,7 +204,12 @@
 		<div class="controls-card glass">
 			<div class="filters-group" style="width: 100%; flex: 1;">
 				<div class="select-wrapper">
-					<label for="search-date">Trip Date</label>
+					<div class="label-row">
+						<label for="search-date">Trip Date</label>
+						{#if searchDate}
+							<button type="button" class="clear-date-btn" onclick={() => searchDate = ''}>Clear Date</button>
+						{/if}
+					</div>
 					<input
 						type="date"
 						id="search-date"
@@ -302,14 +316,20 @@
 		{:else}
 			<div class="cards-grid">
 				{#each filteredListings as listing (listing.id)}
+					{@const locParts = parseLocation(listing.location)}
 					<div class="listing-card glass glass-interactive" class:matched-card={listing.matchedInstance}>
 						<div class="card-header">
 							<span class="location-badge">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 location-icon">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
 									<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
 								</svg>
-								{listing.location}
+								<div class="location-text-group">
+									<span class="location-main">{locParts.main}</span>
+									{#if locParts.details}
+										<span class="location-details">{locParts.details}</span>
+									{/if}
+								</div>
 							</span>
 							{#if listing.matchedInstance}
 								<span class="active-badge">1 spot left</span>
@@ -532,13 +552,14 @@
 		letter-spacing: 0.5px;
 	}
 	.date-badge {
-		background: rgba(255, 255, 255, 0.05);
-		border: 1px solid var(--border-light);
-		color: var(--text-secondary);
-		padding: 4px 10px;
+		background: rgba(6, 182, 212, 0.12);
+		border: 1px solid rgba(6, 182, 212, 0.3);
+		color: var(--primary);
+		padding: 2px 8px;
 		border-radius: 6px;
-		font-size: 0.95rem;
-		font-weight: 700;
+		font-size: 0.78rem;
+		font-weight: 600;
+		white-space: nowrap;
 	}
 	.title-row {
 		display: flex;
@@ -680,14 +701,49 @@
 	.location-badge {
 		background: rgba(255, 255, 255, 0.04);
 		border: 1px solid var(--border-light);
-		padding: 4px 10px;
-		border-radius: 6px;
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-		font-weight: 500;
+		padding: 5px 10px;
+		border-radius: 8px;
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
+		gap: 8px;
+	}
+	.location-icon {
+		flex-shrink: 0;
+		color: var(--primary);
+	}
+	.location-text-group {
+		display: flex;
+		flex-direction: column;
+		line-height: 1.2;
+	}
+	.location-main {
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: var(--text-primary);
+	}
+	.location-details {
+		font-size: 0.72rem;
+		color: var(--text-muted);
+		font-weight: 400;
+	}
+	.label-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.clear-date-btn {
+		background: none;
+		border: none;
+		color: var(--primary);
+		font-size: 0.75rem;
+		font-weight: 600;
+		cursor: pointer;
+		padding: 0;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+	.clear-date-btn:hover {
+		text-decoration: underline;
 	}
 	.pax-badge {
 		font-size: 0.8rem;
