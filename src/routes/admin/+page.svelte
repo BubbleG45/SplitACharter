@@ -69,6 +69,7 @@
 		<div class="action-buttons">
 			<a href="/admin/listings/new" class="btn btn-primary">Create Listing Template</a>
 			<a href="/admin/listings" class="btn btn-secondary">Manage Listings</a>
+			<a href="/dashboard" class="btn btn-secondary">My Booked Trips</a>
 		</div>
 	</div>
 	<div class="decoration">
