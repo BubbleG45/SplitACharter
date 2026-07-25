@@ -56,28 +56,31 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 export const actions: Actions = {
 	getLogs: async ({ request, locals: { supabase } }) => {
 		const formData = await request.formData();
-		const email = formData.get('email') as string;
-		const phone = formData.get('phone') as string;
-		const tripDate = formData.get('tripDate') as string;
-		const tripId = formData.get('tripId') as string;
+		const email = (formData.get('email') as string)?.trim();
+		const phone = (formData.get('phone') as string)?.trim();
+		const tripDate = (formData.get('tripDate') as string)?.trim();
+		const tripId = (formData.get('tripId') as string)?.trim();
 
 		if (!email && !phone) {
 			return fail(400, { message: 'Missing recipient identifier' });
 		}
 
-		let filterStr = '';
-		if (email && phone) {
-			filterStr = `recipient.eq.${email},recipient.eq.${phone}`;
-		} else if (email) {
-			filterStr = `recipient.eq.${email}`;
-		} else if (phone) {
-			filterStr = `recipient.eq.${phone}`;
+		const filters: string[] = [];
+		if (email) {
+			filters.push(`recipient.ilike.${email}`);
+		}
+		if (phone) {
+			filters.push(`recipient.ilike.%${phone}%`);
+			const cleanDigits = phone.replace(/\D/g, '');
+			if (cleanDigits && cleanDigits.length >= 7 && cleanDigits !== phone) {
+				filters.push(`recipient.ilike.%${cleanDigits}%`);
+			}
 		}
 
 		const { data: logs, error: logsErr } = await supabase
 			.from('notification_logs')
 			.select('*')
-			.or(filterStr)
+			.or(filters.join(','))
 			.order('timestamp', { ascending: false });
 
 		if (logsErr) {
@@ -85,42 +88,53 @@ export const actions: Actions = {
 			return fail(500, { message: 'Failed to fetch logs' });
 		}
 
-		// Filter out login/auth communications and ensure logs belong strictly to this specific trip instance
-		const tripLogs = (logs || []).filter((l: any) => {
+		// 1. Filter out login/auth/otp communications
+		const nonAuthLogs = (logs || []).filter((l: any) => {
 			const template = (l.template || '').toLowerCase();
-			const isLoginOrAuth =
+			return !(
 				template.includes('auth') ||
 				template.includes('login') ||
 				template.includes('magic') ||
-				template.includes('otp');
-			if (isLoginOrAuth) return false;
+				template.includes('otp')
+			);
+		});
 
-			// If tripDate or tripId is provided, verify log content pertains to this specific trip
-			if (tripDate || tripId) {
-				const content = l.content || '';
-				if (tripId && content.toLowerCase().includes(tripId.toLowerCase())) {
-					return true;
-				}
-				if (tripDate) {
-					if (content.includes(tripDate)) return true;
-					const parts = tripDate.split('-');
-					if (parts.length === 3) {
-						const yyyy = parts[0];
-						const mm = parts[1];
-						const dd = parts[2];
-						const m = String(parseInt(mm, 10));
-						const d = String(parseInt(dd, 10));
+		// 2. Filter by tripDate or tripId if available
+		const dateMatchedLogs = nonAuthLogs.filter((l: any) => {
+			if (!tripDate && !tripId) return true;
+			const content = l.content || '';
+			if (tripId && content.toLowerCase().includes(tripId.toLowerCase())) {
+				return true;
+			}
+			if (tripDate) {
+				if (content.includes(tripDate)) return true;
+				const parts = tripDate.split('-');
+				if (parts.length === 3) {
+					const yyyy = parts[0];
+					const mm = parts[1];
+					const dd = parts[2];
+					const m = String(parseInt(mm, 10));
+					const d = String(parseInt(dd, 10));
 
-						if (content.includes(`${mm}/${dd}/${yyyy}`) || content.includes(`${m}/${d}/${yyyy}`)) {
+					if (content.includes(`${mm}/${dd}/${yyyy}`) || content.includes(`${m}/${d}/${yyyy}`)) {
+						return true;
+					}
+
+					const dateObj = new Date(`${tripDate}T00:00:00`);
+					if (!isNaN(dateObj.getTime())) {
+						const monthLong = dateObj.toLocaleDateString('en-US', { month: 'long' });
+						const monthShort = dateObj.toLocaleDateString('en-US', { month: 'short' });
+						if (content.includes(`${monthLong} ${d}`) || content.includes(`${monthShort} ${d}`)) {
 							return true;
 						}
 					}
 				}
-				return false;
 			}
-
-			return true;
+			return false;
 		});
+
+		// Return date-matched logs if found, otherwise return non-auth logs so history is never blank
+		const tripLogs = (dateMatchedLogs.length > 0) ? dateMatchedLogs : nonAuthLogs;
 
 		return { logs: tripLogs };
 	},
@@ -200,5 +214,112 @@ export const actions: Actions = {
 		}
 
 		return { success: true };
+	},
+
+	getCaptainsLog: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const tripId = formData.get('tripId') as string;
+
+		if (!tripId) {
+			return fail(400, { message: 'Trip ID is required' });
+		}
+
+		// 1. Fetch trip instance with assigned captain and listing details
+		const { data: trip, error: tripErr } = await supabase
+			.from('trip_instances')
+			.select(`
+				id,
+				date,
+				status,
+				captain_id,
+				updated_at,
+				captains (
+					id,
+					name,
+					phone,
+					email
+				),
+				listing_templates (
+					trip_type,
+					location,
+					meeting_area
+				)
+			`)
+			.eq('id', tripId)
+			.maybeSingle();
+
+		if (tripErr || !trip) {
+			return fail(404, { message: 'Trip instance not found' });
+		}
+
+		// 2. Fetch all notification_logs for captain_blast and captain_details_link matching tripId
+		const { data: logs, error: logsErr } = await supabase
+			.from('notification_logs')
+			.select('*')
+			.in('template', ['captain_blast', 'captain_details_link'])
+			.ilike('content', `%${tripId}%`)
+			.order('timestamp', { ascending: true });
+
+		if (logsErr) {
+			console.error('Error fetching captain notification logs:', logsErr);
+			return fail(500, { message: 'Failed to fetch captain logs' });
+		}
+
+		// 3. Fetch all active captains to resolve recipient phone/email to captain names
+		const { data: allCaptains } = await supabase
+			.from('captains')
+			.select('id, name, phone, email');
+
+		const captainMap = new Map<string, any>();
+		if (allCaptains) {
+			for (const cap of allCaptains) {
+				if (cap.phone) captainMap.set(cap.phone, cap);
+				if (cap.email) captainMap.set(cap.email, cap);
+				captainMap.set(cap.id, cap);
+			}
+		}
+
+		// 4. Identify winning acceptance notification log (if any) or updated_at
+		const winningLog = (logs || []).find((l: any) => l.template === 'captain_details_link');
+		const acceptedTime = winningLog ? winningLog.timestamp : (trip.captain_id ? trip.updated_at : null);
+
+		// 5. Structure blast audit items
+		const blastLogs = (logs || []).filter((l: any) => l.template === 'captain_blast');
+		const auditItems = blastLogs.map((l: any) => {
+			const matchedCaptain = captainMap.get(l.recipient);
+			const isWinner = Boolean(trip.captain_id && matchedCaptain?.id === trip.captain_id);
+
+			return {
+				id: l.id,
+				captainId: matchedCaptain?.id || null,
+				captainName: matchedCaptain?.name || 'Registered Captain',
+				recipient: l.recipient,
+				channel: l.channel,
+				sentAt: l.timestamp,
+				status: l.status,
+				isWinner
+			};
+		});
+
+		const assignedCaptain = (Array.isArray(trip.captains) ? trip.captains[0] : trip.captains) as any;
+
+		return {
+			tripInfo: {
+				id: trip.id,
+				date: trip.date,
+				status: trip.status,
+				tripType: (trip as any).listing_templates?.trip_type || 'Charter',
+				location: (trip as any).listing_templates?.location || '',
+				meetingArea: (trip as any).listing_templates?.meeting_area || '',
+				assignedCaptain: assignedCaptain ? {
+					id: assignedCaptain.id,
+					name: assignedCaptain.name,
+					phone: assignedCaptain.phone,
+					email: assignedCaptain.email
+				} : null,
+				acceptedTime
+			},
+			blastAudits: auditItems
+		};
 	}
 };

@@ -182,6 +182,36 @@
 			loadingLogs = false;
 		}
 	}
+
+	let showCaptainsLogModal = $state(false);
+	let loadingCaptainsLog = $state(false);
+	let captainsLogData = $state<any>(null);
+
+	async function openCaptainsLog(trip: any) {
+		showCaptainsLogModal = true;
+		loadingCaptainsLog = true;
+		captainsLogData = null;
+
+		try {
+			const formData = new FormData();
+			formData.append('tripId', trip.id);
+
+			const response = await fetch('?/getCaptainsLog', {
+				method: 'POST',
+				body: formData
+			});
+			const result = deserialize(await response.text()) as any;
+			if (result.type === 'success' && result.data) {
+				captainsLogData = result.data;
+			} else {
+				console.error('Error fetching Captain Log data:', result);
+			}
+		} catch (err) {
+			console.error(err);
+		} finally {
+			loadingCaptainsLog = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -403,6 +433,18 @@
 						</td>
 						<td>
 							<div class="row-actions" onclick={(e) => e.stopPropagation()} role="presentation">
+								{#if trip.status === 'confirmed' || trip.status === 'completed'}
+									<button
+										type="button"
+										class="btn btn-xs btn-primary btn-captains-log"
+										onclick={() => openCaptainsLog(trip)}
+									>
+										<svg class="icon w-3.5 h-3.5 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+										</svg>
+										Captain's Log
+									</button>
+								{/if}
 								{#if trip.status !== 'canceled' && trip.status !== 'completed'}
 									<button
 										type="button"
@@ -425,7 +467,21 @@
 						<tr class="nested-row">
 							<td colspan="7">
 								<div class="nested-container glass">
-									<h4>Customer Bookings for this Trip</h4>
+									<div class="nested-title-bar">
+										<h4>Customer Bookings for this Trip</h4>
+										{#if trip.status === 'confirmed' || trip.status === 'completed'}
+											<button
+												type="button"
+												class="btn btn-xs btn-primary btn-captains-log"
+												onclick={() => openCaptainsLog(trip)}
+											>
+												<svg class="icon w-3.5 h-3.5 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+												</svg>
+												Captain's Log
+											</button>
+										{/if}
+									</div>
 									{#if bookingsCount === 0}
 										<p class="nested-empty">No customers have signed up for this trip instance yet.</p>
 									{:else}
@@ -545,6 +601,121 @@
 					{/each}
 				</div>
 			{/if}
+		</div>
+	</div>
+{/if}
+
+<!-- Captain's Log Audit Modal -->
+{#if showCaptainsLogModal}
+	<button class="drawer-backdrop" onclick={() => (showCaptainsLogModal = false)} aria-label="Close Captain's Log modal"></button>
+	<div class="captains-log-modal glass glow-primary" role="dialog" aria-modal="true">
+		<div class="modal-header">
+			<div>
+				<span class="drawer-subtitle">Skipper Dispatch Audit</span>
+				<h2>Captain's Log</h2>
+				{#if captainsLogData?.tripInfo}
+					<p class="modal-trip-meta">
+						<strong>{captainsLogData.tripInfo.tripType}</strong> — {formatDate(captainsLogData.tripInfo.date)} ({captainsLogData.tripInfo.location})
+					</p>
+				{/if}
+			</div>
+			<button class="close-btn" onclick={() => (showCaptainsLogModal = false)} aria-label="Close Modal">
+				<svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
+		</div>
+
+		<div class="modal-body">
+			{#if loadingCaptainsLog}
+				<div class="spinner-container">
+					<div class="spinner"></div>
+					<p>Loading Captain's Log dispatch data...</p>
+				</div>
+			{:else if captainsLogData}
+				{@const info = captainsLogData.tripInfo}
+				{@const audits = captainsLogData.blastAudits || []}
+
+				<!-- Summary Header Card -->
+				<div class="log-summary-card glass">
+					<div class="log-summary-grid">
+						<div class="summary-col">
+							<span class="summary-label">Trip Status</span>
+							<span class="badge status-badge trip-{info.status}">{info.status}</span>
+						</div>
+						<div class="summary-col">
+							<span class="summary-label">Assigned Skipper</span>
+							<strong class="skipper-name">{info.assignedCaptain?.name || 'Unassigned'}</strong>
+							{#if info.assignedCaptain?.phone}
+								<span class="skipper-phone">{info.assignedCaptain.phone}</span>
+							{/if}
+						</div>
+						<div class="summary-col">
+							<span class="summary-label">Acceptance Timestamp</span>
+							{#if info.acceptedTime}
+								<span class="acceptance-time">{new Date(info.acceptedTime).toLocaleString()}</span>
+							{:else}
+								<span class="no-time">Pending Acceptance</span>
+							{/if}
+						</div>
+					</div>
+				</div>
+
+				<div class="audits-section">
+					<h3 class="section-title">Skipper Blast Delivery & Response History ({audits.length})</h3>
+					{#if audits.length === 0}
+						<p class="empty-state">No captain blast logs recorded for this trip instance.</p>
+					{:else}
+						<table class="captains-log-table">
+							<thead>
+								<tr>
+									<th>Captain Name</th>
+									<th>Recipient Contact</th>
+									<th>Blast Sent Time</th>
+									<th>Delivery Status</th>
+									<th>Outcome</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each audits as audit}
+									<tr class:winner-row={audit.isWinner}>
+										<td>
+											<span class="captain-name">{audit.captainName}</span>
+										</td>
+										<td>
+											<span class="recipient-contact">{audit.recipient}</span>
+										</td>
+										<td>
+											<span class="sent-time">{new Date(audit.sentAt).toLocaleString()}</span>
+										</td>
+										<td>
+											<span class="badge status-badge log-{audit.status}">{audit.status}</span>
+										</td>
+										<td>
+											{#if audit.isWinner}
+												<span class="badge badge-winner">
+													<svg class="w-3.5 h-3.5 inline mr-1" viewBox="0 0 20 20" fill="currentColor">
+														<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+													</svg>
+													Accepted & Secured
+												</span>
+											{:else}
+												<span class="badge badge-unclaimed">Blast Sent</span>
+											{/if}
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					{/if}
+				</div>
+			{/if}
+		</div>
+
+		<div class="modal-footer">
+			<button type="button" class="btn btn-secondary" onclick={() => (showCaptainsLogModal = false)}>
+				Close Log
+			</button>
 		</div>
 	</div>
 {/if}
@@ -1384,6 +1555,148 @@
 		padding: 1rem 1.75rem 1.5rem 1.75rem;
 		border-top: 1px solid var(--border-light);
 		background: var(--bg-surface-dark);
+	}
+
+	/* Captain's Log Modal Styles */
+	.btn-captains-log {
+		background: rgba(6, 182, 212, 0.15);
+		color: #38bdf8;
+		border: 1px solid rgba(6, 182, 212, 0.3);
+		display: inline-flex;
+		align-items: center;
+		transition: all 0.2s ease;
+	}
+	.btn-captains-log:hover {
+		background: rgba(6, 182, 212, 0.25);
+		color: #7dd3fc;
+		border-color: rgba(6, 182, 212, 0.5);
+	}
+	.nested-title-bar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 12px;
+	}
+	.nested-title-bar h4 {
+		margin: 0;
+	}
+
+	.captains-log-modal {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 720px;
+		max-width: 94vw;
+		max-height: 85vh;
+		background: var(--bg-surface-dark);
+		border: 1px solid rgba(6, 182, 212, 0.3);
+		border-radius: 12px;
+		z-index: 300;
+		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		animation: modal-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	.log-summary-card {
+		padding: 1.25rem;
+		border-radius: 10px;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(255, 255, 255, 0.02);
+	}
+	.log-summary-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1rem;
+	}
+	.summary-col {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.summary-label {
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: var(--text-muted);
+	}
+	.skipper-name {
+		font-size: 1rem;
+		color: var(--text-primary);
+	}
+	.skipper-phone {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+	}
+	.acceptance-time {
+		font-size: 0.85rem;
+		color: var(--success);
+		font-weight: 600;
+	}
+	.no-time {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		font-style: italic;
+	}
+
+	.audits-section {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	.section-title {
+		font-size: 0.95rem;
+		font-weight: 700;
+		color: var(--text-primary);
+	}
+
+	.captains-log-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.85rem;
+	}
+	.captains-log-table th {
+		text-align: left;
+		padding: 10px 12px;
+		background: rgba(0, 0, 0, 0.3);
+		color: var(--text-secondary);
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		border-bottom: 1px solid var(--border-light);
+	}
+	.captains-log-table td {
+		padding: 10px 12px;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+		color: var(--text-secondary);
+	}
+	.captains-log-table tr.winner-row {
+		background: rgba(16, 185, 129, 0.06);
+	}
+	.captain-name {
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+	.recipient-contact {
+		font-family: monospace;
+		font-size: 0.8rem;
+		color: var(--text-muted);
+	}
+	.sent-time {
+		font-size: 0.8rem;
+	}
+
+	.badge-winner {
+		background: rgba(16, 185, 129, 0.15);
+		color: #34d399;
+		border: 1px solid rgba(16, 185, 129, 0.3);
+	}
+	.badge-unclaimed {
+		background: rgba(148, 163, 184, 0.1);
+		color: var(--text-muted);
+		border: 1px solid rgba(148, 163, 184, 0.2);
 	}
 </style>
 
