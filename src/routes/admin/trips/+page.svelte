@@ -249,38 +249,14 @@
 			</div>
 		{/if}
 
-		<div class="filter-group filter-actions">
-			<span class="filter-label-placeholder" aria-hidden="true">&nbsp;</span>
-			<div class="expand-collapse-buttons">
-				<button
-					type="button"
-					class="btn btn-secondary toggle-all-btn"
-					onclick={expandAll}
-					disabled={filteredTrips.length === 0 || expandedTripIds.size === filteredTrips.length}
-					title="Expand all trip details"
-				>
-					<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-					</svg>
-					Expand All
-				</button>
-				<button
-					type="button"
-					class="btn btn-secondary toggle-all-btn"
-					onclick={collapseAll}
-					disabled={expandedTripIds.size === 0}
-					title="Collapse all trip details"
-				>
-					<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
-					</svg>
-					Collapse All
-				</button>
+		{#if hasActiveFilters}
+			<div class="filter-group filter-actions">
+				<span class="filter-label-placeholder" aria-hidden="true">&nbsp;</span>
 				<button
 					type="button"
 					class="btn btn-secondary clear-filters-btn"
 					onclick={resetFilters}
-					disabled={!hasActiveFilters}
+					title="Clear all active filters"
 				>
 					<svg class="clear-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -288,7 +264,7 @@
 					Clear Filters
 				</button>
 			</div>
-		</div>
+		{/if}
 	</div>
 </div>
 
@@ -302,7 +278,34 @@
 		<table class="admin-table">
 			<thead>
 				<tr>
-					<th style="width: 40px;"></th>
+					<th style="width: 70px;">
+						<div class="table-header-expand-actions">
+							<button
+								type="button"
+								class="header-action-btn"
+								onclick={expandAll}
+								disabled={filteredTrips.length === 0 || expandedTripIds.size === filteredTrips.length}
+								title="Expand All Rows"
+								aria-label="Expand All Rows"
+							>
+								<svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+								</svg>
+							</button>
+							<button
+								type="button"
+								class="header-action-btn"
+								onclick={collapseAll}
+								disabled={expandedTripIds.size === 0}
+								title="Collapse All Rows"
+								aria-label="Collapse All Rows"
+							>
+								<svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+								</svg>
+							</button>
+						</div>
+					</th>
 					<th>Date</th>
 					<th>Charter Specs</th>
 					<th>Assigned Captain</th>
@@ -935,30 +938,55 @@
 		font-size: 0.8rem;
 		user-select: none;
 	}
-	.expand-collapse-buttons {
-		display: flex;
-		gap: 8px;
-		align-items: center;
-		flex-wrap: wrap;
-	}
-	.toggle-all-btn, .clear-filters-btn {
+	.clear-filters-btn {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: 6px;
 		height: 37px;
-		padding: 0 12px;
+		padding: 0 14px;
 		font-size: 0.85rem;
 		white-space: nowrap;
 		cursor: pointer;
 		transition: all 0.2s ease;
 		border-radius: 8px;
 	}
-	.toggle-all-btn:disabled, .clear-filters-btn:disabled {
-		opacity: 0.35;
+	.clear-icon {
+		width: 14px;
+		height: 14px;
+	}
+
+	.table-header-expand-actions {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.header-action-btn {
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid var(--border-light);
+		color: var(--text-secondary);
+		width: 26px;
+		height: 26px;
+		min-width: 26px;
+		min-height: 26px;
+		border-radius: 6px;
+		padding: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.header-action-btn:hover:not(:disabled) {
+		background: rgba(6, 182, 212, 0.15);
+		color: var(--primary);
+		border-color: rgba(6, 182, 212, 0.3);
+	}
+	.header-action-btn:disabled {
+		opacity: 0.3;
 		cursor: not-allowed;
 	}
-	.btn-icon, .clear-icon {
+	.header-icon {
 		width: 14px;
 		height: 14px;
 	}
