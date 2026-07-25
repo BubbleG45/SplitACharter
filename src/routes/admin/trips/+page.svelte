@@ -1367,6 +1367,153 @@
 		cursor: default;
 	}
 
+	.drawer {
+		position: fixed;
+		top: 0;
+		right: 0;
+		width: 480px;
+		max-width: 92vw;
+		height: 100vh;
+		background: var(--bg-surface-dark);
+		border-left: 1px solid var(--border-light);
+		box-shadow: -10px 0 40px rgba(0, 0, 0, 0.6);
+		z-index: 250;
+		display: flex;
+		flex-direction: column;
+		animation: slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	@keyframes slide-in {
+		from {
+			transform: translateX(100%);
+		}
+		to {
+			transform: translateX(0);
+		}
+	}
+
+	.drawer-header {
+		padding: 1.5rem 1.75rem;
+		border-bottom: 1px solid var(--border-light);
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		background: rgba(255, 255, 255, 0.01);
+	}
+
+	.drawer-subtitle {
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: var(--text-muted);
+	}
+
+	.drawer-email {
+		font-size: 0.85rem;
+		color: var(--primary);
+		display: block;
+		margin-top: 2px;
+	}
+
+	.drawer-trip-ref {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		margin-top: 4px;
+	}
+
+	.drawer-body {
+		padding: 1.5rem 1.75rem;
+		overflow-y: auto;
+		flex: 1;
+	}
+
+	.spinner-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 3rem 0;
+		gap: 1rem;
+		color: var(--text-muted);
+	}
+
+	.spinner {
+		width: 32px;
+		height: 32px;
+		border: 3px solid rgba(255, 255, 255, 0.1);
+		border-top-color: var(--primary);
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	.timeline {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.timeline-item {
+		padding: 1rem;
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.timeline-meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.timeline-time {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+	}
+
+	.timeline-details {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.timeline-template {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+	}
+
+	.timeline-content {
+		font-size: 0.85rem;
+		line-height: 1.5;
+		color: var(--text-primary);
+		background: rgba(0, 0, 0, 0.25);
+		padding: 10px;
+		border-radius: 6px;
+		border: 1px solid rgba(255, 255, 255, 0.03);
+		white-space: pre-wrap;
+		word-break: break-word;
+	}
+
+	.timeline-status {
+		align-self: flex-start;
+		font-size: 0.75rem;
+	}
+
+	.channel-email {
+		background: rgba(6, 182, 212, 0.12);
+		color: var(--primary);
+	}
+	.channel-sms {
+		background: rgba(99, 102, 241, 0.12);
+		color: var(--secondary);
+	}
+
 	.modal-header {
 		padding: 1.5rem 1.75rem 1rem 1.75rem;
 		display: flex;
