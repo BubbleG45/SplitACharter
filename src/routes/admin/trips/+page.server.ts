@@ -58,6 +58,8 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const email = formData.get('email') as string;
 		const phone = formData.get('phone') as string;
+		const tripDate = formData.get('tripDate') as string;
+		const tripId = formData.get('tripId') as string;
 
 		if (!email && !phone) {
 			return fail(400, { message: 'Missing recipient identifier' });
@@ -83,7 +85,7 @@ export const actions: Actions = {
 			return fail(500, { message: 'Failed to fetch logs' });
 		}
 
-		// Filter out login/auth communications and only return trip-related communications
+		// Filter out login/auth communications and ensure logs belong strictly to this specific trip instance
 		const tripLogs = (logs || []).filter((l: any) => {
 			const template = (l.template || '').toLowerCase();
 			const isLoginOrAuth =
@@ -91,7 +93,33 @@ export const actions: Actions = {
 				template.includes('login') ||
 				template.includes('magic') ||
 				template.includes('otp');
-			return !isLoginOrAuth;
+			if (isLoginOrAuth) return false;
+
+			// If tripDate or tripId is provided, verify log content pertains to this specific trip
+			if (tripDate || tripId) {
+				const content = l.content || '';
+				if (tripId && content.toLowerCase().includes(tripId.toLowerCase())) {
+					return true;
+				}
+				if (tripDate) {
+					if (content.includes(tripDate)) return true;
+					const parts = tripDate.split('-');
+					if (parts.length === 3) {
+						const yyyy = parts[0];
+						const mm = parts[1];
+						const dd = parts[2];
+						const m = String(parseInt(mm, 10));
+						const d = String(parseInt(dd, 10));
+
+						if (content.includes(`${mm}/${dd}/${yyyy}`) || content.includes(`${m}/${d}/${yyyy}`)) {
+							return true;
+						}
+					}
+				}
+				return false;
+			}
+
+			return true;
 		});
 
 		return { logs: tripLogs };

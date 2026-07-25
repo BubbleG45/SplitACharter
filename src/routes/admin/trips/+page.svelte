@@ -150,8 +150,11 @@
 		expandedTripIds = new Set();
 	}
 
-	async function openCommunications(customer: any) {
+	let selectedTrip = $state<any>(null);
+
+	async function openCommunications(customer: any, trip: any) {
 		selectedCustomer = customer;
+		selectedTrip = trip;
 		showDrawer = true;
 		loadingLogs = true;
 		logs = [];
@@ -160,6 +163,8 @@
 			const formData = new FormData();
 			if (customer.email) formData.append('email', customer.email);
 			if (customer.phone) formData.append('phone', customer.phone);
+			if (trip?.date) formData.append('tripDate', trip.date);
+			if (trip?.id) formData.append('tripId', trip.id);
 
 			const response = await fetch('?/getLogs', {
 				method: 'POST',
@@ -465,7 +470,7 @@
 															{#if customer}
 																<button 
 																	class="btn btn-secondary btn-xs"
-																	onclick={(e) => { e.stopPropagation(); openCommunications(customer); }}
+																	onclick={(e) => { e.stopPropagation(); openCommunications(customer, trip); }}
 																>
 																	<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 																		<path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -503,6 +508,10 @@
 				<span class="drawer-subtitle">Trip Communications</span>
 				<h2>{selectedCustomer?.name}</h2>
 				<span class="drawer-email">{selectedCustomer?.email}</span>
+				{#if selectedTrip}
+					{@const template = (Array.isArray(selectedTrip.listing_templates) ? selectedTrip.listing_templates[0] : selectedTrip.listing_templates) as any}
+					<p class="drawer-trip-ref">Trip: <strong>{template?.trip_type || 'Charter'}</strong> ({selectedTrip.date})</p>
+				{/if}
 			</div>
 			<button class="close-btn" onclick={() => showDrawer = false} aria-label="Close Drawer">
 				<svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -51,12 +51,28 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 		.eq('active', true)
 		.order('name', { ascending: true });
 
-	// Fetch notification logs associated with this trip instance (filtered by trip ID in SMS/email content)
-	const { data: logs } = await supabase
+	// Fetch notification logs associated with this trip instance (by trip ID or by date for booked recipients)
+	const bookingRecipients: string[] = [];
+	if (bookings) {
+		for (const b of bookings) {
+			const cust = (b as any).customers;
+			if (cust?.email) bookingRecipients.push(cust.email);
+			if (cust?.phone) bookingRecipients.push(cust.phone);
+		}
+	}
+
+	let logsQuery = supabase
 		.from('notification_logs')
 		.select('id, recipient, channel, template, content, status, created_at')
-		.ilike('content', `%${params.id}%`)
 		.order('created_at', { ascending: false });
+
+	if (bookingRecipients.length > 0 && trip.date) {
+		logsQuery = logsQuery.or(`content.ilike.%${params.id}%,and(recipient.in.(${bookingRecipients.join(',')}),content.ilike.%${trip.date}%)`);
+	} else {
+		logsQuery = logsQuery.ilike('content', `%${params.id}%`);
+	}
+
+	const { data: logs } = await logsQuery;
 
 	return {
 		trip,

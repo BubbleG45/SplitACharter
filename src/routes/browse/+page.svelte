@@ -7,7 +7,6 @@
 
 	let filterLocation = $state(page.url.searchParams.get('location') || 'all');
 	let filterDuration = $state(page.url.searchParams.get('duration') || 'all'); // 'all', 'half-day', 'full-day'
-	let filterPax = $state(page.url.searchParams.get('capacity') || 'all'); // 'all', 'small', 'medium', 'large'
 	let filterTripType = $state(page.url.searchParams.get('trip_type') || 'all');
 	let filterGroupSize = $state(page.url.searchParams.get('groupSize') || '1');
 	let searchDate = $state(page.url.searchParams.get('date') || '');
@@ -25,7 +24,6 @@
 			searchDate = urlParams.get('date') || '';
 			filterLocation = urlParams.get('location') || 'all';
 			filterDuration = urlParams.get('duration') || 'all';
-			filterPax = urlParams.get('capacity') || 'all';
 			filterTripType = urlParams.get('trip_type') || 'all';
 			filterGroupSize = urlParams.get('groupSize') || '1';
 		};
@@ -42,7 +40,6 @@
 		if (searchDate) params.set('date', searchDate);
 		if (filterLocation !== 'all') params.set('location', filterLocation);
 		if (filterDuration !== 'all') params.set('duration', filterDuration);
-		if (filterPax !== 'all') params.set('capacity', filterPax);
 		if (filterTripType !== 'all') params.set('trip_type', filterTripType);
 		if (filterGroupSize !== '1') params.set('groupSize', filterGroupSize);
 
@@ -111,15 +108,9 @@
 			(filterDuration === 'half-day' && isHalfDay) ||
 			(filterDuration === 'full-day' && isFullDay);
 
-		const pax = template.max_passengers;
-		let matchesPax = true;
-		if (filterPax === 'small') matchesPax = pax <= 4;
-		else if (filterPax === 'medium') matchesPax = pax > 4 && pax <= 8;
-		else if (filterPax === 'large') matchesPax = pax > 8;
-
 		const matchesTripType = filterTripType === 'all' || template.trip_type === filterTripType;
 
-		return matchesLocation && matchesDuration && matchesPax && matchesTripType;
+		return matchesLocation && matchesDuration && matchesTripType;
 	}
 
 	// Client-side filtering
@@ -225,12 +216,6 @@
 		{ value: 'half-day', label: 'Half Day (≤ 4 hrs)' },
 		{ value: 'full-day', label: 'Full Day (> 4 hrs)' }
 	];
-	const capacityOptions = [
-		{ value: 'all', label: 'Any Capacity' },
-		{ value: 'small', label: 'Small Group (1–4 pax)' },
-		{ value: 'medium', label: 'Medium Group (5–8 pax)' },
-		{ value: 'large', label: 'Large Group (9+ pax)' }
-	];
 	const tripTypeOptions = $derived([
 		{ value: 'all', label: 'Any Trip Type' },
 		...data.tripTypes.map((t) => ({ value: t.name, label: t.name }))
@@ -240,7 +225,6 @@
 		searchDate = '';
 		filterLocation = 'all';
 		filterDuration = 'all';
-		filterPax = 'all';
 		filterTripType = 'all';
 		filterGroupSize = '1';
 	}
@@ -293,7 +277,7 @@
 			<div class="controls-card-header">
 				<div class="controls-title-group">
 					<span class="controls-title">Filter Charters</span>
-					{#if searchDate || filterLocation !== 'all' || filterDuration !== 'all' || filterPax !== 'all' || filterTripType !== 'all' || filterGroupSize !== '1'}
+					{#if searchDate || filterLocation !== 'all' || filterDuration !== 'all' || filterTripType !== 'all' || filterGroupSize !== '1'}
 						<button type="button" class="btn-clear-all" onclick={resetAllFilters}>
 							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -334,13 +318,6 @@
 					label="Duration"
 					bind:value={filterDuration}
 					options={durationOptions}
-				/>
-
-				<CustomSelect
-					id="capacity"
-					label="Capacity"
-					bind:value={filterPax}
-					options={capacityOptions}
 				/>
 
 				<CustomSelect
