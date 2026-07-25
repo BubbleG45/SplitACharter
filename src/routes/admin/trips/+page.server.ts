@@ -65,31 +65,80 @@ export const actions: Actions = {
 			return fail(400, { message: 'Missing recipient identifier' });
 		}
 
-		const filters: string[] = [];
-		if (email) {
-			filters.push(`recipient.ilike.${email}`);
+		let logs: any[] = [];
+		let logsErr: any = null;
+
+		try {
+			if (email && phone) {
+				const cleanPhone = phone.replace(/\D/g, '');
+				const orConditions = [
+					`recipient.ilike.%${email}%`,
+					`recipient.ilike.%${phone}%`
+				];
+				if (cleanPhone && cleanPhone.length >= 7 && cleanPhone !== phone) {
+					orConditions.push(`recipient.ilike.%${cleanPhone}%`);
+				}
+
+				const { data, error } = await supabase
+					.from('notification_logs')
+					.select('*')
+					.or(orConditions.join(','))
+					.order('timestamp', { ascending: false });
+
+				logs = data || [];
+				logsErr = error;
+			} else if (email) {
+				const { data, error } = await supabase
+					.from('notification_logs')
+					.select('*')
+					.ilike('recipient', `%${email}%`)
+					.order('timestamp', { ascending: false });
+
+				logs = data || [];
+				logsErr = error;
+			} else if (phone) {
+				const { data, error } = await supabase
+					.from('notification_logs')
+					.select('*')
+					.ilike('recipient', `%${phone}%`)
+					.order('timestamp', { ascending: false });
+
+				logs = data || [];
+				logsErr = error;
+			}
+		} catch (err) {
+			logsErr = err;
 		}
-		if (phone) {
-			filters.push(`recipient.ilike.%${phone}%`);
-			const cleanDigits = phone.replace(/\D/g, '');
-			if (cleanDigits && cleanDigits.length >= 7 && cleanDigits !== phone) {
-				filters.push(`recipient.ilike.%${cleanDigits}%`);
+
+		// Fallback: If DB .or() failed or returned 0 logs, load all recent notification logs and match recipient in JS
+		if (logsErr || logs.length === 0) {
+			const { data: allLogs } = await supabase
+				.from('notification_logs')
+				.select('*')
+				.order('timestamp', { ascending: false })
+				.limit(300);
+
+			if (allLogs) {
+				const eLower = (email || '').toLowerCase();
+				const pClean = (phone || '').replace(/\D/g, '');
+
+				logs = allLogs.filter((l: any) => {
+					const rLower = (l.recipient || '').toLowerCase();
+					const rClean = (l.recipient || '').replace(/\D/g, '');
+
+					const matchEmail = Boolean(eLower && rLower.includes(eLower));
+					const matchPhone = Boolean(
+						(phone && rLower.includes(phone.toLowerCase())) ||
+						(pClean && pClean.length >= 7 && rClean.includes(pClean))
+					);
+
+					return matchEmail || matchPhone;
+				});
 			}
 		}
 
-		const { data: logs, error: logsErr } = await supabase
-			.from('notification_logs')
-			.select('*')
-			.or(filters.join(','))
-			.order('timestamp', { ascending: false });
-
-		if (logsErr) {
-			console.error('Error fetching logs:', logsErr);
-			return fail(500, { message: 'Failed to fetch logs' });
-		}
-
 		// 1. Filter out login/auth/otp communications
-		const nonAuthLogs = (logs || []).filter((l: any) => {
+		const nonAuthLogs = logs.filter((l: any) => {
 			const template = (l.template || '').toLowerCase();
 			return !(
 				template.includes('auth') ||
@@ -133,7 +182,7 @@ export const actions: Actions = {
 			return false;
 		});
 
-		// Return date-matched logs if found, otherwise return non-auth logs so history is never blank
+		// Return date-matched logs if found, otherwise fallback to non-auth logs so history is never blank
 		const tripLogs = (dateMatchedLogs.length > 0) ? dateMatchedLogs : nonAuthLogs;
 
 		return { logs: tripLogs };
