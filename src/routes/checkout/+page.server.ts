@@ -66,13 +66,20 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		maxAvailablePassengers = listing.max_passengers - currentlyBooked;
 	}
 
+	// Calculate initial group size from URL parameter if available
+	const initialGroupSizeRaw = url.searchParams.get('groupSize');
+	let initialGroupSize = initialGroupSizeRaw ? parseInt(initialGroupSizeRaw, 10) : 1;
+	if (isNaN(initialGroupSize) || initialGroupSize < 1) initialGroupSize = 1;
+	if (initialGroupSize > maxAvailablePassengers) initialGroupSize = maxAvailablePassengers;
+
 	return {
 		listing,
 		profile,
 		date,
 		maxAvailablePassengers,
 		isJoiningExisting,
-		tripInstanceId: tripInstance?.id || null
+		tripInstanceId: tripInstance?.id || null,
+		initialGroupSize
 	};
 };
 

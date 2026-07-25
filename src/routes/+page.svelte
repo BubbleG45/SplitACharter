@@ -1,5 +1,4 @@
 <script lang="ts">
-	import logoWhite from '$lib/assets/logo-white.svg';
 	let { data } = $props();
 </script>
 
@@ -13,27 +12,6 @@
 	<div class="bg-blur bg-blur-2"></div>
 
 	<main class="landing-main">
-		<header class="landing-header">
-			<a href="/" class="logo-link">
-				<img src={logoWhite} alt="SplitACharter Logo" class="header-logo" />
-			</a>
-			<nav class="nav-links">
-				<a href="/how-it-works" class="nav-link-custom">How It Works</a>
-				<a href="/browse" class="nav-link-custom">Browse Charters</a>
-				{#if data.session}
-					{#if data.isAdmin}
-						<a href="/admin" class="nav-link-custom">Admin Dashboard</a>
-					{:else}
-						<a href="/dashboard" class="nav-link-custom">My Dashboard</a>
-					{/if}
-					<form action="/login?/signOut" method="POST" style="display: inline;">
-						<button type="submit" class="nav-link-custom" style="cursor: pointer; background: none; border: 1px solid var(--border-light);">Sign Out</button>
-					</form>
-				{:else}
-					<a href="/login" class="nav-btn-primary">Sign In</a>
-				{/if}
-			</nav>
-		</header>
 
 		<section class="hero">
 			<h1>You came all the way to the Keys.<br/><span class="highlight">Get on the water.</span></h1>
@@ -103,66 +81,6 @@
 		z-index: 2;
 	}
 
-	.landing-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 5rem;
-	}
-	.logo-link {
-		display: block;
-		transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-	}
-	.logo-link:hover {
-		transform: scale(1.02);
-	}
-	.header-logo {
-		height: 96px;
-		display: block;
-	}
-	.nav-links {
-		display: flex;
-		align-items: center;
-		gap: 1.5rem;
-	}
-	.nav-link-custom {
-		font-size: 0.9rem;
-		font-weight: 600;
-		color: var(--text-secondary);
-		text-decoration: none;
-		padding: 8px 18px;
-		border-radius: 20px;
-		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-		background: rgba(255, 255, 255, 0.02);
-		border: 1px solid var(--border-light);
-	}
-	.nav-link-custom:hover {
-		color: var(--text-primary);
-		background: rgba(255, 255, 255, 0.06);
-		border-color: rgba(255, 255, 255, 0.2);
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
-	}
-	.nav-btn-primary {
-		background: linear-gradient(135deg, var(--primary), var(--secondary));
-		color: #ffffff !important;
-		font-weight: 700;
-		padding: 8px 20px;
-		border-radius: 20px;
-		border: none;
-		box-shadow: 0 4px 15px rgba(6, 182, 212, 0.25);
-		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-		text-decoration: none;
-		font-size: 0.9rem;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-	}
-	.nav-btn-primary:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 6px 20px rgba(6, 182, 212, 0.45);
-	}
-
 	.hero {
 		flex: 1;
 		display: flex;
@@ -170,6 +88,7 @@
 		justify-content: center;
 		max-width: 650px;
 		padding-bottom: 5rem;
+		padding-top: 2rem;
 	}
 	.hero h1 {
 		font-size: 3.5rem;
@@ -206,34 +125,9 @@
 		.hero h1 {
 			font-size: 2.5rem;
 		}
-		.landing-header {
-			margin-bottom: 3rem;
-		}
 	}
 
 	@media (max-width: 640px) {
-		.landing-header {
-			flex-direction: column;
-			gap: 1rem;
-			margin-bottom: 2.5rem;
-			align-items: center;
-		}
-		.header-logo {
-			height: 56px;
-		}
-		.nav-links {
-			flex-wrap: wrap;
-			justify-content: center;
-			gap: 0.75rem;
-		}
-		.nav-link-custom {
-			padding: 6px 12px;
-			font-size: 0.85rem;
-		}
-		.nav-btn-primary {
-			padding: 6px 14px;
-			font-size: 0.85rem;
-		}
 		.hero-actions {
 			flex-direction: column;
 			align-items: stretch;

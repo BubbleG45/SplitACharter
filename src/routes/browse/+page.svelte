@@ -9,6 +9,7 @@
 	let filterDuration = $state(page.url.searchParams.get('duration') || 'all'); // 'all', 'half-day', 'full-day'
 	let filterPax = $state(page.url.searchParams.get('capacity') || 'all'); // 'all', 'small', 'medium', 'large'
 	let filterTripType = $state(page.url.searchParams.get('trip_type') || 'all');
+	let filterGroupSize = $state(page.url.searchParams.get('groupSize') || '1');
 	let searchDate = $state(page.url.searchParams.get('date') || '');
 	let minDate = $state('');
 
@@ -26,6 +27,7 @@
 			filterDuration = urlParams.get('duration') || 'all';
 			filterPax = urlParams.get('capacity') || 'all';
 			filterTripType = urlParams.get('trip_type') || 'all';
+			filterGroupSize = urlParams.get('groupSize') || '1';
 		};
 
 		window.addEventListener('popstate', handlePopState);
@@ -42,6 +44,7 @@
 		if (filterDuration !== 'all') params.set('duration', filterDuration);
 		if (filterPax !== 'all') params.set('capacity', filterPax);
 		if (filterTripType !== 'all') params.set('trip_type', filterTripType);
+		if (filterGroupSize !== '1') params.set('groupSize', filterGroupSize);
 
 		const queryString = params.toString();
 		const targetUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
@@ -51,6 +54,18 @@
 			window.history.replaceState(history.state, '', targetUrl);
 		}
 	});
+
+	function getRemainingSpots(template: any, matchedInstance?: any): number {
+		const maxPax = template?.max_passengers || 6;
+		if (matchedInstance && matchedInstance.status === 'half-booked') {
+			const activeBookings = matchedInstance.bookings?.filter(
+				(b: any) => b.status !== 'canceled' && b.status !== 'forfeited'
+			) || [];
+			const bookedPax = activeBookings.reduce((sum: number, b: any) => sum + (b.group_size || 0), 0);
+			return Math.max(0, maxPax - bookedPax);
+		}
+		return maxPax;
+	}
 
 	function matchesLocationFilter(locString: string, filterVal: string) {
 		if (filterVal === 'all') return true;
@@ -191,6 +206,14 @@
 		return dateStr;
 	}
 
+	const groupSizeOptions = [
+		{ value: '1', label: '1 Passenger' },
+		{ value: '2', label: '2 Passengers' },
+		{ value: '3', label: '3 Passengers' },
+		{ value: '4', label: '4 Passengers' },
+		{ value: '5', label: '5 Passengers' },
+		{ value: '6', label: '6 Passengers' }
+	];
 	const locationOptions = [
 		{ value: 'all', label: 'All Locations' },
 		{ value: 'lower-keys', label: 'Lower Keys (Key West, Big Pine Key)' },
@@ -219,12 +242,16 @@
 		filterDuration = 'all';
 		filterPax = 'all';
 		filterTripType = 'all';
+		filterGroupSize = '1';
 	}
 
 	function getListingHref(listing: any) {
 		const params = new URLSearchParams(page.url.searchParams);
 		if (listing.matchedInstance && !params.get('date')) {
 			params.set('date', listing.matchedInstance.date);
+		}
+		if (filterGroupSize && filterGroupSize !== '1') {
+			params.set('groupSize', filterGroupSize);
 		}
 		const qs = params.toString();
 		return `/browse/${listing.id}${qs ? `?${qs}` : ''}`;
@@ -233,6 +260,9 @@
 	function getSuggestionHref(trip: any, template: any) {
 		const params = new URLSearchParams(page.url.searchParams);
 		params.set('date', trip.date);
+		if (filterGroupSize && filterGroupSize !== '1') {
+			params.set('groupSize', filterGroupSize);
+		}
 		const qs = params.toString();
 		return `/browse/${template.id}?${qs}`;
 	}
@@ -263,7 +293,7 @@
 			<div class="controls-card-header">
 				<div class="controls-title-group">
 					<span class="controls-title">Filter Charters</span>
-					{#if searchDate || filterLocation !== 'all' || filterDuration !== 'all' || filterPax !== 'all' || filterTripType !== 'all'}
+					{#if searchDate || filterLocation !== 'all' || filterDuration !== 'all' || filterPax !== 'all' || filterTripType !== 'all' || filterGroupSize !== '1'}
 						<button type="button" class="btn-clear-all" onclick={resetAllFilters}>
 							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -284,6 +314,13 @@
 						class="date-input-field"
 					/>
 				</div>
+
+				<CustomSelect
+					id="group-size"
+					label="Your Group Size"
+					bind:value={filterGroupSize}
+					options={groupSizeOptions}
+				/>
 
 				<CustomSelect
 					id="location"
@@ -345,19 +382,32 @@
 					{#each suggestedTrips as trip (trip.id)}
 						{@const template = data.listings.find(l => l.id === trip.listing_template_id)}
 						{#if template}
+							{@const spotsLeft = getRemainingSpots(template, trip)}
+							{@const reqGroupSize = parseInt(filterGroupSize, 10) || 1}
+							{@const exceedsCapacity = reqGroupSize > spotsLeft}
 							<div class="suggestion-card glass">
 								<div class="suggestion-info">
 									<div class="suggestion-meta">
-										<span class="suggestion-badge">Active Group</span>
+										{#if exceedsCapacity}
+											<span class="exceeds-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
+										{:else}
+											<span class="suggestion-badge">Active Group</span>
+										{/if}
 										<span class="suggestion-date">{formatDateDisplay(trip.date)}</span>
 									</div>
 									<h4>{template.trip_type}</h4>
 									<p class="suggestion-loc">{template.location} — {template.meeting_area}</p>
 									<p class="suggestion-price">${Math.round(template.low_price / 2)} – ${Math.round(template.high_price / 2)} <span class="price-lbl">/ group</span></p>
 								</div>
-								<a href={getSuggestionHref(trip, template)} class="btn btn-join">
-									Join Group
-								</a>
+								{#if exceedsCapacity}
+									<button type="button" class="btn btn-disabled" disabled title="Not enough spots remaining for your group size of {reqGroupSize}">
+										Exceeds Capacity
+									</button>
+								{:else}
+									<a href={getSuggestionHref(trip, template)} class="btn btn-join">
+										Join Group
+									</a>
+								{/if}
 							</div>
 						{/if}
 					{/each}
@@ -383,6 +433,9 @@
 			<div class="cards-grid">
 				{#each filteredListings as listing (listing.id)}
 					{@const locParts = parseLocation(listing.location)}
+					{@const spotsLeft = getRemainingSpots(listing, listing.matchedInstance)}
+					{@const reqGroupSize = parseInt(filterGroupSize, 10) || 1}
+					{@const exceedsCapacity = reqGroupSize > spotsLeft}
 					<div class="listing-card glass glass-interactive" class:matched-card={listing.matchedInstance}>
 						<div class="card-header">
 							<span class="location-badge">
@@ -397,8 +450,10 @@
 									{/if}
 								</div>
 							</span>
-							{#if listing.matchedInstance}
-								<span class="active-badge">1 spot left</span>
+							{#if exceedsCapacity}
+								<span class="exceeds-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
+							{:else if listing.matchedInstance}
+								<span class="active-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
 							{:else}
 								<span class="pax-badge">{listing.max_passengers} Max Pax</span>
 							{/if}
@@ -432,9 +487,15 @@
 								<span class="price-split">${Math.round(listing.low_price / 2)} – ${Math.round(listing.high_price / 2)} <span class="per-group">/ group</span></span>
 								<span class="price-total">Total: ${Math.round(listing.low_price)}–${Math.round(listing.high_price)}</span>
 							</div>
-							<a href={getListingHref(listing)} class="btn {listing.matchedInstance ? 'btn-join' : 'btn-book'}">
-								{listing.matchedInstance ? 'Join Group' : 'Book Charter'}
-							</a>
+							{#if exceedsCapacity}
+								<button type="button" class="btn btn-disabled" disabled title="Not enough spots remaining for your group size of {reqGroupSize}">
+									Exceeds Capacity
+								</button>
+							{:else}
+								<a href={getListingHref(listing)} class="btn {listing.matchedInstance ? 'btn-join' : 'btn-book'}">
+									{listing.matchedInstance ? 'Join Group' : 'Book Charter'}
+								</a>
+							{/if}
 						</div>
 					</div>
 				{/each}
@@ -636,6 +697,27 @@
 		font-size: 0.95rem;
 		color: var(--text-secondary);
 		font-weight: 700;
+	}
+
+	.exceeds-badge {
+		background: rgba(239, 68, 68, 0.15);
+		color: #fca5a5;
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		padding: 2px 8px;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+	.btn-disabled {
+		background: rgba(255, 255, 255, 0.05) !important;
+		color: var(--text-muted) !important;
+		border: 1px solid var(--border-light) !important;
+		cursor: not-allowed !important;
+		opacity: 0.6;
+		box-shadow: none !important;
+		transform: none !important;
 	}
 
 

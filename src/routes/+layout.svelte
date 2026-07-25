@@ -1,10 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { invalidate } from '$app/navigation';
+	import { page } from '$app/state';
+	import Header from '$lib/components/Header.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 
 	let { data, children } = $props();
+
+	let isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
 
 	onMount(() => {
 		const {
@@ -67,5 +71,9 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
+
+{#if !isAdminRoute}
+	<Header session={data.session} isAdmin={data.isAdmin} />
+{/if}
 
 {@render children()}

@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			.order('name', { ascending: true }),
 		supabase
 			.from('trip_instances')
-			.select('id, date, status, listing_template_id, listing_templates(id, trip_type, location, duration, low_price, high_price, max_passengers)')
+			.select('id, date, status, listing_template_id, listing_templates(id, trip_type, location, duration, low_price, high_price, max_passengers), bookings(group_size, status)')
 			.eq('status', 'half-booked')
 			.gte('date', new Date().toISOString().split('T')[0])
 			.order('date', { ascending: true })

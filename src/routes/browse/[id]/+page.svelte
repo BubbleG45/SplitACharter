@@ -1,5 +1,8 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	let { data } = $props();
+
+	let groupSizeParam = $derived(page.url.searchParams.get('groupSize') || '');
 
 	/* svelte-ignore state_referenced_locally */
 	let selectedDate = $state(data.preselectedDate || '');
@@ -182,7 +185,7 @@
 					</div>
 
 					<div class="action-row">
-						<a href="/checkout?templateId={data.listing.id}&date={selectedDate}" class="btn btn-primary w-full btn-large">
+						<a href="/checkout?templateId={data.listing.id}&date={selectedDate}{groupSizeParam ? `&groupSize=${groupSizeParam}` : ''}" class="btn btn-primary w-full btn-large">
 							Proceed to Checkout
 						</a>
 					</div>

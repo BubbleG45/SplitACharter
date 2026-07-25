@@ -13,7 +13,8 @@
 	/* svelte-ignore state_referenced_locally */
 	let howHeard = $state(data.profile?.how_heard || '');
 	
-	let groupSize = $state(1);
+	/* svelte-ignore state_referenced_locally */
+	let groupSize = $state(data.initialGroupSize || 1);
 	let certFields = $state({
 		certified: false,
 		level: '',
