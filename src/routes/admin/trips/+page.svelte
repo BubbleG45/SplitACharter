@@ -976,7 +976,7 @@
 		color: var(--text-muted);
 	}
 
-	/* Slide Drawer Styles */
+	/* Slide Drawer & Modal Backdrop Styles */
 	.drawer-backdrop {
 		position: fixed;
 		top: 0;
@@ -987,206 +987,16 @@
 		backdrop-filter: blur(4px);
 		z-index: 200;
 		border: none;
+		border-radius: 0;
 		cursor: default;
 	}
-	.drawer {
-		position: fixed;
-		top: 0;
-		right: 0;
-		width: 500px;
-		max-width: 90vw;
-		height: 100vh;
-		background: var(--bg-surface-dark);
-		border-left: 1px solid var(--border-light);
-		border-radius: 0;
-		z-index: 210;
-		display: flex;
-		flex-direction: column;
-		box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
-		animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-	}
-	@keyframes slide-in {
-		from { transform: translateX(100%); }
-		to { transform: translateX(0); }
-	}
-	.drawer-header {
-		padding: 2rem;
-		border-bottom: 1px solid var(--border-light);
+
+	.modal-header {
+		padding: 1.5rem 1.75rem 1rem 1.75rem;
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-	}
-	.drawer-subtitle {
-		font-size: 0.75rem;
-		text-transform: uppercase;
-		letter-spacing: 1px;
-		color: var(--primary);
-		font-weight: 700;
-	}
-	.drawer-header h2 {
-		font-size: 1.5rem;
-		margin-top: 4px;
-	}
-	.drawer-email {
-		font-size: 0.85rem;
-		color: var(--text-secondary);
-	}
-	.close-btn {
-		background: none;
-		border: none;
-		color: var(--text-muted);
-		padding: 4px;
-	}
-	.close-btn:hover {
-		color: var(--text-primary);
-	}
-	.close-icon {
-		width: 24px;
-		height: 24px;
-	}
-
-	.drawer-body {
-		padding: 2rem;
-		overflow-y: auto;
-		flex: 1;
-	}
-
-	/* Timeline in Drawer */
-	.timeline {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-	}
-	.timeline-item {
-		border-left: 2px solid var(--border-light);
-		padding-left: 1.25rem;
-		position: relative;
-	}
-	.timeline-item::before {
-		content: '';
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		background: var(--text-muted);
-		position: absolute;
-		left: -6px;
-		top: 6px;
-		border: 2px solid var(--bg-surface-dark);
-	}
-	.timeline-item:hover::before {
-		background: var(--primary);
-		box-shadow: 0 0 8px var(--primary);
-	}
-	.timeline-meta {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 6px;
-	}
-	.timeline-channel {
-		font-size: 0.7rem;
-		text-transform: uppercase;
-	}
-	.channel-sms { background: rgba(99, 102, 241, 0.15); color: var(--secondary); border: 1px solid rgba(99, 102, 241, 0.3); }
-	.channel-email { background: rgba(6, 182, 212, 0.15); color: var(--primary); border: 1px solid rgba(6, 182, 212, 0.3); }
-	.timeline-time {
-		font-size: 0.75rem;
-		color: var(--text-muted);
-	}
-	.timeline-details {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-	.timeline-template {
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-	}
-	.timeline-template code {
-		background: rgba(255, 255, 255, 0.05);
-		padding: 2px 4px;
-		border-radius: 4px;
-	}
-	.timeline-content {
-		font-size: 0.85rem;
-		line-height: 1.4;
-		color: var(--text-primary);
-		white-space: pre-wrap;
-		background: rgba(255, 255, 255, 0.02);
-		padding: 8px 12px;
-		border-radius: 6px;
-		border: 1px solid var(--border-light);
-	}
-	.timeline-status {
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: capitalize;
-		width: fit-content;
-	}
-	.status-sent, .status-delivered { color: var(--success); }
-	.status-failed { color: var(--danger); }
-
-	/* General components and loading spinner */
-	.spinner-container {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 3rem 0;
-		color: var(--text-secondary);
-		gap: 12px;
-	}
-	.spinner {
-		border: 3px solid rgba(255, 255, 255, 0.05);
-		border-top: 3px solid var(--primary);
-		border-radius: 50%;
-		width: 30px;
-		height: 30px;
-		animation: spin 1s linear infinite;
-	}
-	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
-	}
-
-	.btn-secondary {
-		background: rgba(255, 255, 255, 0.04);
-		border: 1px solid var(--border-light);
-		color: var(--text-primary);
-	}
-	.btn-secondary:hover {
-		background: rgba(255, 255, 255, 0.1);
-	}
-	.btn-xs {
-		padding: 4px 10px;
-		font-size: 0.78rem;
-		border-radius: 4px;
-	}
-	.icon {
-		width: 14px;
-		height: 14px;
-	}
-
-	.empty-state {
-		padding: 3rem 1.5rem;
-		text-align: center;
-		color: var(--text-muted);
-	}
-
-	.row-actions {
-		display: flex;
-		gap: 6px;
-	}
-	.btn-danger {
-		background: rgba(239, 68, 68, 0.15);
-		border: 1px solid rgba(239, 68, 68, 0.35);
-		color: #fca5a5;
-		font-weight: 600;
-	}
-	.btn-danger:hover {
-		background: rgba(239, 68, 68, 0.3);
-		border-color: var(--danger);
-		color: #ffffff;
+		border-bottom: 1px solid var(--border-light);
 	}
 
 	/* Admin Cancel Modal */
@@ -1197,15 +1007,16 @@
 		transform: translate(-50%, -50%);
 		width: 580px;
 		max-width: 92vw;
+		max-height: 85vh;
 		background: var(--bg-surface-dark);
 		border: 1px solid rgba(239, 68, 68, 0.3);
 		border-radius: 12px;
-		padding: 2rem;
 		z-index: 300;
 		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
+		overflow: hidden;
+		animation: modal-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 	.modal-trip-meta {
 		font-size: 0.85rem;
@@ -1215,12 +1026,17 @@
 	.modal-form {
 		display: flex;
 		flex-direction: column;
-		gap: 1.25rem;
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
 	}
 	.modal-body {
+		padding: 1.5rem 1.75rem;
+		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
 		gap: 1.25rem;
+		flex: 1;
 	}
 	.affected-summary-card {
 		padding: 1rem;
@@ -1332,8 +1148,9 @@
 		display: flex;
 		justify-content: flex-end;
 		gap: 12px;
-		padding-top: 0.75rem;
+		padding: 1rem 1.75rem 1.5rem 1.75rem;
 		border-top: 1px solid var(--border-light);
+		background: var(--bg-surface-dark);
 	}
 </style>
 
