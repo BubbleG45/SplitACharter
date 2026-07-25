@@ -17,11 +17,29 @@
 		Array.from(new Set(data.listingTemplates.map((t: any) => t.location))).sort()
 	);
 
+	// Current date in YYYY-MM-DD format for past-due calculations
+	const todayDateStr = new Date().toISOString().slice(0, 10);
+
+	function isTripPastDue(trip: any): boolean {
+		if (!trip?.date) return false;
+		const isFinished = trip.status === 'completed' || trip.status === 'canceled';
+		return !isFinished && trip.date < todayDateStr;
+	}
+
+	let hideFinished = $state(true);
+	let filterNeedsAttentionOnly = $state(false);
+
+	let attentionTripsCount = $derived(
+		data.trips.filter((t: any) => isTripPastDue(t)).length
+	);
+
 	let hasActiveFilters = $derived(
 		searchQuery.trim() !== '' ||
 		selectedStatus !== 'all' ||
 		selectedTripType !== 'all' ||
-		selectedLocation !== 'all'
+		selectedLocation !== 'all' ||
+		!hideFinished ||
+		filterNeedsAttentionOnly
 	);
 
 	function resetFilters() {
@@ -29,6 +47,8 @@
 		selectedStatus = 'all';
 		selectedTripType = 'all';
 		selectedLocation = 'all';
+		hideFinished = true;
+		filterNeedsAttentionOnly = false;
 	}
 
 	// Admin Trip Cancel modal state
@@ -49,9 +69,15 @@
 	let loadingLogs = $state(false);
 	let logs = $state<any[]>([]);
 
-	// Derived filtered trips based on status, trip type, location, and search query
+	// Derived filtered trips based on status, trip type, location, hideFinished, and search query
 	let filteredTrips = $derived(
 		data.trips.filter((t: any) => {
+			if (filterNeedsAttentionOnly) {
+				if (!isTripPastDue(t)) return false;
+			} else if (hideFinished) {
+				if (t.status === 'completed' || t.status === 'canceled') return false;
+			}
+
 			const statusMatch = selectedStatus === 'all' || t.status === selectedStatus;
 			const tripTypeMatch = selectedTripType === 'all' || t.listing_templates?.trip_type === selectedTripType;
 			const locationMatch = selectedLocation === 'all' || t.listing_templates?.location === selectedLocation;
@@ -114,6 +140,14 @@
 		}
 		// Svelte 5 Set reactivity helper
 		expandedTripIds = new Set(expandedTripIds);
+	}
+
+	function expandAll() {
+		expandedTripIds = new Set(filteredTrips.map((t: any) => t.id));
+	}
+
+	function collapseAll() {
+		expandedTripIds = new Set();
 	}
 
 	async function openCommunications(customer: any) {
@@ -191,30 +225,69 @@
 		</div>
 
 		<div class="filter-group">
-			<label for="status-filter">Trip Status:</label>
-			<select id="status-filter" bind:value={selectedStatus}>
-				<option value="all">All Trips</option>
-				<option value="half-booked">Half-Booked (1 of 2 Booked)</option>
-				<option value="pending-reconfirm">Pending Reconfirm</option>
-				<option value="confirmed">Confirmed</option>
-				<option value="completed">Completed</option>
-				<option value="canceled">Canceled</option>
-			</select>
+			<span class="filter-label">Archive View:</span>
+			<label class="checkbox-toggle-label">
+				<input type="checkbox" bind:checked={hideFinished} />
+				<span>Hide Completed & Canceled</span>
+			</label>
 		</div>
+
+		{#if attentionTripsCount > 0}
+			<div class="filter-group">
+				<span class="filter-label-placeholder" aria-hidden="true">&nbsp;</span>
+				<button
+					type="button"
+					class="btn btn-attention-filter {filterNeedsAttentionOnly ? 'active' : ''}"
+					onclick={() => (filterNeedsAttentionOnly = !filterNeedsAttentionOnly)}
+					title="Click to toggle filtering for trips needing attention"
+				>
+					<svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+					</svg>
+					{attentionTripsCount} Trip{attentionTripsCount > 1 ? 's' : ''} Need Attention
+				</button>
+			</div>
+		{/if}
 
 		<div class="filter-group filter-actions">
 			<span class="filter-label-placeholder" aria-hidden="true">&nbsp;</span>
-			<button
-				type="button"
-				class="btn btn-secondary clear-filters-btn"
-				onclick={resetFilters}
-				disabled={!hasActiveFilters}
-			>
-				<svg class="clear-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-				</svg>
-				Clear Filters
-			</button>
+			<div class="expand-collapse-buttons">
+				<button
+					type="button"
+					class="btn btn-secondary toggle-all-btn"
+					onclick={expandAll}
+					disabled={filteredTrips.length === 0 || expandedTripIds.size === filteredTrips.length}
+					title="Expand all trip details"
+				>
+					<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+					</svg>
+					Expand All
+				</button>
+				<button
+					type="button"
+					class="btn btn-secondary toggle-all-btn"
+					onclick={collapseAll}
+					disabled={expandedTripIds.size === 0}
+					title="Collapse all trip details"
+				>
+					<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+					</svg>
+					Collapse All
+				</button>
+				<button
+					type="button"
+					class="btn btn-secondary clear-filters-btn"
+					onclick={resetFilters}
+					disabled={!hasActiveFilters}
+				>
+					<svg class="clear-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+					Clear Filters
+				</button>
+			</div>
 		</div>
 	</div>
 </div>
@@ -262,8 +335,9 @@
 					{@const activeBookingsCount = trip.bookings?.filter((b: any) => b.status !== 'canceled' && b.status !== 'forfeited')?.length || 0}
 					{@const bookingsCount = trip.bookings?.length || 0}
 					{@const isExpanded = expandedTripIds.has(trip.id)}
+					{@const pastDue = isTripPastDue(trip)}
 
-					<tr class="master-row" onclick={() => toggleTrip(trip.id)}>
+					<tr class="master-row {pastDue ? 'row-past-due' : ''}" onclick={() => toggleTrip(trip.id)}>
 						<td>
 							<button class="expand-btn" aria-label="Toggle Details">
 								<svg class="chevron-icon {isExpanded ? 'rotated' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -291,23 +365,33 @@
 							<span class="badge badge-count">{activeBookingsCount} / 2 Active</span>
 						</td>
 						<td>
-							<span class="badge status-badge trip-{trip.status}">
-								{#if trip.status === 'open'}
-									Open
-								{:else if trip.status === 'half-booked'}
-									Half-Booked
-								{:else if trip.status === 'pending-reconfirm'}
-									Pending Reconfirm
-								{:else if trip.status === 'confirmed'}
-									Confirmed
-								{:else if trip.status === 'completed'}
-									Completed
-								{:else if trip.status === 'canceled'}
-									Canceled
-								{:else}
-									{trip.status}
+							<div class="status-wrapper">
+								<span class="badge status-badge trip-{trip.status}">
+									{#if trip.status === 'open'}
+										Open
+									{:else if trip.status === 'half-booked'}
+										Half-Booked
+									{:else if trip.status === 'pending-reconfirm'}
+										Pending Reconfirm
+									{:else if trip.status === 'confirmed'}
+										Confirmed
+									{:else if trip.status === 'completed'}
+										Completed
+									{:else if trip.status === 'canceled'}
+										Canceled
+									{:else}
+										{trip.status}
+									{/if}
+								</span>
+								{#if pastDue}
+									<span class="badge badge-attention" title="Trip date has passed without being Completed or Canceled">
+										<svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+										</svg>
+										Needs Attention
+									</span>
 								{/if}
-							</span>
+							</div>
 						</td>
 						<td>
 							<div class="row-actions" onclick={(e) => e.stopPropagation()} role="presentation">
@@ -751,7 +835,7 @@
 	}
 	.filters-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 		gap: 1.25rem;
 		align-items: center;
 	}
@@ -760,10 +844,87 @@
 		flex-direction: column;
 		gap: 6px;
 	}
-	.filter-group label {
+	.filter-label {
 		font-size: 0.8rem;
 		font-weight: 600;
 		color: var(--text-secondary);
+	}
+	.checkbox-toggle-label {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 0.85rem;
+		color: var(--text-primary);
+		cursor: pointer;
+		user-select: none;
+		padding: 6px 0;
+	}
+	.checkbox-toggle-label input[type="checkbox"] {
+		width: 16px;
+		height: 16px;
+		accent-color: var(--primary);
+		cursor: pointer;
+	}
+
+	.btn-attention-filter {
+		background: rgba(245, 158, 11, 0.12);
+		color: var(--accent);
+		border: 1px solid rgba(245, 158, 11, 0.3);
+		font-size: 0.82rem;
+		font-weight: 600;
+		padding: 6px 12px;
+		height: 37px;
+		border-radius: 8px;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		transition: all 0.2s ease;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.btn-attention-filter:hover, .btn-attention-filter.active {
+		background: rgba(245, 158, 11, 0.25);
+		border-color: var(--accent);
+		color: #ffffff;
+		box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+	}
+
+	.status-wrapper {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		align-items: flex-start;
+	}
+
+	.badge-attention {
+		background: rgba(239, 68, 68, 0.15);
+		color: #fca5a5;
+		border: 1px solid rgba(239, 68, 68, 0.35);
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 0.72rem;
+		font-weight: 700;
+		animation: pulse-border 2s infinite;
+	}
+
+	@keyframes pulse-border {
+		0%, 100% { border-color: rgba(239, 68, 68, 0.35); }
+		50% { border-color: var(--danger); box-shadow: 0 0 8px rgba(239, 68, 68, 0.3); }
+	}
+
+	.alert-icon {
+		width: 13px;
+		height: 13px;
+		flex-shrink: 0;
+	}
+
+	.master-row.row-past-due {
+		background: rgba(239, 68, 68, 0.03);
+		border-left: 3px solid var(--danger);
+	}
+	.master-row.row-past-due:hover {
+		background: rgba(239, 68, 68, 0.07);
 	}
 	.filter-group select, .search-input {
 		width: 100%;
@@ -774,23 +935,30 @@
 		font-size: 0.8rem;
 		user-select: none;
 	}
-	.clear-filters-btn {
+	.expand-collapse-buttons {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+	.toggle-all-btn, .clear-filters-btn {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: 6px;
 		height: 37px;
-		padding: 0 14px;
+		padding: 0 12px;
 		font-size: 0.85rem;
 		white-space: nowrap;
 		cursor: pointer;
 		transition: all 0.2s ease;
+		border-radius: 8px;
 	}
-	.clear-filters-btn:disabled {
+	.toggle-all-btn:disabled, .clear-filters-btn:disabled {
 		opacity: 0.35;
 		cursor: not-allowed;
 	}
-	.clear-icon {
+	.btn-icon, .clear-icon {
 		width: 14px;
 		height: 14px;
 	}
@@ -997,6 +1165,34 @@
 		justify-content: space-between;
 		align-items: flex-start;
 		border-bottom: 1px solid var(--border-light);
+	}
+
+	.close-btn {
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid var(--border-light);
+		color: var(--text-secondary);
+		width: 32px;
+		height: 32px;
+		min-width: 32px;
+		min-height: 32px;
+		border-radius: 8px;
+		padding: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		flex-shrink: 0;
+	}
+	.close-btn:hover {
+		background: rgba(239, 68, 68, 0.2);
+		color: #ffffff;
+		border-color: rgba(239, 68, 68, 0.4);
+	}
+	.close-icon {
+		width: 18px;
+		height: 18px;
+		stroke-width: 2.5;
 	}
 
 	/* Admin Cancel Modal */
