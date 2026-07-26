@@ -44,6 +44,9 @@
 			if (intervalStr.minutes) result += `${intervalStr.minutes} min`;
 			return result.trim() || 'N/A';
 		}
+		return 'N/A';
+	}
+
 	function formatDateDisplay(dateStr: string) {
 		if (!dateStr) return '';
 		const parts = dateStr.split('-');
