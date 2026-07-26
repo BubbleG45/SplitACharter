@@ -68,7 +68,7 @@
 			: `Split a private boat charter for ${data.listing.trip_type} in ${data.listing.location}. Connect with another small group and pay half.`
 	);
 
-	let requestOrigin = $derived((data as any).origin || page.url.origin || 'https://splitacharter.com');
+	let requestOrigin = $derived(page.url.origin);
 
 	let currentFullUrl = $derived(
 		`${requestOrigin}/browse/${data.listing.id}${selectedDate ? `?date=${selectedDate}` : ''}`

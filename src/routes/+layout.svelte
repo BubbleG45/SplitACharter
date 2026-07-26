@@ -72,12 +72,12 @@
 	<link rel="icon" href={favicon} />
 	<meta property="og:site_name" content="SplitACharter" />
 	<meta property="og:type" content="website" />
-	<meta property="og:image" content="https://splitacharter.com/og-image.png" />
+	<meta property="og:image" content="{origin}/og-image.png" />
 	<meta property="og:image:type" content="image/png" />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:image" content="https://splitacharter.com/og-image.png" />
+	<meta name="twitter:image" content="{origin}/og-image.png" />
 </svelte:head>
 
 {#if !isAdminRoute}
