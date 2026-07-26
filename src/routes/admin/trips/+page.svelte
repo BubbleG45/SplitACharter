@@ -69,6 +69,34 @@
 	let loadingLogs = $state(false);
 	let logs = $state<any[]>([]);
 
+	// Active Booking Ref # popover state
+	let activeBookingRefId = $state<string | null>(null);
+	let copiedBookingId = $state<string | null>(null);
+
+	function toggleBookingRefPopover(e: MouseEvent, bookingId: string) {
+		e.stopPropagation();
+		if (activeBookingRefId === bookingId) {
+			activeBookingRefId = null;
+		} else {
+			activeBookingRefId = bookingId;
+		}
+	}
+
+	async function copyBookingRef(e: MouseEvent, bookingId: string) {
+		e.stopPropagation();
+		try {
+			await navigator.clipboard.writeText(bookingId);
+			copiedBookingId = bookingId;
+			setTimeout(() => {
+				if (copiedBookingId === bookingId) {
+					copiedBookingId = null;
+				}
+			}, 2000);
+		} catch (err) {
+			console.error('Failed to copy booking ID', err);
+		}
+	}
+
 	// Derived filtered trips based on status, trip type, location, hideFinished, and search query
 	let filteredTrips = $derived(
 		data.trips.filter((t: any) => {
@@ -217,6 +245,8 @@
 <svelte:head>
 	<title>Trips & Bookings — SplitACharter</title>
 </svelte:head>
+
+<svelte:window onclick={() => (activeBookingRefId = null)} />
 
 <div class="admin-header">
 	<div>
@@ -488,7 +518,6 @@
 										<table class="nested-table">
 											<thead>
 												<tr>
-													<th>Booking Ref #</th>
 													<th>Customer Name</th>
 													<th>Contact Details</th>
 													<th>Group Size</th>
@@ -502,10 +531,49 @@
 													{@const customer = (Array.isArray(booking.customers) ? booking.customers[0] : booking.customers) as any}
 													<tr>
 														<td>
-															<code class="ref-code" title={booking.id}>{booking.id}</code>
-														</td>
-														<td>
-															<span class="nested-name">{customer?.name || 'N/A'}</span>
+															<div class="customer-name-wrapper">
+																<span class="nested-name">{customer?.name || 'N/A'}</span>
+																<div class="booking-ref-popover-container">
+																	<button
+																		type="button"
+																		class="info-ref-btn {activeBookingRefId === booking.id ? 'active' : ''}"
+																		title="View Booking Ref #"
+																		onclick={(e) => toggleBookingRefPopover(e, booking.id)}
+																		aria-label="View Booking Ref #"
+																	>
+																		<svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+																			<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+																		</svg>
+																	</button>
+																	{#if activeBookingRefId === booking.id}
+																		<div class="booking-ref-popover" onclick={(e) => e.stopPropagation()}>
+																			<div class="popover-header">
+																				<span class="popover-title">Booking Ref #</span>
+																			</div>
+																			<div class="popover-body">
+																				<code class="popover-code">{booking.id}</code>
+																				<button
+																					type="button"
+																					class="btn-copy {copiedBookingId === booking.id ? 'copied' : ''}"
+																					onclick={(e) => copyBookingRef(e, booking.id)}
+																				>
+																					{#if copiedBookingId === booking.id}
+																						<svg class="w-3.5 h-3.5 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+																							<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+																						</svg>
+																						Copied!
+																					{:else}
+																						<svg class="w-3.5 h-3.5 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+																							<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125H3.375c-.621 0-1.125-.504-1.125-1.125V11.25c0-.621.504-1.125 1.125-1.125h3.375m0 6.75H20.625c.621 0 1.125-.504 1.125-1.125V4.875c0-.621-.504-1.125-1.125-1.125H11.25c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125z" />
+																						</svg>
+																						Copy
+																					{/if}
+																				</button>
+																			</div>
+																		</div>
+																	{/if}
+																</div>
+															</div>
 														</td>
 														<td>
 															<div class="nested-contact">
@@ -1844,6 +1912,111 @@
 		background: rgba(148, 163, 184, 0.1);
 		color: var(--text-muted);
 		border: 1px solid rgba(148, 163, 184, 0.2);
+	}
+
+	/* Booking Ref Popover Styles */
+	.customer-name-wrapper {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		position: relative;
+	}
+	.booking-ref-popover-container {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+	}
+	.info-ref-btn {
+		background: transparent;
+		border: none;
+		color: var(--text-muted, #94a3b8);
+		cursor: pointer;
+		padding: 2px;
+		border-radius: 4px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.15s ease;
+	}
+	.info-ref-btn:hover,
+	.info-ref-btn.active {
+		color: var(--primary, #06b6d4);
+		background: rgba(6, 182, 212, 0.12);
+	}
+	.info-icon {
+		width: 1rem;
+		height: 1rem;
+	}
+	.booking-ref-popover {
+		position: absolute;
+		top: calc(100% + 6px);
+		left: 0;
+		z-index: 50;
+		min-width: 220px;
+		background: #1e293b;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+		border-radius: 8px;
+		padding: 0.6rem 0.75rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		animation: popoverFadeIn 0.15s ease-out;
+	}
+	@keyframes popoverFadeIn {
+		from { opacity: 0; transform: translateY(-4px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+	.popover-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.popover-title {
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		font-weight: 700;
+		color: var(--text-muted, #94a3b8);
+	}
+	.popover-body {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.popover-code {
+		font-family: monospace;
+		font-size: 0.78rem;
+		color: var(--primary, #06b6d4);
+		background: rgba(6, 182, 212, 0.08);
+		padding: 4px 8px;
+		border-radius: 4px;
+		border: 1px solid rgba(6, 182, 212, 0.2);
+		word-break: break-all;
+		flex: 1;
+	}
+	.btn-copy {
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		color: var(--text-primary, #f8fafc);
+		font-size: 0.72rem;
+		font-weight: 600;
+		padding: 4px 8px;
+		border-radius: 4px;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		white-space: nowrap;
+		transition: all 0.15s ease;
+	}
+	.btn-copy:hover {
+		background: rgba(255, 255, 255, 0.12);
+		border-color: rgba(255, 255, 255, 0.25);
+	}
+	.btn-copy.copied {
+		background: rgba(34, 197, 94, 0.15);
+		border-color: rgba(34, 197, 94, 0.35);
+		color: #4ade80;
 	}
 </style>
 
