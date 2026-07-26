@@ -28,7 +28,7 @@
 						<a href="/dashboard" class="btn btn-secondary btn-large">My Dashboard</a>
 					{/if}
 				{:else}
-					<a href="/login" class="btn btn-primary btn-large font-bold">Sign In to Platform</a>
+					<a href="/login" class="btn btn-primary btn-large font-bold">Sign In</a>
 					<a href="/browse" class="btn btn-secondary btn-large">Browse Charters</a>
 				{/if}
 			</div>
