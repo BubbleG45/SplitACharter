@@ -66,8 +66,54 @@
 	// Communication logs drawer state
 	let showDrawer = $state(false);
 	let selectedCustomer = $state<{ name: string; email: string; phone: string | null } | null>(null);
+	let selectedTrip = $state<any>(null);
 	let loadingLogs = $state(false);
 	let logs = $state<any[]>([]);
+
+	// Copy link feedback state
+	let copiedTripId = $state<string | null>(null);
+
+	function copyTripLink(trip: any) {
+		if (!trip) return;
+		const templateId = trip.listing_template_id || trip.listing_templates?.id;
+		const date = trip.date;
+		if (!templateId || !date) return;
+
+		const url = `${window.location.origin}/browse/${templateId}?date=${date}`;
+
+		if (navigator?.clipboard?.writeText) {
+			navigator.clipboard.writeText(url).then(() => {
+				copiedTripId = trip.id;
+				setTimeout(() => {
+					if (copiedTripId === trip.id) copiedTripId = null;
+				}, 2000);
+			}).catch(() => {
+				fallbackCopyTextToClipboard(url, trip.id);
+			});
+		} else {
+			fallbackCopyTextToClipboard(url, trip.id);
+		}
+	}
+
+	function fallbackCopyTextToClipboard(text: string, tripId: string) {
+		const textArea = document.createElement('textarea');
+		textArea.value = text;
+		textArea.style.position = 'fixed';
+		textArea.style.left = '-999999px';
+		document.body.appendChild(textArea);
+		textArea.focus();
+		textArea.select();
+		try {
+			document.execCommand('copy');
+			copiedTripId = tripId;
+			setTimeout(() => {
+				if (copiedTripId === tripId) copiedTripId = null;
+			}, 2000);
+		} catch (err) {
+			console.error('Fallback copy failed', err);
+		}
+		document.body.removeChild(textArea);
+	}
 
 	// Derived filtered trips based on status, trip type, location, hideFinished, and search query
 	let filteredTrips = $derived(
@@ -149,8 +195,6 @@
 	function collapseAll() {
 		expandedTripIds = new Set();
 	}
-
-	let selectedTrip = $state<any>(null);
 
 	async function openCommunications(customer: any, trip: any) {
 		selectedCustomer = customer;
@@ -433,6 +477,24 @@
 						</td>
 						<td>
 							<div class="row-actions" onclick={(e) => e.stopPropagation()} role="presentation">
+								<button
+									type="button"
+									class="btn btn-xs {copiedTripId === trip.id ? 'btn-copied' : 'btn-share-link'}"
+									onclick={() => copyTripLink(trip)}
+									title="Copy share link for social media"
+								>
+									{#if copiedTripId === trip.id}
+										<svg class="icon w-3.5 h-3.5 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+										</svg>
+										Copied!
+									{:else}
+										<svg class="icon w-3.5 h-3.5 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+										</svg>
+										Share Link
+									{/if}
+								</button>
 								{#if trip.status === 'confirmed' || trip.status === 'completed'}
 									<button
 										type="button"
@@ -1350,6 +1412,45 @@
 	}
 	.created-at {
 		color: var(--text-muted);
+	}
+
+	.btn-share-link {
+		background: rgba(6, 182, 212, 0.1);
+		color: var(--primary);
+		border: 1px solid rgba(6, 182, 212, 0.25);
+		font-weight: 600;
+		padding: 4px 8px;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		display: inline-flex;
+		align-items: center;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		white-space: nowrap;
+	}
+	.btn-share-link:hover {
+		background: rgba(6, 182, 212, 0.22);
+		border-color: var(--primary);
+		color: #ffffff;
+		transform: translateY(-1px);
+	}
+	.btn-copied {
+		background: rgba(16, 185, 129, 0.2);
+		color: var(--success);
+		border: 1px solid rgba(16, 185, 129, 0.4);
+		font-weight: 700;
+		padding: 4px 8px;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		display: inline-flex;
+		align-items: center;
+		white-space: nowrap;
+		animation: pulse-copy 0.2s ease-in-out;
+	}
+	@keyframes pulse-copy {
+		0% { transform: scale(0.95); }
+		50% { transform: scale(1.05); }
+		100% { transform: scale(1); }
 	}
 
 	/* Slide Drawer & Modal Backdrop Styles */

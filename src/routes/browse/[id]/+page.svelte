@@ -44,12 +44,45 @@
 			if (intervalStr.minutes) result += `${intervalStr.minutes} min`;
 			return result.trim() || 'N/A';
 		}
-		return 'N/A';
+	function formatDateDisplay(dateStr: string) {
+		if (!dateStr) return '';
+		const parts = dateStr.split('-');
+		if (parts.length === 3) {
+			return `${parts[1]}/${parts[2]}/${parts[0]}`;
+		}
+		return dateStr;
 	}
+
+	let pageTitle = $derived(
+		selectedDate
+			? `${data.listing.trip_type} on ${formatDateDisplay(selectedDate)} — SplitACharter`
+			: `${data.listing.trip_type} — SplitACharter`
+	);
+
+	let pageOgDescription = $derived(
+		selectedDate
+			? `Join a 50/50 cost-shared private boat charter for ${data.listing.trip_type} in ${data.listing.location} on ${formatDateDisplay(selectedDate)}. Pay half!`
+			: `Split a private boat charter for ${data.listing.trip_type} in ${data.listing.location}. Connect with another small group and pay half.`
+	);
+
+	let currentFullUrl = $derived(
+		typeof window !== 'undefined'
+			? window.location.href
+			: `https://splitacharter.com/browse/${data.listing.id}${selectedDate ? `?date=${selectedDate}` : ''}`
+	);
 </script>
 
 <svelte:head>
-	<title>{data.listing.trip_type} — Details</title>
+	<title>{pageTitle}</title>
+	<meta name="description" content={pageOgDescription} />
+	<meta property="og:site_name" content="SplitACharter" />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content={pageTitle} />
+	<meta property="og:description" content={pageOgDescription} />
+	<meta property="og:url" content={currentFullUrl} />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={pageTitle} />
+	<meta name="twitter:description" content={pageOgDescription} />
 </svelte:head>
 
 <div class="detail-wrapper">

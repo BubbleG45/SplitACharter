@@ -30,6 +30,7 @@
 	let expiry = $state('12/28');
 	let cvc = $state('123');
 	let paymentOutcome = $state('success');
+	let submitting = $state(false);
 
 	const isDiveTrip = $derived(
 		data.listing.trip_type.toLowerCase().includes('dive') ||
@@ -69,7 +70,18 @@
 		<div class="checkout-grid">
 			<!-- Main Form -->
 			<div class="form-panel glass">
-				<form method="POST" action="?/checkout&templateId={data.listing.id}&date={data.date}" use:enhance class="checkout-form">
+				<form
+					method="POST"
+					action="?/checkout&templateId={data.listing.id}&date={data.date}"
+					use:enhance={() => {
+						submitting = true;
+						return async ({ update }) => {
+							await update();
+							submitting = false;
+						};
+					}}
+					class="checkout-form"
+				>
 					<!-- Hidden inputs for calculated fields -->
 					<input type="hidden" name="templateId" value={data.listing.id} />
 					<input type="hidden" name="date" value={data.date} />
@@ -283,8 +295,20 @@
 					</section>
 
 					<div class="form-actions">
-						<button type="submit" class="btn btn-primary btn-large w-full">
-							Simulate Deposit & Book Slot
+						<button
+							type="submit"
+							class="btn btn-primary btn-large w-full btn-submit-checkout"
+							disabled={submitting}
+						>
+							{#if submitting}
+								<svg class="spinner-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<circle class="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="spinner-head" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+								<span>Processing Deposit & Booking...</span>
+							{:else}
+								Simulate Deposit & Book Slot
+							{/if}
 						</button>
 					</div>
 				</form>
@@ -597,6 +621,39 @@
 
 	.form-actions {
 		margin-top: 2.5rem;
+	}
+	.btn-submit-checkout {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.65rem;
+		transition: all 0.2s ease;
+	}
+	.btn-submit-checkout:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+		pointer-events: none;
+		box-shadow: none;
+		transform: none;
+	}
+	.spinner-icon {
+		width: 1.25rem;
+		height: 1.25rem;
+		animation: spin 0.8s linear infinite;
+	}
+	.spinner-track {
+		opacity: 0.25;
+	}
+	.spinner-head {
+		opacity: 0.9;
+	}
+	@keyframes spin {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	/* Sidebar Summary panel */
