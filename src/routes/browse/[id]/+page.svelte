@@ -89,8 +89,8 @@
 	<meta property="og:url" content={currentFullUrl} />
 	<meta property="og:image" content={ogImageUrl} />
 	<meta property="og:image:type" content="image/png" />
-	<meta property="og:image:width" content="1200" />
-	<meta property="og:image:height" content="630" />
+	<meta property="og:image:width" content="2390" />
+	<meta property="og:image:height" content="1792" />
 	<meta property="og:image:alt" content="SplitACharter — Shared Private Boat Charters" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={pageTitle} />
