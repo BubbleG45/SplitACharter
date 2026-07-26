@@ -75,7 +75,7 @@
 	);
 
 	let ogImageUrl = $derived(
-		`${requestOrigin}/og-image.png`
+		`${requestOrigin}/og-image-v2.png`
 	);
 </script>
 
