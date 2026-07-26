@@ -73,6 +73,12 @@
 			? window.location.href
 			: `https://splitacharter.com/browse/${data.listing.id}${selectedDate ? `?date=${selectedDate}` : ''}`
 	);
+
+	let ogImageUrl = $derived(
+		typeof window !== 'undefined'
+			? `${window.location.origin}/logo-white.svg`
+			: 'https://splitacharter.com/logo-white.svg'
+	);
 </script>
 
 <svelte:head>
@@ -83,9 +89,12 @@
 	<meta property="og:title" content={pageTitle} />
 	<meta property="og:description" content={pageOgDescription} />
 	<meta property="og:url" content={currentFullUrl} />
+	<meta property="og:image" content={ogImageUrl} />
+	<meta property="og:image:alt" content="SplitACharter Logo" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={pageTitle} />
 	<meta name="twitter:description" content={pageOgDescription} />
+	<meta name="twitter:image" content={ogImageUrl} />
 </svelte:head>
 
 <div class="detail-wrapper">
