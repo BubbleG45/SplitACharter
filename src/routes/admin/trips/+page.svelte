@@ -510,7 +510,7 @@
 								{#if trip.status !== 'canceled' && trip.status !== 'completed'}
 									<button
 										type="button"
-										class="btn btn-xs btn-danger"
+										class="btn btn-xs btn-danger btn-cancel-trip"
 										onclick={() => {
 											cancelingTrip = trip;
 											cancelWithRefund = true;
@@ -1410,8 +1410,20 @@
 		font-size: 0.75rem;
 		color: var(--text-muted);
 	}
-	.created-at {
-		color: var(--text-muted);
+	.row-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		align-items: stretch;
+	}
+	.btn-cancel-trip {
+		font-size: 0.7rem !important;
+		padding: 2px 6px !important;
+		opacity: 0.85;
+		margin-top: 2px;
+	}
+	.btn-cancel-trip:hover {
+		opacity: 1;
 	}
 
 	.btn-share-link {
