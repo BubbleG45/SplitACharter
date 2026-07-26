@@ -107,6 +107,7 @@
 									type="text"
 									id="name"
 									name="name"
+									autocomplete="name"
 									bind:value={name}
 									placeholder="e.g., John Doe"
 									required
@@ -119,6 +120,8 @@
 									type="tel"
 									id="phone"
 									name="phone"
+									autocomplete="tel"
+									inputmode="tel"
 									bind:value={phone}
 									placeholder="e.g., +15551234567"
 									required
@@ -267,6 +270,9 @@
 								<input
 									type="text"
 									id="card-number"
+									name="cc-number"
+									autocomplete="cc-number"
+									inputmode="numeric"
 									bind:value={cardNumber}
 									class="card-input"
 									readonly
@@ -276,11 +282,29 @@
 							<div class="card-extra-row">
 								<div class="form-group">
 									<label for="card-expiry">Expiration</label>
-									<input type="text" id="card-expiry" bind:value={expiry} class="card-input" readonly />
+									<input
+										type="text"
+										id="card-expiry"
+										name="cc-exp"
+										autocomplete="cc-exp"
+										inputmode="numeric"
+										bind:value={expiry}
+										class="card-input"
+										readonly
+									/>
 								</div>
 								<div class="form-group">
 									<label for="card-cvc">CVC</label>
-									<input type="text" id="card-cvc" bind:value={cvc} class="card-input" readonly />
+									<input
+										type="text"
+										id="card-cvc"
+										name="cc-csc"
+										autocomplete="cc-csc"
+										inputmode="numeric"
+										bind:value={cvc}
+										class="card-input"
+										readonly
+									/>
 								</div>
 							</div>
 

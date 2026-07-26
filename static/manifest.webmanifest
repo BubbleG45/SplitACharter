@@ -1,0 +1,25 @@
+{
+  "name": "SplitACharter — Shared Private Boat Charters",
+  "short_name": "SplitACharter",
+  "description": "Split a private boat charter in the Florida Keys. Connect with another small group and pay half.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b1120",
+  "theme_color": "#06b6d4",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
