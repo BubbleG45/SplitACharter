@@ -30,6 +30,7 @@ export const load: PageServerLoad = async ({ params, url, locals: { supabase } }
 	return {
 		listing,
 		tripInstances: tripInstances || [],
-		preselectedDate
+		preselectedDate,
+		origin: url.origin
 	};
 };

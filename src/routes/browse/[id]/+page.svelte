@@ -68,16 +68,14 @@
 			: `Split a private boat charter for ${data.listing.trip_type} in ${data.listing.location}. Connect with another small group and pay half.`
 	);
 
+	let requestOrigin = $derived((data as any).origin || page.url.origin || 'https://splitacharter.com');
+
 	let currentFullUrl = $derived(
-		typeof window !== 'undefined'
-			? window.location.href
-			: `https://splitacharter.com/browse/${data.listing.id}${selectedDate ? `?date=${selectedDate}` : ''}`
+		`${requestOrigin}/browse/${data.listing.id}${selectedDate ? `?date=${selectedDate}` : ''}`
 	);
 
 	let ogImageUrl = $derived(
-		typeof window !== 'undefined'
-			? `${window.location.origin}/og-image.png`
-			: 'https://splitacharter.com/og-image.png'
+		`${requestOrigin}/og-image.png`
 	);
 </script>
 
