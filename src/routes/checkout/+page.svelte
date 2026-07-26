@@ -26,9 +26,9 @@
 	let liability = $state(false);
 	
 	// Mock card inputs
-	let cardNumber = $state('4242 4242 4242 4242');
-	let expiry = $state('12/28');
-	let cvc = $state('123');
+	let cardNumber = $state('');
+	let expiry = $state('');
+	let cvc = $state('');
 	let paymentOutcome = $state('success');
 	let submitting = $state(false);
 
@@ -274,8 +274,8 @@
 									autocomplete="cc-number"
 									inputmode="numeric"
 									bind:value={cardNumber}
+									placeholder="4242 4242 4242 4242"
 									class="card-input"
-									readonly
 								/>
 							</div>
 
@@ -289,8 +289,8 @@
 										autocomplete="cc-exp"
 										inputmode="numeric"
 										bind:value={expiry}
+										placeholder="MM/YY (e.g. 12/28)"
 										class="card-input"
-										readonly
 									/>
 								</div>
 								<div class="form-group">
@@ -302,8 +302,8 @@
 										autocomplete="cc-csc"
 										inputmode="numeric"
 										bind:value={cvc}
+										placeholder="123"
 										class="card-input"
-										readonly
 									/>
 								</div>
 							</div>
