@@ -9,6 +9,7 @@
 	let { data, children } = $props();
 
 	let isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
+	let origin = $derived(page.url.origin || '');
 
 	onMount(() => {
 		const {
