@@ -230,9 +230,10 @@
 	}
 
 	function getListingHref(listing: any) {
-		const params = new URLSearchParams(page.url.searchParams);
-		if (listing.matchedInstance && !params.get('date')) {
-			params.set('date', listing.matchedInstance.date);
+		const params = new URLSearchParams();
+		const effectiveDate = searchDate || listing.matchedInstance?.date;
+		if (effectiveDate) {
+			params.set('date', effectiveDate);
 		}
 		if (filterGroupSize && filterGroupSize !== '1') {
 			params.set('groupSize', filterGroupSize);
@@ -242,8 +243,10 @@
 	}
 
 	function getSuggestionHref(trip: any, template: any) {
-		const params = new URLSearchParams(page.url.searchParams);
-		params.set('date', trip.date);
+		const params = new URLSearchParams();
+		if (trip.date) {
+			params.set('date', trip.date);
+		}
 		if (filterGroupSize && filterGroupSize !== '1') {
 			params.set('groupSize', filterGroupSize);
 		}
