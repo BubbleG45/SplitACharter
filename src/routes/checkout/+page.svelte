@@ -443,7 +443,7 @@
 		color: var(--text-primary);
 	}
 	.checkout-header h1 {
-		font-size: 2.5rem;
+		font-size: clamp(1.75rem, 5vw, 2.5rem);
 		font-weight: 800;
 		letter-spacing: -0.7px;
 		margin-bottom: 0.5rem;
@@ -512,6 +512,7 @@
 		font-weight: 700;
 		font-size: 0.9rem;
 		font-family: var(--font-heading);
+		flex-shrink: 0;
 	}
 	.section-title h2 {
 		font-size: 1.35rem;
@@ -558,6 +559,7 @@
 	.checkbox-row input {
 		margin-top: 3px;
 		cursor: pointer;
+		flex-shrink: 0;
 	}
 	.checkbox-row label {
 		font-size: 0.85rem;
@@ -578,7 +580,8 @@
 	.group-size-wrapper {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		flex-wrap: wrap;
+		gap: 0.75rem 1rem;
 	}
 	.group-size-wrapper input {
 		width: 100px;
@@ -781,6 +784,7 @@
 	@media (max-width: 992px) {
 		.checkout-grid {
 			grid-template-columns: 1fr;
+			gap: 1.75rem;
 		}
 		.summary-panel {
 			order: -1;
@@ -788,19 +792,48 @@
 	}
 	@media (max-width: 576px) {
 		.checkout-wrapper {
-			padding: 2rem 1rem;
+			padding: 1.75rem 1rem;
+		}
+		.checkout-header {
+			margin-bottom: 1.75rem;
 		}
 		.form-panel, .summary-panel {
-			padding: 1.5rem;
+			padding: 1.25rem 1rem;
 		}
 		.inputs-grid {
 			grid-template-columns: 1fr;
+			gap: 1rem;
 		}
 		.cert-inputs {
 			grid-template-columns: 1fr;
+			gap: 1rem;
 		}
 		.full-width {
 			grid-column: span 1;
+		}
+		.card-extra-row {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+		.mock-card-panel {
+			padding: 1.25rem 1rem;
+		}
+		.sandbox-badge {
+			position: static;
+			align-self: flex-start;
+			margin-bottom: 0.5rem;
+		}
+		input, select {
+			font-size: 1rem !important;
+		}
+	}
+
+	@media (max-width: 380px) {
+		.checkout-wrapper {
+			padding: 1.25rem 0.5rem;
+		}
+		.form-panel, .summary-panel {
+			padding: 1rem 0.75rem;
 		}
 	}
 </style>
