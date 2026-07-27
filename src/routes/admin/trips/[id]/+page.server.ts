@@ -119,10 +119,14 @@ export const actions: Actions = {
 			.not('status', 'in', '("canceled","forfeited")');
 
 		// Fire cancel event to matching workflow timers in Inngest
-		await inngest.send({
-			name: 'trip/captain.matched',
-			data: { tripInstanceId: params.id }
-		});
+		try {
+			await inngest.send({
+				name: 'trip/captain.matched',
+				data: { tripInstanceId: params.id }
+			});
+		} catch (inngestErr) {
+			console.error('Inngest trip/captain.matched send failed (non-fatal):', inngestErr);
+		}
 
 		const tripDetails = (updatedTrip as any).listing_templates;
 		const captainName = captain?.name || 'Assigned Captain';

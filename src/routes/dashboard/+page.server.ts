@@ -104,10 +104,14 @@ export const actions: Actions = {
 		}
 
 		// 3. Send event to Inngest to cancel the reconfirmation workflow run early
-		await inngest.send({
-			name: 'booking/reconfirmed',
-			data: { bookingId }
-		});
+		try {
+			await inngest.send({
+				name: 'booking/reconfirmed',
+				data: { bookingId }
+			});
+		} catch (inngestErr) {
+			console.error('Inngest booking/reconfirmed send failed (non-fatal):', inngestErr);
+		}
 
 		// 4. Check if BOTH bookings on this trip instance are now reconfirmed
 		const { data: siblingBookings } = await supabaseAdmin
@@ -144,10 +148,14 @@ export const actions: Actions = {
 			}
 
 			// Send trip/confirmed event to Inngest to trigger captain matching sequence (Phase 4)
-			await inngest.send({
-				name: 'trip/confirmed',
-				data: { tripInstanceId: booking.trip_instance_id }
-			});
+			try {
+				await inngest.send({
+					name: 'trip/confirmed',
+					data: { tripInstanceId: booking.trip_instance_id }
+				});
+			} catch (inngestErr) {
+				console.error('Inngest trip/confirmed send failed (non-fatal):', inngestErr);
+			}
 		}
 
 		return { success: true };

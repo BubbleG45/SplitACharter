@@ -51,10 +51,14 @@ export const GET: RequestHandler = async ({ url }) => {
 			.not('status', 'in', '("canceled","forfeited")');
 
 		// Send trip/captain.matched event to Inngest to cancel matching workflows
-		await inngest.send({
-			name: 'trip/captain.matched',
-			data: { tripInstanceId: tripId }
-		});
+		try {
+			await inngest.send({
+				name: 'trip/captain.matched',
+				data: { tripInstanceId: tripId }
+			});
+		} catch (inngestErr) {
+			console.error('Inngest trip/captain.matched send failed (non-fatal):', inngestErr);
+		}
 
 		const captainName = captain?.name || 'Matched Captain';
 		const captainPhone = captain?.phone || 'N/A';
