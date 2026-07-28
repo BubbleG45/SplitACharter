@@ -171,25 +171,25 @@
 	function formatDate(dateStr: string) {
 		if (!dateStr) return 'N/A';
 		return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
+			month: '2-digit',
+			day: '2-digit',
+			year: '2-digit'
 		});
 	}
 
 	function formatDateTime(dateTimeStr: string) {
-		if (!dateTimeStr) return { date: 'N/A', time: '' };
+		if (!dateTimeStr) return 'N/A';
 		const d = new Date(dateTimeStr);
 		const date = d.toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
+			month: '2-digit',
+			day: '2-digit',
+			year: '2-digit'
 		});
 		const time = d.toLocaleTimeString('en-US', {
-			hour: '2-digit',
+			hour: 'numeric',
 			minute: '2-digit'
 		});
-		return { date, time };
+		return `${date}, ${time}`;
 	}
 
 	function toggleTrip(tripId: string) {
@@ -614,12 +614,7 @@
 															<span class="badge status-badge booking-{booking.status}">{booking.status}</span>
 														</td>
 														<td>
-															<div class="created-at">
-																<span class="created-date">{formattedDate.date}</span>
-																{#if formattedDate.time}
-																	<span class="created-time">{formattedDate.time}</span>
-																{/if}
-															</div>
+															<span class="created-at">{formattedDate}</span>
 														</td>
 														<td>
 															{#if customer}
@@ -2206,20 +2201,15 @@
 		padding: 2px 6px !important;
 		font-weight: 600;
 	}
-	.created-at {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		line-height: 1.3;
-	}
-	.created-date {
-		font-size: 0.88rem;
+	.date {
 		font-weight: 600;
-		color: var(--text-primary);
+		color: var(--primary);
+		white-space: nowrap;
 	}
-	.created-time {
-		font-size: 0.78rem;
-		color: var(--text-muted);
+	.created-at {
+		white-space: nowrap;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
 	}
 </style>
 
