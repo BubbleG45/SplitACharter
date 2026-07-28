@@ -233,6 +233,7 @@
 	let selectedCaptainsLogTrip = $state<any>(null);
 	let blastingInProgress = $state(false);
 	let copiedClaimUrlId = $state<string | null>(null);
+	let copiedDetailsUrl = $state(false);
 
 	function copyClaimUrl(audit: any) {
 		if (!audit?.claimUrl) return;
@@ -743,6 +744,47 @@
 					</div>
 				</div>
 
+				<!-- Winning Captain Claim & Contact Details Notification Banner -->
+				{#if info.winningMessageDetails}
+					<div class="winning-notification-card glass glow-primary">
+						<div class="winning-card-header">
+							<div class="winning-card-title">
+								<svg class="winning-header-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+								</svg>
+								<strong>Winning Skipper Claim Notification</strong>
+							</div>
+							{#if info.winningMessageDetails.sentAt}
+								<span class="winning-time">{new Date(info.winningMessageDetails.sentAt).toLocaleString()}</span>
+							{/if}
+						</div>
+						<div class="winning-message-box">
+							<span class="winning-message-label">Sent SMS Content:</span>
+							<p class="winning-message-text">{info.winningMessageDetails.content}</p>
+						</div>
+						<div class="winning-card-footer">
+							<span class="winning-note">
+								ℹ️ The SMS sent to the skipper includes a direct link granting access to full customer contact details & passenger manifest.
+							</span>
+							{#if info.winningMessageDetails.detailsUrl}
+								<button
+									type="button"
+									class="btn btn-xs btn-share-link"
+									onclick={() => {
+										if (navigator?.clipboard?.writeText) {
+											navigator.clipboard.writeText(info.winningMessageDetails.detailsUrl);
+											copiedDetailsUrl = true;
+											setTimeout(() => (copiedDetailsUrl = false), 2000);
+										}
+									}}
+								>
+									{copiedDetailsUrl ? 'Copied Details Link!' : 'Copy Captain Details Link'}
+								</button>
+							{/if}
+						</div>
+					</div>
+				{/if}
+
 				<div class="audits-section">
 					<div class="audits-section-header">
 						<h3 class="section-title">Skipper Blast Delivery & Response History ({audits.length})</h3>
@@ -789,26 +831,24 @@
 								{#each audits as audit}
 									<tr class:winner-row={audit.isWinner}>
 										<td>
-											<div class="captain-name-group" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+											<div class="captain-name-group" style="display: flex; align-items: center; gap: 6px;">
 												<span class="captain-name">{audit.captainName}</span>
 												{#if audit.claimUrl}
 													<button
 														type="button"
-														class="btn-copy-claim"
+														class="btn-copy-claim-icon"
 														class:copied={copiedClaimUrlId === audit.id}
-														title="Copy Claim URL sent to {audit.captainName}"
+														title={copiedClaimUrlId === audit.id ? 'Copied URL!' : 'Copy Trip Claim URL'}
 														onclick={() => copyClaimUrl(audit)}
 													>
 														{#if copiedClaimUrlId === audit.id}
-															<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 13px; height: 13px; color: var(--success);">
+															<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="claim-icon-svg text-success">
 																<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
 															</svg>
-															<span>Copied!</span>
 														{:else}
-															<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 13px; height: 13px;">
+															<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="claim-icon-svg">
 																<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H5.25m11.9-3.664A2.251 2.251 0 0015 2.25h-1.5a2.251 2.251 0 00-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 00-9-9z" />
 															</svg>
-															<span>Copy Claim URL</span>
 														{/if}
 													</button>
 												{/if}
@@ -826,10 +866,10 @@
 										<td>
 											{#if audit.isWinner}
 												<span class="badge badge-winner">
-													<svg class="w-3.5 h-3.5 inline mr-1" viewBox="0 0 20 20" fill="currentColor">
+													<svg class="w-3 h-3 inline mr-0.5" viewBox="0 0 20 20" fill="currentColor">
 														<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
 													</svg>
-													Accepted & Secured
+													Secured
 												</span>
 											{:else}
 												<span class="badge badge-unclaimed">Blast Sent</span>
@@ -1502,31 +1542,99 @@
 		align-items: center;
 		margin-bottom: 1rem;
 	}
-	.btn-copy-claim {
+	.btn-copy-claim-icon {
 		background: rgba(6, 182, 212, 0.08);
-		border: 1px solid rgba(6, 182, 212, 0.25);
+		border: 1px solid rgba(6, 182, 212, 0.2);
 		color: var(--primary);
-		padding: 2px 8px;
+		width: 22px;
+		height: 22px;
+		min-width: 22px;
 		border-radius: 4px;
-		font-size: 0.72rem;
-		font-weight: 600;
 		display: inline-flex;
 		align-items: center;
-		gap: 4px;
+		justify-content: center;
+		padding: 0;
 		cursor: pointer;
 		transition: all 0.2s ease;
-		white-space: nowrap;
 	}
-	.btn-copy-claim:hover {
+	.btn-copy-claim-icon:hover {
 		background: rgba(6, 182, 212, 0.22);
 		border-color: var(--primary);
 		color: #ffffff;
-		transform: translateY(-1px);
+		transform: scale(1.1);
 	}
-	.btn-copy-claim.copied {
-		background: rgba(16, 185, 129, 0.15);
+	.btn-copy-claim-icon.copied {
+		background: rgba(16, 185, 129, 0.18);
 		border-color: rgba(16, 185, 129, 0.4);
 		color: var(--success);
+	}
+	.claim-icon-svg {
+		width: 12px;
+		height: 12px;
+	}
+
+	.winning-notification-card {
+		padding: 1rem 1.25rem;
+		border-radius: 8px;
+		background: rgba(16, 185, 129, 0.04);
+		border: 1px solid rgba(16, 185, 129, 0.2);
+		margin-bottom: 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.winning-card-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.winning-card-title {
+		font-size: 0.85rem;
+		color: var(--text-primary);
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.winning-header-icon {
+		width: 16px;
+		height: 16px;
+		color: var(--success);
+	}
+	.winning-time {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+	}
+	.winning-message-box {
+		background: rgba(0, 0, 0, 0.25);
+		border: 1px solid var(--border-light);
+		padding: 8px 12px;
+		border-radius: 6px;
+	}
+	.winning-message-label {
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		display: block;
+		margin-bottom: 2px;
+	}
+	.winning-message-text {
+		font-size: 0.82rem;
+		color: var(--text-primary);
+		margin: 0;
+		line-height: 1.4;
+		word-break: break-word;
+	}
+	.winning-card-footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+	.winning-note {
+		font-size: 0.78rem;
+		color: var(--text-secondary);
 	}
 	.btn-dispatch-blast {
 		font-size: 0.75rem !important;
@@ -2075,9 +2183,12 @@
 	}
 
 	.badge-winner {
-		background: rgba(16, 185, 129, 0.15);
+		background: rgba(16, 185, 129, 0.12);
 		color: #34d399;
 		border: 1px solid rgba(16, 185, 129, 0.3);
+		font-size: 0.7rem !important;
+		padding: 2px 6px !important;
+		font-weight: 600;
 	}
 	.badge-unclaimed {
 		background: rgba(148, 163, 184, 0.1);

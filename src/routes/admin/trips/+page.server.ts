@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { sendNotification, getSiteUrl } from '$lib/notifications';
+import { generateCaptainToken } from '$lib/security';
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	const [tripsRes, listingsRes] = await Promise.all([
@@ -342,9 +343,37 @@ export const actions: Actions = {
 		// 4. Identify winning acceptance notification log (if any) or updated_at
 		const winningLog = (logs || []).find((l: any) => l.template === 'captain_details_link');
 		const acceptedTime = winningLog ? winningLog.timestamp : (trip.captain_id ? trip.updated_at : null);
+		const defaultBaseUrl = getSiteUrl();
+
+		// Structure winning captain message & details link
+		let winningMessageDetails: {
+			sentAt: string | null;
+			recipient: string | null;
+			content: string | null;
+			detailsUrl: string | null;
+		} | null = null;
+
+		if (winningLog) {
+			const urlMatch = winningLog.content ? winningLog.content.match(/(https?:\/\/[^\s]+)/) : null;
+			winningMessageDetails = {
+				sentAt: winningLog.timestamp,
+				recipient: winningLog.recipient,
+				content: winningLog.content,
+				detailsUrl: urlMatch ? urlMatch[1] : null
+			};
+		} else if (trip.captain_id) {
+			const detailsToken = generateCaptainToken(trip.id, trip.captain_id);
+			const detailsUrl = `${defaultBaseUrl}/captain-match/trip-details?tripId=${trip.id}&captainId=${trip.captain_id}&token=${detailsToken}`;
+			const tripType = (trip as any).listing_templates?.trip_type || 'Charter';
+			winningMessageDetails = {
+				sentAt: trip.updated_at,
+				recipient: (Array.isArray(trip.captains) ? trip.captains[0] : trip.captains)?.phone || 'Assigned Captain',
+				content: `SplitACharter Confirmation: You secured the ${tripType} trip on ${trip.date}! Access customer & trip details here: ${detailsUrl}`,
+				detailsUrl
+			};
+		}
 
 		// 5. Structure blast audit items with claim URL
-		const defaultBaseUrl = getSiteUrl();
 		const blastLogs = (logs || []).filter((l: any) => l.template === 'captain_blast');
 		const auditItems = blastLogs.map((l: any) => {
 			const matchedCaptain = captainMap.get(l.recipient);
@@ -388,7 +417,8 @@ export const actions: Actions = {
 					phone: assignedCaptain.phone,
 					email: assignedCaptain.email
 				} : null,
-				acceptedTime
+				acceptedTime,
+				winningMessageDetails
 			},
 			blastAudits: auditItems
 		};
