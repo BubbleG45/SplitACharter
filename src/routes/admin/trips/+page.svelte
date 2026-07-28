@@ -232,6 +232,23 @@
 	let captainsLogData = $state<any>(null);
 	let selectedCaptainsLogTrip = $state<any>(null);
 	let blastingInProgress = $state(false);
+	let copiedClaimUrlId = $state<string | null>(null);
+
+	function copyClaimUrl(audit: any) {
+		if (!audit?.claimUrl) return;
+		if (navigator?.clipboard?.writeText) {
+			navigator.clipboard.writeText(audit.claimUrl).then(() => {
+				copiedClaimUrlId = audit.id;
+				setTimeout(() => {
+					if (copiedClaimUrlId === audit.id) copiedClaimUrlId = null;
+				}, 2000);
+			}).catch(() => {
+				fallbackCopyTextToClipboard(audit.claimUrl, audit.id);
+			});
+		} else {
+			fallbackCopyTextToClipboard(audit.claimUrl, audit.id);
+		}
+	}
 
 	async function openCaptainsLog(trip: any) {
 		selectedCaptainsLogTrip = trip;
@@ -772,7 +789,30 @@
 								{#each audits as audit}
 									<tr class:winner-row={audit.isWinner}>
 										<td>
-											<span class="captain-name">{audit.captainName}</span>
+											<div class="captain-name-group" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+												<span class="captain-name">{audit.captainName}</span>
+												{#if audit.claimUrl}
+													<button
+														type="button"
+														class="btn-copy-claim"
+														class:copied={copiedClaimUrlId === audit.id}
+														title="Copy Claim URL sent to {audit.captainName}"
+														onclick={() => copyClaimUrl(audit)}
+													>
+														{#if copiedClaimUrlId === audit.id}
+															<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 13px; height: 13px; color: var(--success);">
+																<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+															</svg>
+															<span>Copied!</span>
+														{:else}
+															<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 13px; height: 13px;">
+																<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H5.25m11.9-3.664A2.251 2.251 0 0015 2.25h-1.5a2.251 2.251 0 00-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 00-9-9z" />
+															</svg>
+															<span>Copy Claim URL</span>
+														{/if}
+													</button>
+												{/if}
+											</div>
 										</td>
 										<td>
 											<span class="recipient-contact">{audit.recipient}</span>
@@ -1461,6 +1501,32 @@
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 1rem;
+	}
+	.btn-copy-claim {
+		background: rgba(6, 182, 212, 0.08);
+		border: 1px solid rgba(6, 182, 212, 0.25);
+		color: var(--primary);
+		padding: 2px 8px;
+		border-radius: 4px;
+		font-size: 0.72rem;
+		font-weight: 600;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		white-space: nowrap;
+	}
+	.btn-copy-claim:hover {
+		background: rgba(6, 182, 212, 0.22);
+		border-color: var(--primary);
+		color: #ffffff;
+		transform: translateY(-1px);
+	}
+	.btn-copy-claim.copied {
+		background: rgba(16, 185, 129, 0.15);
+		border-color: rgba(16, 185, 129, 0.4);
+		color: var(--success);
 	}
 	.btn-dispatch-blast {
 		font-size: 0.75rem !important;

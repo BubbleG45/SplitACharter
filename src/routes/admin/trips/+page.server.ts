@@ -343,11 +343,21 @@ export const actions: Actions = {
 		const winningLog = (logs || []).find((l: any) => l.template === 'captain_details_link');
 		const acceptedTime = winningLog ? winningLog.timestamp : (trip.captain_id ? trip.updated_at : null);
 
-		// 5. Structure blast audit items
+		// 5. Structure blast audit items with claim URL
+		const defaultBaseUrl = getSiteUrl();
 		const blastLogs = (logs || []).filter((l: any) => l.template === 'captain_blast');
 		const auditItems = blastLogs.map((l: any) => {
 			const matchedCaptain = captainMap.get(l.recipient);
 			const isWinner = Boolean(trip.captain_id && matchedCaptain?.id === trip.captain_id);
+
+			// Extract claim URL from log content if present, or construct standard claim URL
+			let claimUrl: string | null = null;
+			const urlMatch = l.content ? l.content.match(/(https?:\/\/[^\s]+)/) : null;
+			if (urlMatch && urlMatch[1]) {
+				claimUrl = urlMatch[1];
+			} else if (matchedCaptain?.id) {
+				claimUrl = `${defaultBaseUrl}/api/captain-match/accept?tripId=${trip.id}&captainId=${matchedCaptain.id}`;
+			}
 
 			return {
 				id: l.id,
@@ -357,7 +367,8 @@ export const actions: Actions = {
 				channel: l.channel,
 				sentAt: l.timestamp,
 				status: l.status,
-				isWinner
+				isWinner,
+				claimUrl
 			};
 		});
 
