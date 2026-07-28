@@ -178,13 +178,18 @@
 	}
 
 	function formatDateTime(dateTimeStr: string) {
-		if (!dateTimeStr) return 'N/A';
-		return new Date(dateTimeStr).toLocaleDateString('en-US', {
+		if (!dateTimeStr) return { date: 'N/A', time: '' };
+		const d = new Date(dateTimeStr);
+		const date = d.toLocaleDateString('en-US', {
 			month: 'short',
 			day: 'numeric',
+			year: 'numeric'
+		});
+		const time = d.toLocaleTimeString('en-US', {
 			hour: '2-digit',
 			minute: '2-digit'
 		});
+		return { date, time };
 	}
 
 	function toggleTrip(tripId: string) {
@@ -591,6 +596,7 @@
 											<tbody>
 												{#each trip.bookings as booking (booking.id)}
 													{@const customer = (Array.isArray(booking.customers) ? booking.customers[0] : booking.customers) as any}
+													{@const formattedDate = formatDateTime(booking.created_at)}
 													<tr>
 														<td>
 															<span class="nested-name">{customer?.name || 'N/A'}</span>
@@ -608,7 +614,12 @@
 															<span class="badge status-badge booking-{booking.status}">{booking.status}</span>
 														</td>
 														<td>
-															<span class="created-at">{formatDateTime(booking.created_at)}</span>
+															<div class="created-at">
+																<span class="created-date">{formattedDate.date}</span>
+																{#if formattedDate.time}
+																	<span class="created-time">{formattedDate.time}</span>
+																{/if}
+															</div>
 														</td>
 														<td>
 															{#if customer}
@@ -2195,10 +2206,20 @@
 		padding: 2px 6px !important;
 		font-weight: 600;
 	}
-	.badge-unclaimed {
-		background: rgba(148, 163, 184, 0.1);
+	.created-at {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		line-height: 1.3;
+	}
+	.created-date {
+		font-size: 0.88rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+	.created-time {
+		font-size: 0.78rem;
 		color: var(--text-muted);
-		border: 1px solid rgba(148, 163, 184, 0.2);
 	}
 </style>
 
