@@ -29,6 +29,8 @@
 	let copiedId = $state('');
 	let cancelingBooking = $state<any>(null);
 	let cancellingInProgress = $state(false);
+	let reconfirmingId = $state<string | null>(null);
+	let reconfirmedSuccessId = $state<string | null>(null);
 
 	function handleCopy(id: string) {
 		navigator.clipboard.writeText(id);
@@ -192,15 +194,55 @@
 								{:else if booking.status === 'awaiting-reconfirm'}
 									<div class="info-alert info-warning glass action-alert">
 										<p><strong>Attendance Verification Required!</strong> Please reconfirm your booking now. Failure to do so before the window closes will result in forfeiture of your deposit.</p>
-										<form method="POST" action="?/reconfirm" use:enhance>
+										<form
+											method="POST"
+											action="?/reconfirm"
+											use:enhance={({ formData }) => {
+												const id = formData.get('bookingId') as string;
+												reconfirmingId = id;
+												return async ({ result, update }) => {
+													await update();
+													reconfirmingId = null;
+													if (result.type === 'success') {
+														reconfirmedSuccessId = id;
+														setTimeout(() => {
+															if (reconfirmedSuccessId === id) reconfirmedSuccessId = null;
+														}, 5000);
+													}
+												};
+											}}
+										>
 											<input type="hidden" name="bookingId" value={booking.id} />
-											<button type="submit" class="btn btn-primary btn-small">Reconfirm Booking</button>
+											<button
+												type="submit"
+												class="btn btn-primary btn-small btn-reconfirm"
+												disabled={reconfirmingId === booking.id}
+											>
+												{#if reconfirmingId === booking.id}
+													<svg class="spinner-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+														<circle class="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+														<path class="spinner-head" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+													</svg>
+													<span>Reconfirming...</span>
+												{:else}
+													<span>Reconfirm Booking</span>
+												{/if}
+											</button>
 										</form>
 									</div>
 								{:else if booking.status === 'reconfirmed'}
-									<div class="info-alert info-success glass">
-										<p><strong>Booking Reconfirmed!</strong> You've verified your slot. We are now running the captain matching sequence. Once a captain accepts, we will send you their contact details!</p>
-									</div>
+									{#if reconfirmedSuccessId === booking.id}
+										<div class="info-alert info-success glass banner-pop">
+											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; color: var(--success); flex-shrink: 0;">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+											</svg>
+											<p><strong>Successfully Reconfirmed!</strong> Your slot is locked in. We are running captain matching now!</p>
+										</div>
+									{:else}
+										<div class="info-alert info-success glass">
+											<p><strong>Booking Reconfirmed!</strong> You've verified your slot. We are now running the captain matching sequence. Once a captain accepts, we will send you their contact details!</p>
+										</div>
+									{/if}
 								{:else if booking.status === 'held'}
 									<div class="info-alert info-danger glass">
 										<p><strong>Booking Held.</strong> Your counterpart group failed to reconfirm, so the trip has reset. Your $50.00 fee is being held. You can apply it to a new match or request a manual refund from support.</p>
@@ -615,6 +657,39 @@
 		padding: 6px 12px;
 		font-size: 0.8rem;
 		align-self: flex-start;
+	}
+	.btn-reconfirm {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		transition: all 0.2s ease;
+	}
+	.btn-reconfirm:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+		pointer-events: none;
+	}
+	.spinner-icon {
+		width: 1rem;
+		height: 1rem;
+		animation: spin 0.8s linear infinite;
+	}
+	.spinner-track {
+		opacity: 0.25;
+	}
+	.spinner-head {
+		opacity: 0.9;
+	}
+	.banner-pop {
+		animation: fadeIn 0.3s ease-out;
+	}
+	@keyframes spin {
+		from { transform: rotate(0deg); }
+		to { transform: rotate(360deg); }
+	}
+	@keyframes fadeIn {
+		from { opacity: 0; transform: translateY(-4px); }
+		to { opacity: 1; transform: translateY(0); }
 	}
 
 	.booking-card-footer {

@@ -63,14 +63,16 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 			.not('status', 'in', '("canceled","forfeited")');
 
 		const currentlyBooked = existingBookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
-		maxAvailablePassengers = listing.max_passengers - currentlyBooked;
+		maxAvailablePassengers = Math.max(0, listing.max_passengers - currentlyBooked);
 	}
 
 	// Calculate initial group size from URL parameter if available
 	const initialGroupSizeRaw = url.searchParams.get('groupSize');
 	let initialGroupSize = initialGroupSizeRaw ? parseInt(initialGroupSizeRaw, 10) : 1;
 	if (isNaN(initialGroupSize) || initialGroupSize < 1) initialGroupSize = 1;
-	if (initialGroupSize > maxAvailablePassengers) initialGroupSize = maxAvailablePassengers;
+	if (maxAvailablePassengers > 0 && initialGroupSize > maxAvailablePassengers) {
+		initialGroupSize = maxAvailablePassengers;
+	}
 
 	return {
 		listing,
@@ -151,7 +153,7 @@ export const actions: Actions = {
 			// Fetch Listing details
 			const { data: listing, error: listingErr } = await supabaseAdmin
 				.from('listing_templates')
-				.select('trip_type')
+				.select('trip_type, max_passengers')
 				.eq('id', templateId)
 				.maybeSingle();
 
@@ -210,6 +212,27 @@ export const actions: Actions = {
 					}
 					tripInstanceId = newTrip.id;
 				}
+			}
+
+			// Validate group size does not exceed remaining open spots for this trip instance
+			const { data: existingBookings, error: capacityErr } = await supabaseAdmin
+				.from('bookings')
+				.select('group_size')
+				.eq('trip_instance_id', tripInstanceId)
+				.not('status', 'in', '("canceled","forfeited")');
+
+			if (capacityErr) {
+				console.error('Error fetching existing bookings for capacity check:', capacityErr);
+			}
+
+			const currentlyBooked = existingBookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
+			const remainingSpots = listing.max_passengers - currentlyBooked;
+
+			if (groupSize > remainingSpots) {
+				const errorMsg = remainingSpots > 0
+					? `Your passenger group size (${groupSize} ${groupSize === 1 ? 'passenger' : 'passengers'}) exceeds the remaining open spots (${remainingSpots} ${remainingSpots === 1 ? 'spot' : 'spots'}) for this charter.`
+					: 'This charter trip is already at full passenger capacity.';
+				return fail(400, { message: errorMsg });
 			}
 
 			// 3. Create Booking in 'pending-payment' status
@@ -328,67 +351,90 @@ export const actions: Actions = {
 				}
 			}
 
-			// If the trip instance is now pending-reconfirm, transition bookings and start Inngest reconfirmation timers
+			// If the trip instance is now pending-reconfirm, auto-reconfirm Group 2 and ask Group 1 to reconfirm
 			if (nextTripStatus === 'pending-reconfirm') {
-				const { data: matchedBookings } = await supabaseAdmin
+				// 1. Auto-reconfirm Group 2 (current checkout customer)
+				await supabaseAdmin
 					.from('bookings')
-					.select('id')
+					.update({
+						status: 'reconfirmed',
+						reconfirmation_timestamp: new Date().toISOString()
+					})
+					.eq('id', booking.id);
+
+				// 2. Set Group 1 (the existing booking) to 'awaiting-reconfirm'
+				await supabaseAdmin
+					.from('bookings')
+					.update({ status: 'awaiting-reconfirm' })
 					.eq('trip_instance_id', tripInstanceId)
-					.in('status', ['paid', 'awaiting-reconfirm']);
+					.neq('id', booking.id)
+					.in('status', ['paid']);
 
-				if (matchedBookings && matchedBookings.length >= 2) {
-					const bookingIds = matchedBookings.map((b) => b.id);
+				// 3. Send match_auto_reconfirmed notification to Group 2
+				try {
+					await sendNotification(
+						'match_auto_reconfirmed',
+						{ email: user.email || '', phone, name },
+						{
+							trip_date: date,
+							trip_type: listing.trip_type
+						}
+					);
+				} catch (notifErr) {
+					console.error('Error sending match_auto_reconfirmed notification:', notifErr);
+				}
 
-					// Update both bookings status to 'awaiting-reconfirm'
-					await supabaseAdmin
-						.from('bookings')
-						.update({ status: 'awaiting-reconfirm' })
-						.in('id', bookingIds);
+				// 4. Send match_detected notification ONLY to Group 1
+				const { data: firstGroupBookings } = await supabaseAdmin
+					.from('bookings')
+					.select('id, customers(name, phone, email)')
+					.eq('trip_instance_id', tripInstanceId)
+					.neq('id', booking.id);
 
-					// Trigger match_detected notifications immediately to both customers
-					const { data: customerBookings } = await supabaseAdmin
-						.from('bookings')
-						.select('id, customers(name, phone, email)')
-						.in('id', bookingIds);
-
-					if (customerBookings) {
-						for (const cb of customerBookings) {
-							const customer = (cb as any).customers;
-							if (customer) {
-								try {
-									await sendNotification(
-										'match_detected',
-										{ email: customer.email, phone: customer.phone, name: customer.name },
-										{
-											trip_date: date,
-											trip_type: listing.trip_type
-										}
-									);
-								} catch (notifErr) {
-									console.error('Error sending match_detected notification:', notifErr);
-								}
+				if (firstGroupBookings) {
+					for (const cb of firstGroupBookings) {
+						const customer = (cb as any).customers;
+						if (customer) {
+							try {
+								await sendNotification(
+									'match_detected',
+									{ email: customer.email, phone: customer.phone, name: customer.name },
+									{
+										trip_date: date,
+										trip_type: listing.trip_type
+									}
+								);
+							} catch (notifErr) {
+								console.error('Error sending match_detected notification to group 1:', notifErr);
 							}
 						}
 					}
+				}
 
-					// Trigger Inngest match.detected event for each booking
-					try {
-						const tripDateTime = `${date}T08:00:00.000Z`; // Default departure 8:00 AM
-						const matchTime = new Date().toISOString();
+				// 5. Trigger Inngest reconfirmation timers for Group 1 only, and cancel unmatched timers for Group 2
+				try {
+					const tripDateTime = `${date}T08:00:00.000Z`; // Default departure 8:00 AM
+					const matchTime = new Date().toISOString();
 
+					if (firstGroupBookings && firstGroupBookings.length > 0) {
 						await inngest.send(
-							bookingIds.map((id) => ({
+							firstGroupBookings.map((b) => ({
 								name: 'booking/match.detected',
 								data: {
-									bookingId: id,
+									bookingId: b.id,
 									tripDateTime,
 									matchTime
 								}
 							}))
 						);
-					} catch (inngestErr) {
-						console.error('Inngest match.detected event failed (non-fatal):', inngestErr);
 					}
+
+					await inngest.send({
+						name: 'booking/reconfirmed',
+						data: { bookingId: booking.id }
+					});
+				} catch (inngestErr) {
+					console.error('Inngest match.detected / reconfirmed event failed (non-fatal):', inngestErr);
 				}
 			}
 		} catch (err: any) {

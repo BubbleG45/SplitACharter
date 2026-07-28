@@ -175,9 +175,17 @@
 										bind:value={groupSize}
 										required
 									/>
-									<span class="pax-cap">Max Available: {data.maxAvailablePassengers} Pax</span>
+									<span class="pax-cap" class:pax-cap-full={data.maxAvailablePassengers <= 0}>
+										{data.maxAvailablePassengers > 0 ? `Max Available: ${data.maxAvailablePassengers} Pax` : 'Fully Booked'}
+									</span>
 								</div>
-								<span class="input-helper">Your group size cannot exceed the remaining capacity of this charter.</span>
+								{#if data.maxAvailablePassengers <= 0}
+									<span class="input-helper error-text">This charter is already at full capacity for the selected date.</span>
+								{:else if groupSize > data.maxAvailablePassengers}
+									<span class="input-helper error-text">Group size ({groupSize}) exceeds remaining open spots ({data.maxAvailablePassengers}).</span>
+								{:else}
+									<span class="input-helper">Your group size cannot exceed the remaining capacity of this charter.</span>
+								{/if}
 							</div>
 
 							<!-- Dive Trip fields conditional -->
@@ -322,7 +330,7 @@
 						<button
 							type="submit"
 							class="btn btn-primary btn-large w-full btn-submit-checkout"
-							disabled={submitting}
+							disabled={submitting || groupSize > data.maxAvailablePassengers || data.maxAvailablePassengers <= 0}
 						>
 							{#if submitting}
 								<svg class="spinner-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -590,6 +598,13 @@
 		font-weight: 600;
 		color: var(--primary);
 		font-size: 0.9rem;
+	}
+	.pax-cap-full {
+		color: #ef4444;
+	}
+	.error-text {
+		color: #fca5a5 !important;
+		font-weight: 600;
 	}
 
 	/* Dive SCUBA fields */

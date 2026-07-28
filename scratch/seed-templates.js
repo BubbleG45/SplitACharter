@@ -1,7 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
 
-const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+let env = {};
+try {
+    const envFile = fs.readFileSync('.env', 'utf8');
+    envFile.split(/\r?\n/).forEach(line => {
+        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+        if (match) {
+            let value = match[2] ? match[2].trim() : '';
+            if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+            env[match[1]] = value;
+        }
+    });
+} catch (e) {}
+
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || env.PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error("Missing PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.");
@@ -31,6 +45,13 @@ const templates = [
     sms_enabled: true,
     email_template: 'Good news! Your shared charter on {trip_date} ({trip_type}) has been filled with another group.\n\nPlease reconfirm your attendance within your confirmation window to secure your spot.',
     sms_template: 'Good news! Your shared charter on {trip_date} has been filled. Please go to your dashboard to reconfirm your attendance within the reconfirmation window.'
+  },
+  {
+    trigger_name: 'match_auto_reconfirmed', 
+    email_enabled: true, 
+    sms_enabled: true,
+    email_template: 'Hello {customer_name},\n\nGreat news! Your booking for the {trip_type} charter on {trip_date} has matched with another group!\n\nSince you just reserved your slot, your group has been automatically reconfirmed. We are now notifying the existing group to reconfirm their slot. Once both groups are locked in, we will notify captains to accept your trip!\n\nYou can view your trip status anytime on your dashboard: {dashboard_url}',
+    sms_template: 'SplitACharter: Your booking for {trip_type} on {trip_date} has matched with another group! Your group is automatically reconfirmed. Details: {dashboard_url}'
   },
   {
     trigger_name: 'reconfirm_reminder', 

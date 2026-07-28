@@ -362,32 +362,65 @@
 					{#each suggestedTrips as trip (trip.id)}
 						{@const template = data.listings.find(l => l.id === trip.listing_template_id)}
 						{#if template}
+							{@const locParts = parseLocation(template.location)}
 							{@const spotsLeft = getRemainingSpots(template, trip)}
 							{@const reqGroupSize = parseInt(filterGroupSize, 10) || 1}
 							{@const exceedsCapacity = reqGroupSize > spotsLeft}
-							<div class="suggestion-card glass">
-								<div class="suggestion-info">
-									<div class="suggestion-meta">
-										{#if exceedsCapacity}
-											<span class="exceeds-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
-										{:else}
-											<span class="active-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
-										{/if}
-										<span class="suggestion-date">{formatDateDisplay(trip.date)}</span>
-									</div>
-									<h4>{template.trip_type}</h4>
-									<p class="suggestion-loc">{template.location} — {template.meeting_area}</p>
-									<p class="suggestion-price">${Math.round(template.low_price / 2)} – ${Math.round(template.high_price / 2)} <span class="price-lbl">/ group</span></p>
+							<div class="listing-card glass glass-interactive matched-card">
+								<div class="card-header">
+									<span class="location-badge">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 location-icon">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+											<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+										</svg>
+										<div class="location-text-group">
+											<span class="location-main">{locParts.main}</span>
+											{#if locParts.details}
+												<span class="location-details">{locParts.details}</span>
+											{/if}
+										</div>
+									</span>
+									{#if exceedsCapacity}
+										<span class="exceeds-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
+									{:else}
+										<span class="active-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
+									{/if}
 								</div>
-								{#if exceedsCapacity}
-									<button type="button" class="btn btn-disabled" disabled title="Not enough spots remaining for your group size of {reqGroupSize}">
-										Exceeds Capacity
-									</button>
-								{:else}
-									<a href={getSuggestionHref(trip, template)} class="btn btn-join">
-										Join Group
-									</a>
-								{/if}
+
+								<div class="card-body">
+									<div class="title-row">
+										<h3>{template.trip_type}</h3>
+										<span class="date-badge">{formatDateDisplay(trip.date)}</span>
+									</div>
+									<p class="description">{template.description}</p>
+
+									<div class="meta-row">
+										<div class="meta-item">
+											<span class="meta-label">Duration</span>
+											<span class="meta-value">{formatDuration(template.duration)}</span>
+										</div>
+										<div class="meta-item">
+											<span class="meta-label">Meeting Area</span>
+											<span class="meta-value" title={template.meeting_area}>{template.meeting_area}</span>
+										</div>
+									</div>
+								</div>
+
+								<div class="card-footer">
+									<div class="price-info">
+										<span class="price-split">${Math.round(template.low_price / 2)} – ${Math.round(template.high_price / 2)} <span class="per-group">/ group</span></span>
+										<span class="price-total">Total: ${Math.round(template.low_price)}–${Math.round(template.high_price)}</span>
+									</div>
+									{#if exceedsCapacity}
+										<button type="button" class="btn btn-disabled" disabled title="Not enough spots remaining for your group size of {reqGroupSize}">
+											Exceeds Capacity
+										</button>
+									{:else}
+										<a href={getSuggestionHref(trip, template)} class="btn btn-join">
+											Join Group
+										</a>
+									{/if}
+								</div>
 							</div>
 						{/if}
 					{/each}
@@ -621,51 +654,7 @@
 	.suggestions-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-		gap: 1rem;
-	}
-	.suggestion-card {
-		border: 1px solid var(--border-light);
-		padding: 1rem;
-		display: flex;
-		flex-direction: column;
-		justify-content: space-between;
-		gap: 1rem;
-		transition: border-color 0.2s;
-		max-width: 380px;
-	}
-	.suggestion-card:hover {
-		border-color: rgba(99, 102, 241, 0.4);
-	}
-	.suggestion-info h4 {
-		font-size: 1.15rem;
-		font-weight: 700;
-		margin-bottom: 6px;
-	}
-	.suggestion-loc {
-		font-size: 0.85rem;
-		color: var(--text-secondary);
-		margin-bottom: 12px;
-	}
-	.suggestion-price {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: var(--primary);
-	}
-	.suggestion-price .price-lbl {
-		font-size: 0.8rem;
-		color: var(--text-muted);
-		font-weight: 400;
-	}
-	.suggestion-meta {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 10px;
-	}
-	.suggestion-date {
-		font-size: 0.95rem;
-		color: var(--text-secondary);
-		font-weight: 700;
+		gap: 1.25rem;
 	}
 
 	.exceeds-badge {
