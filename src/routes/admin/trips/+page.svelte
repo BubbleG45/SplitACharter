@@ -580,7 +580,6 @@
 										<table class="nested-table">
 											<thead>
 												<tr>
-													<th>Booking Ref #</th>
 													<th>Customer Name</th>
 													<th>Contact Details</th>
 													<th>Group Size</th>
@@ -593,9 +592,6 @@
 												{#each trip.bookings as booking (booking.id)}
 													{@const customer = (Array.isArray(booking.customers) ? booking.customers[0] : booking.customers) as any}
 													<tr>
-														<td>
-															<code class="ref-code" title={booking.id}>{booking.id}</code>
-														</td>
 														<td>
 															<span class="nested-name">{customer?.name || 'N/A'}</span>
 														</td>
