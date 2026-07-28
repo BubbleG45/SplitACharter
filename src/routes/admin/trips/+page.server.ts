@@ -36,7 +36,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 					)
 				)
 			`)
-			.order('date', { ascending: false })
+			.order('date', { ascending: true })
 			.order('created_at', { ascending: false }),
 		supabase
 			.from('listing_templates')
