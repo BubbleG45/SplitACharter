@@ -59,7 +59,7 @@ export const load: PageServerLoad = async ({ url, parent }) => {
 	// 2. Fetch Trip and Listing Details
 	const { data: trip, error: tripErr } = await supabaseAdmin
 		.from('trip_instances')
-		.select('id, date, status, captain_id, listing_templates(trip_type, location, meeting_area, description, duration_hours)')
+		.select('id, date, status, captain_id, listing_templates(trip_type, location, meeting_area, description, duration)')
 		.eq('id', tripId)
 		.maybeSingle();
 
