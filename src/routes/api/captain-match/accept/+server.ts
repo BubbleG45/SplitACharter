@@ -90,7 +90,6 @@ export const GET: RequestHandler = async ({ url }) => {
 						{ email: customer.email, phone: customer.phone, name: customer.name },
 						{
 							captain_name: captainName,
-							captain_phone: captainPhone,
 							meeting_area: tripDetails?.meeting_area || '',
 							trip_date: tripDateStr,
 							trip_type: tripDetails?.trip_type || ''

@@ -24,7 +24,7 @@
 		reconfirm_forfeited: ['{customer_name}', '{trip_date}'],
 		counterpart_forfeited: ['{customer_name}', '{trip_date}'],
 		captain_blast: ['{trip_type}', '{trip_date}', '{location}', '{accept_url}'],
-		captain_confirmed: ['{customer_name}', '{captain_name}', '{captain_phone}', '{meeting_area}', '{trip_date}', '{trip_type}'],
+		captain_confirmed: ['{customer_name}', '{captain_name}', '{meeting_area}', '{trip_date}', '{trip_type}'],
 		captain_secured: ['{captain_name}', '{trip_date}', '{trip_type}', '{passenger_list}'],
 		captain_details_link: ['{trip_type}', '{trip_date}', '{location}', '{details_url}'],
 		matching_timeout: ['{customer_name}', '{trip_date}', '{trip_type}'],

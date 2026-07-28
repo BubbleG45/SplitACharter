@@ -12,7 +12,6 @@ const mockData = {
 	trip_type: 'Offshore Fishing (8hr)',
 	deadline_time: '2026-08-21 08:00 AM',
 	captain_name: 'Jack Sparrow',
-	captain_phone: '+1 (555) 019-2834',
 	meeting_area: 'Slip B-12, Marina Del Rey',
 	accept_url: 'http://localhost:5173/api/captain-match/accept?tripId=mock_trip_id&captainId=mock_captain_id',
 	dashboard_url: 'http://localhost:5173/dashboard',
