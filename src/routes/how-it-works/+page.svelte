@@ -153,7 +153,7 @@
 					<div class="step-card glass">
 						<span class="step-number">4</span>
 						<h3>Captain Match & Go</h3>
-						<p>As soon as both groups confirm, we dispatch the trip details to local captains. The first to reply YES claims the trip. You pay the captain directly at the dock!</p>
+						<p>As soon as both groups confirm, we text the trip details to local captains. The first to reply YES claims the trip. You pay the captain directly at the dock!</p>
 					</div>
 				</div>
 

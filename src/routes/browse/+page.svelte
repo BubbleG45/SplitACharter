@@ -272,7 +272,7 @@
 				<span>Back to Home</span>
 			</a>
 			<h1>Available Charters</h1>
-			<p class="subtitle">Pick a charter type, join an existing group, or open a new date to share costs.</p>
+			<p class="subtitle">Browse active charters or pick a date to start your own.</p>
 		</header>
 
 		<!-- Filters Controls -->
@@ -354,7 +354,7 @@
 					<span class="pulse-dot"></span>
 					<div>
 						<h2>Suggested Trips to Join</h2>
-						<p>These active charters are scheduled within 3 days of your searched date. Join one of them to complete the booking!</p>
+						<p>One group is already booked for these trips. Join them and your trip confirms instantly. No waiting for a second group to find you.</p>
 					</div>
 				</div>
 
@@ -371,7 +371,7 @@
 										{#if exceedsCapacity}
 											<span class="exceeds-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
 										{:else}
-											<span class="suggestion-badge">Active Group</span>
+											<span class="active-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
 										{/if}
 										<span class="suggestion-date">{formatDateDisplay(trip.date)}</span>
 									</div>
@@ -661,17 +661,6 @@
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 10px;
-	}
-	.suggestion-badge {
-		background: rgba(99, 102, 241, 0.15);
-		color: #818cf8;
-		border: 1px solid rgba(99, 102, 241, 0.3);
-		padding: 2px 8px;
-		border-radius: 4px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
 	}
 	.suggestion-date {
 		font-size: 0.95rem;

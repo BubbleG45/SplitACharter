@@ -152,7 +152,7 @@
 					type="text"
 					id="meeting_area"
 					name="meeting_area"
-					value="Provided by captain"
+					value="Meeting details sent after confirmation"
 					placeholder="e.g., Slip 14, Whale Harbor Marina, MM 83.5"
 					required
 				/>

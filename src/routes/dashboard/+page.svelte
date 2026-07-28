@@ -117,7 +117,7 @@
 								<div class="trip-meta">
 									<span class="trip-date">{formatDate(trip?.date)}</span>
 									<h3>{template?.trip_type || 'Charter Reservation'}</h3>
-									<span class="trip-loc">{template?.location || 'Florida Keys'} — {template?.meeting_area || 'Provided by captain'}</span>
+									<span class="trip-loc">{template?.location || 'Florida Keys'} — {template?.meeting_area || 'Meeting details sent after confirmation'}</span>
 								</div>
 								
 								<div class="status-meta">
