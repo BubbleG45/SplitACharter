@@ -117,7 +117,7 @@
 			<div class="divider"></div>
 
 			<div class="disclaimer-text">
-				<p>Please coordinate directly with each group as needed. The passengers are aware that they pay you directly at the dock. Secure token verified: Authorized access only.</p>
+				<p>Please coordinate directly with each group as needed. The passengers are aware that they pay you directly at the dock.</p>
 			</div>
 		</div>
 	</div>
