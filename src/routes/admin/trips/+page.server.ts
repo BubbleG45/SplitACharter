@@ -1,6 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { sendNotification } from '$lib/notifications';
+import { sendNotification, getSiteUrl } from '$lib/notifications';
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	const [tripsRes, listingsRes] = await Promise.all([
@@ -302,7 +302,7 @@ export const actions: Actions = {
 		}
 
 		// 2. Fetch all notification_logs for captain_blast and captain_details_link matching tripId
-		const { data: logs, error: logsErr } = await supabase
+		let { data: logs, error: logsErr } = await supabase
 			.from('notification_logs')
 			.select('*')
 			.in('template', ['captain_blast', 'captain_details_link'])
@@ -311,7 +311,18 @@ export const actions: Actions = {
 
 		if (logsErr) {
 			console.error('Error fetching captain notification logs:', logsErr);
-			return fail(500, { message: 'Failed to fetch captain logs' });
+		}
+
+		if (!logs || logs.length === 0) {
+			// Fallback: search notification_logs by trip date for captain_blast/captain_details_link
+			const { data: dateLogs } = await supabase
+				.from('notification_logs')
+				.select('*')
+				.in('template', ['captain_blast', 'captain_details_link'])
+				.ilike('content', `%${trip.date}%`)
+				.order('timestamp', { ascending: true });
+
+			logs = dateLogs || [];
 		}
 
 		// 3. Fetch all active captains to resolve recipient phone/email to captain names
@@ -370,5 +381,66 @@ export const actions: Actions = {
 			},
 			blastAudits: auditItems
 		};
+	},
+
+	triggerCaptainBlast: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const tripId = formData.get('tripId') as string;
+
+		if (!tripId) {
+			return fail(400, { message: 'Trip ID is required' });
+		}
+
+		// Fetch trip details
+		const { data: trip, error: tripErr } = await supabase
+			.from('trip_instances')
+			.select('id, date, status, listing_templates(trip_type, location, meeting_area)')
+			.eq('id', tripId)
+			.single();
+
+		if (tripErr || !trip) {
+			return fail(404, { message: 'Trip instance not found' });
+		}
+
+		const tripDetails = (trip as any).listing_templates;
+		const tripType = tripDetails?.trip_type;
+		const location = tripDetails?.location;
+
+		// Fetch active captains matching trip_type and location
+		const { data: captains } = await supabase
+			.from('captains')
+			.select('id, name, phone, trip_types, locations')
+			.eq('active', true);
+
+		const eligible = (captains || []).filter((c) =>
+			c.trip_types?.includes(tripType) &&
+			c.locations?.includes(location)
+		);
+
+		if (eligible.length === 0) {
+			return fail(400, { message: `No active captains found matching "${tripType}" in "${location}".` });
+		}
+
+		const defaultBaseUrl = getSiteUrl();
+
+		let sentCount = 0;
+		for (const c of eligible) {
+			if (c.phone) {
+				const acceptUrl = `${defaultBaseUrl}/api/captain-match/accept?tripId=${trip.id}&captainId=${c.id}`;
+				await sendNotification(
+					'captain_blast',
+					{ phone: c.phone, name: c.name },
+					{
+						trip_type: tripDetails?.trip_type || '',
+						trip_date: trip.date,
+						location: tripDetails?.location || '',
+						accept_url: acceptUrl
+					}
+				);
+				sentCount++;
+			}
+		}
+
+		return { success: true, count: sentCount, message: `Successfully dispatched captain blast to ${sentCount} captain(s).` };
 	}
 };

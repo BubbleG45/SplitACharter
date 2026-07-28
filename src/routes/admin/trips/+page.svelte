@@ -230,8 +230,11 @@
 	let showCaptainsLogModal = $state(false);
 	let loadingCaptainsLog = $state(false);
 	let captainsLogData = $state<any>(null);
+	let selectedCaptainsLogTrip = $state<any>(null);
+	let blastingInProgress = $state(false);
 
 	async function openCaptainsLog(trip: any) {
+		selectedCaptainsLogTrip = trip;
 		showCaptainsLogModal = true;
 		loadingCaptainsLog = true;
 		captainsLogData = null;
@@ -724,9 +727,36 @@
 				</div>
 
 				<div class="audits-section">
-					<h3 class="section-title">Skipper Blast Delivery & Response History ({audits.length})</h3>
+					<div class="audits-section-header">
+						<h3 class="section-title">Skipper Blast Delivery & Response History ({audits.length})</h3>
+						{#if info.status === 'confirmed' || info.status === 'completed'}
+							<form
+								method="POST"
+								action="?/triggerCaptainBlast"
+								use:enhance={() => {
+									blastingInProgress = true;
+									return async ({ update }) => {
+										await update();
+										blastingInProgress = false;
+										if (selectedCaptainsLogTrip) {
+											openCaptainsLog(selectedCaptainsLogTrip);
+										}
+									};
+								}}
+								style="display: inline-block;"
+							>
+								<input type="hidden" name="tripId" value={info.id} />
+								<button type="submit" class="btn btn-xs btn-primary btn-dispatch-blast" disabled={blastingInProgress}>
+									{blastingInProgress ? 'Dispatching...' : 'Dispatch Captain Blast'}
+								</button>
+							</form>
+						{/if}
+					</div>
 					{#if audits.length === 0}
-						<p class="empty-state">No captain blast logs recorded for this trip instance.</p>
+						<div class="empty-log-box glass">
+							<p class="empty-state-text">No captain blast logs recorded yet for this trip instance.</p>
+							<p class="empty-state-sub">If this trip confirmed without a background worker active, click <strong>Dispatch Captain Blast</strong> above to send the blast notification to eligible captains.</p>
+						</div>
 					{:else}
 						<table class="captains-log-table">
 							<thead>
@@ -1416,14 +1446,44 @@
 		gap: 6px;
 		align-items: stretch;
 	}
-	.btn-cancel-trip {
+	.btn-cancel-trip, .btn-captains-log {
 		font-size: 0.7rem !important;
 		padding: 2px 6px !important;
 		opacity: 0.85;
 		margin-top: 2px;
 	}
-	.btn-cancel-trip:hover {
+	.btn-cancel-trip:hover, .btn-captains-log:hover {
 		opacity: 1;
+	}
+
+	.audits-section-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1rem;
+	}
+	.btn-dispatch-blast {
+		font-size: 0.75rem !important;
+		padding: 4px 10px !important;
+	}
+	.empty-log-box {
+		padding: 1.25rem;
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		background: rgba(255, 255, 255, 0.02);
+		text-align: center;
+		margin-top: 0.5rem;
+	}
+	.empty-state-text {
+		font-weight: 600;
+		color: var(--text-primary);
+		font-size: 0.9rem;
+		margin-bottom: 4px;
+	}
+	.empty-state-sub {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		margin: 0;
 	}
 
 	.btn-share-link {
