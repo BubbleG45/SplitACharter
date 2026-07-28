@@ -145,6 +145,16 @@
 
 			return statusMatch && tripTypeMatch && locationMatch && searchMatch;
 		})
+		.sort((a: any, b: any) => {
+			const dateA = new Date(a.date).getTime();
+			const dateB = new Date(b.date).getTime();
+			if (dateB !== dateA) {
+				return dateB - dateA;
+			}
+			const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+			const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+			return createdB - createdA;
+		})
 	);
 
 	// Auto-expand matched trip rows when searching

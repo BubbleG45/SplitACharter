@@ -12,6 +12,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 				date,
 				status,
 				captain_id,
+				created_at,
 				captains (
 					name,
 					phone
@@ -35,7 +36,8 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 					)
 				)
 			`)
-			.order('date', { ascending: false }),
+			.order('date', { ascending: false })
+			.order('created_at', { ascending: false }),
 		supabase
 			.from('listing_templates')
 			.select('id, trip_type, location')
