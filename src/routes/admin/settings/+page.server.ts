@@ -2,7 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-	const [settingsRes, tripTypesRes] = await Promise.all([
+	const [settingsRes, tripTypesRes, reviewsRes] = await Promise.all([
 		supabase
 			.from('admin_notification_settings')
 			.select('*')
@@ -10,7 +10,12 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		supabase
 			.from('trip_types')
 			.select('*')
-			.order('name', { ascending: true })
+			.order('name', { ascending: true }),
+		supabase
+			.from('landing_reviews')
+			.select('*')
+			.order('display_order', { ascending: true })
+			.order('created_at', { ascending: true })
 	]);
 
 	if (settingsRes.error) {
@@ -25,7 +30,8 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 
 	return {
 		settings: settingsRes.data || [],
-		tripTypes: tripTypesRes.data || []
+		tripTypes: tripTypesRes.data || [],
+		reviews: reviewsRes.data || []
 	};
 };
 
@@ -103,6 +109,117 @@ export const actions: Actions = {
 		}
 
 		return { success: true };
+	},
+	addReview: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const name = (formData.get('name') as string)?.trim();
+		const location = (formData.get('location') as string)?.trim();
+		const trip = (formData.get('trip') as string)?.trim();
+		const stars = parseInt(formData.get('stars') as string || '5', 10);
+		const avatar = (formData.get('avatar') as string)?.trim() || name?.substring(0, 2).toUpperCase();
+		const quote = (formData.get('quote') as string)?.trim();
+		const displayOrder = parseInt(formData.get('display_order') as string || '0', 10);
+
+		if (!name || !location || !trip || !quote) {
+			return fail(400, { reviewMessage: 'Name, location, trip type, and quote are required' });
+		}
+
+		const { error: insertErr } = await supabase
+			.from('landing_reviews')
+			.insert({
+				name,
+				location,
+				trip,
+				stars,
+				avatar,
+				quote,
+				display_order: displayOrder,
+				active: true
+			});
+
+		if (insertErr) {
+			console.error('Error adding review:', insertErr);
+			return fail(500, { reviewMessage: insertErr.message || 'Failed to add review' });
+		}
+
+		return { success: true };
+	},
+	updateReview: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+		const name = (formData.get('name') as string)?.trim();
+		const location = (formData.get('location') as string)?.trim();
+		const trip = (formData.get('trip') as string)?.trim();
+		const stars = parseInt(formData.get('stars') as string || '5', 10);
+		const avatar = (formData.get('avatar') as string)?.trim();
+		const quote = (formData.get('quote') as string)?.trim();
+		const displayOrder = parseInt(formData.get('display_order') as string || '0', 10);
+		const active = formData.get('active') === 'true';
+
+		if (!id || !name || !location || !trip || !quote) {
+			return fail(400, { reviewMessage: 'All fields are required to update a review' });
+		}
+
+		const { error: updateErr } = await supabase
+			.from('landing_reviews')
+			.update({
+				name,
+				location,
+				trip,
+				stars,
+				avatar,
+				quote,
+				display_order: displayOrder,
+				active
+			})
+			.eq('id', id);
+
+		if (updateErr) {
+			console.error('Error updating review:', updateErr);
+			return fail(500, { reviewMessage: updateErr.message || 'Failed to update review' });
+		}
+
+		return { success: true };
+	},
+	toggleReviewActive: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+		const active = formData.get('active') === 'true';
+
+		if (!id) {
+			return fail(400, { reviewMessage: 'Review ID is required' });
+		}
+
+		const { error: updateErr } = await supabase
+			.from('landing_reviews')
+			.update({ active })
+			.eq('id', id);
+
+		if (updateErr) {
+			console.error('Error toggling review active status:', updateErr);
+			return fail(500, { reviewMessage: updateErr.message || 'Failed to toggle status' });
+		}
+
+		return { success: true };
+	},
+	deleteReview: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+
+		if (!id) {
+			return fail(400, { reviewMessage: 'Review ID is required' });
+		}
+
+		const { error: deleteErr } = await supabase
+			.from('landing_reviews')
+			.delete()
+			.eq('id', id);
+
+		if (deleteErr) {
+			console.error('Error deleting review:', deleteErr);
+			return fail(500, { reviewMessage: deleteErr.message || 'Failed to delete review' });
+		}
+
+		return { success: true };
 	}
 };
-

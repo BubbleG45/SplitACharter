@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 
-	let { data, form } = $props();
+	let { data, form }: { data: any; form: any } = $props();
 
 	let savingId = $state<string | null>(null);
 	let saveSuccessId = $state<string | null>(null);
 	let selectedId = $state<string | null>(null);
+
+	let editingReview = $state<any | null>(null);
+	let isAddingReview = $state(false);
 
 	// Automatically select the first template once the settings are loaded
 	$effect(() => {
@@ -14,7 +17,7 @@
 		}
 	});
 
-	const selectedSetting = $derived(data.settings.find(s => s.id === selectedId));
+	const selectedSetting = $derived(data.settings?.find((s: any) => s.id === selectedId));
 
 	const triggerPlaceholders: Record<string, string[]> = {
 		admin_trip_cancellation: ['{customer_name}', '{trip_date}', '{trip_type}', '{cancellation_reason}', '{refund_status_text}', '{dashboard_url}'],
@@ -270,7 +273,405 @@
 	</div>
 </div>
 
+<div class="divider-main"></div>
+
+<div class="admin-header section-header">
+	<div>
+		<span class="subtitle">Content Management</span>
+		<h2>Landing Page Reviews</h2>
+		<p class="section-desc">Manage guest and captain testimonials displayed in the landing page marquee carousel.</p>
+	</div>
+</div>
+
+{#if form?.reviewMessage}
+	<div class="alert alert-error glass">
+		<p>{form.reviewMessage}</p>
+	</div>
+{/if}
+
+<div class="reviews-mgmt-container glass">
+	<div class="reviews-mgmt-header">
+		<h3>Platform Reviews ({data.reviews?.length || 0})</h3>
+		<button 
+			type="button" 
+			class="btn btn-primary" 
+			onclick={() => { isAddingReview = true; editingReview = null; }}
+		>
+			+ Add New Review
+		</button>
+	</div>
+
+	<!-- Add New Review Form -->
+	{#if isAddingReview}
+		<div class="review-form-card glass glow-box">
+			<div class="form-card-title">
+				<h4>Add New Review</h4>
+				<button type="button" class="btn-text-close" onclick={() => isAddingReview = false}>✕ Close</button>
+			</div>
+			<form method="POST" action="?/addReview" use:enhance={() => {
+				return async ({ update, result }) => {
+					await update();
+					if (result.type === 'success') {
+						isAddingReview = false;
+					}
+				};
+			}} class="review-edit-grid">
+				<div class="form-group">
+					<label for="new-rev-name">Author Name</label>
+					<input id="new-rev-name" type="text" name="name" placeholder="e.g. Dave & Sarah M." required class="text-input" />
+				</div>
+				<div class="form-group">
+					<label for="new-rev-location">Location</label>
+					<input id="new-rev-location" type="text" name="location" placeholder="e.g. Miami, FL" required class="text-input" />
+				</div>
+				<div class="form-group">
+					<label for="new-rev-trip">Charter / Trip Type</label>
+					<input id="new-rev-trip" type="text" name="trip" placeholder="e.g. Islamorada Reef Snorkeling" required class="text-input" />
+				</div>
+				<div class="form-group">
+					<label for="new-rev-stars">Rating (1-5 Stars)</label>
+					<select id="new-rev-stars" name="stars" class="text-input">
+						<option value="5">5 Stars (★★★★★)</option>
+						<option value="4">4 Stars (★★★★☆)</option>
+						<option value="3">3 Stars (★★★☆☆)</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label for="new-rev-avatar">Avatar Initials</label>
+					<input id="new-rev-avatar" type="text" name="avatar" placeholder="e.g. DS" class="text-input" maxLength={3} />
+				</div>
+				<div class="form-group">
+					<label for="new-rev-order">Display Order</label>
+					<input id="new-rev-order" type="number" name="display_order" value={(data.reviews?.length || 0) + 1} class="text-input" />
+				</div>
+				<div class="form-group full-width">
+					<label for="new-rev-quote">Review Quote</label>
+					<textarea id="new-rev-quote" name="quote" rows="3" placeholder="Write customer review..." required class="text-input"></textarea>
+				</div>
+				<div class="form-actions full-width">
+					<button type="button" class="btn btn-secondary" onclick={() => isAddingReview = false}>Cancel</button>
+					<button type="submit" class="btn btn-primary">Save Review</button>
+				</div>
+			</form>
+		</div>
+	{/if}
+
+	<!-- Existing Reviews Table / List -->
+	{#if !data.reviews || data.reviews.length === 0}
+		<p class="empty-msg" style="padding: 2rem; text-align: center;">No reviews in database. Default static reviews are currently displayed on the landing page.</p>
+	{:else}
+		<div class="reviews-list">
+			{#each data.reviews as rev}
+				{#if editingReview?.id === rev.id}
+					<div class="review-form-card glass glow-box inline-edit">
+						<div class="form-card-title">
+							<h4>Edit Review</h4>
+							<button type="button" class="btn-text-close" onclick={() => editingReview = null}>✕ Cancel</button>
+						</div>
+						<form method="POST" action="?/updateReview" use:enhance={() => {
+							return async ({ update, result }) => {
+								await update();
+								if (result.type === 'success') {
+									editingReview = null;
+								}
+							};
+						}} class="review-edit-grid">
+							<input type="hidden" name="id" value={rev.id} />
+							<div class="form-group">
+								<label for="edit-rev-name-{rev.id}">Author Name</label>
+								<input id="edit-rev-name-{rev.id}" type="text" name="name" bind:value={editingReview.name} required class="text-input" />
+							</div>
+							<div class="form-group">
+								<label for="edit-rev-loc-{rev.id}">Location</label>
+								<input id="edit-rev-loc-{rev.id}" type="text" name="location" bind:value={editingReview.location} required class="text-input" />
+							</div>
+							<div class="form-group">
+								<label for="edit-rev-trip-{rev.id}">Charter / Trip Type</label>
+								<input id="edit-rev-trip-{rev.id}" type="text" name="trip" bind:value={editingReview.trip} required class="text-input" />
+							</div>
+							<div class="form-group">
+								<label for="edit-rev-stars-{rev.id}">Rating (1-5 Stars)</label>
+								<select id="edit-rev-stars-{rev.id}" name="stars" bind:value={editingReview.stars} class="text-input">
+									<option value={5}>5 Stars (★★★★★)</option>
+									<option value={4}>4 Stars (★★★★☆)</option>
+									<option value={3}>3 Stars (★★★☆☆)</option>
+								</select>
+							</div>
+							<div class="form-group">
+								<label for="edit-rev-avatar-{rev.id}">Avatar Initials</label>
+								<input id="edit-rev-avatar-{rev.id}" type="text" name="avatar" bind:value={editingReview.avatar} class="text-input" />
+							</div>
+							<div class="form-group">
+								<label for="edit-rev-order-{rev.id}">Display Order</label>
+								<input id="edit-rev-order-{rev.id}" type="number" name="display_order" bind:value={editingReview.display_order} class="text-input" />
+							</div>
+							<div class="form-group full-width">
+								<label for="edit-rev-quote-{rev.id}">Review Quote</label>
+								<textarea id="edit-rev-quote-{rev.id}" name="quote" rows="3" bind:value={editingReview.quote} required class="text-input"></textarea>
+							</div>
+							<div class="form-group">
+								<label class="toggle-label">
+									<input type="checkbox" name="active_checkbox" bind:checked={editingReview.active} />
+									<span>Active on Landing Page</span>
+								</label>
+								<input type="hidden" name="active" value={editingReview.active ? 'true' : 'false'} />
+							</div>
+							<div class="form-actions full-width">
+								<button type="button" class="btn btn-secondary" onclick={() => editingReview = null}>Cancel</button>
+								<button type="submit" class="btn btn-primary">Update Review</button>
+							</div>
+						</form>
+					</div>
+				{:else}
+					<div class="review-row" class:inactive={!rev.active}>
+						<div class="review-main-info">
+							<div class="rev-avatar">{rev.avatar}</div>
+							<div class="rev-text-details">
+								<div class="rev-author">
+									<span class="rev-name">{rev.name}</span>
+									<span class="rev-loc">• {rev.location}</span>
+									<span class="rev-stars">{'★'.repeat(rev.stars)}</span>
+									{#if !rev.active}
+										<span class="status-badge inactive">Hidden</span>
+									{:else}
+										<span class="status-badge active">Active</span>
+									{/if}
+								</div>
+								<p class="rev-quote">"{rev.quote}"</p>
+								<div class="rev-trip-tag">⚓ {rev.trip}</div>
+							</div>
+						</div>
+						<div class="review-actions">
+							<button 
+								type="button" 
+								class="btn-action-edit"
+								onclick={() => { editingReview = { ...rev }; isAddingReview = false; }}
+							>
+								Edit
+							</button>
+							<form method="POST" action="?/toggleReviewActive" use:enhance class="inline-form">
+								<input type="hidden" name="id" value={rev.id} />
+								<input type="hidden" name="active" value={rev.active ? 'false' : 'true'} />
+								<button type="submit" class="btn-action-toggle">
+									{rev.active ? 'Hide' : 'Show'}
+								</button>
+							</form>
+							<form method="POST" action="?/deleteReview" use:enhance class="inline-form">
+								<input type="hidden" name="id" value={rev.id} />
+								<button 
+									type="submit" 
+									class="btn-danger-action"
+									onclick={(e) => {
+										if (!confirm(`Are you sure you want to delete this review by ${rev.name}?`)) {
+											e.preventDefault();
+										}
+									}}
+								>
+									Delete
+								</button>
+							</form>
+						</div>
+					</div>
+				{/if}
+			{/each}
+		</div>
+	{/if}
+</div>
+
 <style>
+	.reviews-mgmt-container {
+		border: 1px solid var(--border-light);
+		padding: 2rem;
+		border-radius: 8px;
+		background: rgba(255, 255, 255, 0.01);
+		margin-bottom: 4rem;
+	}
+	.reviews-mgmt-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1.5rem;
+	}
+	.reviews-mgmt-header h3 {
+		font-size: 1.2rem;
+		font-weight: 700;
+		color: var(--text-primary);
+	}
+	.review-form-card {
+		padding: 1.5rem;
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		background: rgba(15, 23, 42, 0.6);
+		margin-bottom: 1.5rem;
+	}
+	.form-card-title {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1rem;
+		border-bottom: 1px solid var(--border-light);
+		padding-bottom: 0.5rem;
+	}
+	.form-card-title h4 {
+		font-size: 1.05rem;
+		font-weight: 700;
+		color: var(--primary);
+	}
+	.btn-text-close {
+		background: none;
+		border: none;
+		color: var(--text-muted);
+		cursor: pointer;
+		font-size: 0.85rem;
+	}
+	.btn-text-close:hover {
+		color: var(--text-primary);
+	}
+	.review-edit-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1rem;
+	}
+	.review-edit-grid .full-width {
+		grid-column: 1 / -1;
+	}
+	.form-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+	}
+	.reviews-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.review-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1.25rem;
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		gap: 1.5rem;
+		transition: background 0.2s ease;
+	}
+	.review-row:hover {
+		background: rgba(255, 255, 255, 0.04);
+	}
+	.review-row.inactive {
+		opacity: 0.55;
+	}
+	.review-main-info {
+		display: flex;
+		gap: 1rem;
+		align-items: flex-start;
+		flex: 1;
+	}
+	.rev-avatar {
+		width: 42px;
+		height: 42px;
+		border-radius: 50%;
+		background: linear-gradient(135deg, var(--primary), var(--secondary));
+		color: #fff;
+		font-weight: 700;
+		font-size: 0.9rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.rev-text-details {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+	.rev-author {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.rev-name {
+		font-weight: 700;
+		color: #f8fafc;
+		font-size: 0.95rem;
+	}
+	.rev-loc {
+		color: var(--text-secondary);
+		font-size: 0.85rem;
+	}
+	.rev-stars {
+		color: #f59e0b;
+		font-size: 0.85rem;
+	}
+	.status-badge {
+		font-size: 0.7rem;
+		font-weight: 700;
+		padding: 2px 6px;
+		border-radius: 4px;
+		text-transform: uppercase;
+	}
+	.status-badge.active {
+		background: rgba(16, 185, 129, 0.15);
+		color: var(--success);
+		border: 1px solid rgba(16, 185, 129, 0.3);
+	}
+	.status-badge.inactive {
+		background: rgba(148, 163, 184, 0.15);
+		color: var(--text-muted);
+		border: 1px solid rgba(148, 163, 184, 0.3);
+	}
+	.rev-quote {
+		font-size: 0.9rem;
+		color: #cbd5e1;
+		font-style: italic;
+		line-height: 1.4;
+	}
+	.rev-trip-tag {
+		font-size: 0.75rem;
+		color: #38bdf8;
+		font-weight: 600;
+	}
+	.review-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-shrink: 0;
+	}
+	.inline-form {
+		display: inline;
+	}
+	.btn-action-edit {
+		background: rgba(56, 189, 248, 0.1);
+		color: #38bdf8;
+		border: 1px solid rgba(56, 189, 248, 0.25);
+		font-size: 0.8rem;
+		padding: 4px 10px;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	.btn-action-edit:hover {
+		background: #38bdf8;
+		color: #000;
+	}
+	.btn-action-toggle {
+		background: rgba(255, 255, 255, 0.05);
+		color: var(--text-secondary);
+		border: 1px solid var(--border-light);
+		font-size: 0.8rem;
+		padding: 4px 10px;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	.btn-action-toggle:hover {
+		background: rgba(255, 255, 255, 0.1);
+		color: var(--text-primary);
+	}
+
 	.divider-main {
 		margin: 4rem 0 3rem 0;
 		height: 1px;

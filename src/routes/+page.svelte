@@ -1,7 +1,7 @@
 <script lang="ts">
-	let { data } = $props();
+	let { data }: { data: any } = $props();
 
-	const reviews = [
+	const defaultReviews = [
 		{
 			name: 'Dave & Sarah M.',
 			location: 'Miami, FL',
@@ -83,6 +83,8 @@
 			quote: 'Found a spot on short notice. Reconfirmed right from my phone and met incredible dive buddies. Highly recommend SplitACharter!'
 		}
 	];
+
+	const displayReviews = $derived(data.reviews && data.reviews.length > 0 ? data.reviews : defaultReviews);
 </script>
 
 <svelte:head>
@@ -127,7 +129,7 @@
 
 			<div class="marquee-container">
 				<div class="marquee-track">
-					{#each [...reviews, ...reviews] as r}
+					{#each [...displayReviews, ...displayReviews] as r}
 						<div class="review-card">
 							<div class="card-top">
 								<div class="author-info">
