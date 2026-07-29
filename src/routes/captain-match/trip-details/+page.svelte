@@ -112,7 +112,7 @@
 			</div>
 
 			<div class="info-alert info-meeting glass">
-				<p><strong>Meeting Area / Slip:</strong> {template?.meeting_area || 'Not Specified'}</p>
+				<p><strong>Meeting Area / Slip:</strong> {template?.meeting_area && !template.meeting_area.toLowerCase().includes('meeting details sent after confirmation') ? template.meeting_area : 'Not Specified'}</p>
 				<p class="meeting-instructions">Please contact the groups directly to confirm and provide specific details on where to meet.</p>
 			</div>
 
