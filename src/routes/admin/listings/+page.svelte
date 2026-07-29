@@ -73,25 +73,47 @@
 			})
 	);
 
+	let templateToDelete = $state<any | null>(null);
+	let deleteStep = $state<1 | 2>(1);
+
+	function openDeleteModal(listing: any) {
+		templateToDelete = listing;
+		deleteStep = 1;
+	}
+
+	function closeDeleteModal() {
+		templateToDelete = null;
+		deleteStep = 1;
+	}
+
+	function proceedToStep2() {
+		deleteStep = 2;
+	}
+
 	function formatDuration(intervalStr: string | any) {
-		// Postgres interval formats can be e.g. "04:00:00" or custom object
 		if (typeof intervalStr === 'string') {
+			if (intervalStr.includes('hour') || intervalStr.includes('hr')) {
+				return intervalStr
+					.replace(/hours?/gi, 'hrs')
+					.replace(/minutes?/gi, 'mins')
+					.replace(/\b0 mins\b/gi, '')
+					.trim();
+			}
 			const parts = intervalStr.split(':');
 			if (parts.length >= 2) {
 				const hours = parseInt(parts[0], 10);
 				const minutes = parseInt(parts[1], 10);
 				let result = '';
-				if (hours > 0) result += `${hours} hr `;
-				if (minutes > 0) result += `${minutes} min`;
-				return result.trim();
+				if (hours > 0) result += `${hours} hr${hours > 1 ? 's' : ''} `;
+				if (minutes > 0) result += `${minutes} min${minutes > 1 ? 's' : ''}`;
+				return result.trim() || 'N/A';
 			}
 			return intervalStr;
 		}
-		// In case it is an object from pg
 		if (intervalStr && typeof intervalStr === 'object') {
 			let result = '';
-			if (intervalStr.hours) result += `${intervalStr.hours} hr `;
-			if (intervalStr.minutes) result += `${intervalStr.minutes} min`;
+			if (intervalStr.hours) result += `${intervalStr.hours} hr${intervalStr.hours > 1 ? 's' : ''} `;
+			if (intervalStr.minutes) result += `${intervalStr.minutes} min${intervalStr.minutes > 1 ? 's' : ''}`;
 			return result.trim() || 'N/A';
 		}
 		return 'N/A';
@@ -228,12 +250,74 @@
 										{/if}
 									</button>
 								</form>
+								<button
+									type="button"
+									class="btn-icon btn-delete"
+									title="Delete Template"
+									onclick={() => openDeleteModal(listing)}
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+									</svg>
+								</button>
 							</div>
 						</td>
 					</tr>
 				{/each}
 			</tbody>
 		</table>
+	</div>
+{/if}
+
+<!-- Double Confirmation Delete Modal -->
+{#if templateToDelete}
+	<div class="modal-backdrop" onclick={closeDeleteModal} role="presentation">
+		<div class="modal-card glass glow-danger" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+			{#if deleteStep === 1}
+				<div class="modal-header">
+					<span class="modal-badge step-1">Step 1 of 2</span>
+					<h2>Delete Listing Template?</h2>
+				</div>
+				<div class="modal-body">
+					<p>Are you sure you want to delete the listing template for <strong>"{templateToDelete.trip_type}"</strong> ({templateToDelete.location})?</p>
+					<p class="modal-subtext">This action will remove the listing template from your active operational catalog.</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" onclick={closeDeleteModal}>Cancel</button>
+					<button type="button" class="btn btn-danger-action" onclick={proceedToStep2}>
+						Continue to Final Confirmation &rarr;
+					</button>
+				</div>
+			{:else}
+				<div class="modal-header">
+					<span class="modal-badge step-2">Step 2 of 2 — Final Warning</span>
+					<h2 class="danger-title">Permanent Removal Confirmation</h2>
+				</div>
+				<div class="modal-body">
+					<div class="modal-alert-box">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 alert-warning-icon">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+						</svg>
+						<span><strong>Warning:</strong> Deleting this template is permanent and cannot be undone.</span>
+					</div>
+					<p>Please confirm one more time that you want to permanently delete <strong>"{templateToDelete.trip_type}"</strong>.</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" onclick={closeDeleteModal}>Cancel</button>
+					<form method="POST" action="?/deleteTemplate" use:enhance={() => {
+						return async ({ update }) => {
+							await update();
+							closeDeleteModal();
+						};
+					}}>
+						<input type="hidden" name="id" value={templateToDelete.id} />
+						<button type="submit" class="btn btn-danger-solid">
+							Yes, Permanently Delete Template
+						</button>
+					</form>
+				</div>
+			{/if}
+		</div>
 	</div>
 {/if}
 
@@ -427,6 +511,149 @@
 		background: rgba(16, 185, 129, 0.15);
 		color: var(--success);
 		border-color: rgba(16, 185, 129, 0.3);
+	}
+	.btn-delete:hover {
+		background: rgba(239, 68, 68, 0.2);
+		color: var(--danger);
+		border-color: var(--danger);
+	}
+
+	/* Modal Styles */
+	.modal-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.75);
+		backdrop-filter: blur(8px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		padding: 1.5rem;
+	}
+	.modal-card {
+		max-width: 500px;
+		width: 100%;
+		border-radius: 12px;
+		border: 1px solid var(--border-light);
+		background: #12182b;
+		padding: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+	}
+	.glow-danger {
+		border-color: rgba(239, 68, 68, 0.4);
+		box-shadow: 0 0 30px rgba(239, 68, 68, 0.15);
+	}
+	.modal-header {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	.modal-header h2 {
+		font-size: 1.4rem;
+		font-weight: 700;
+		margin: 0;
+	}
+	.danger-title {
+		color: var(--danger);
+	}
+	.modal-badge {
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		padding: 2px 8px;
+		border-radius: 4px;
+		width: fit-content;
+	}
+	.modal-badge.step-1 {
+		background: rgba(6, 182, 212, 0.15);
+		color: var(--primary);
+		border: 1px solid rgba(6, 182, 212, 0.3);
+	}
+	.modal-badge.step-2 {
+		background: rgba(239, 68, 68, 0.15);
+		color: var(--danger);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+	}
+	.modal-body {
+		color: var(--text-secondary);
+		font-size: 0.95rem;
+		line-height: 1.5;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.modal-subtext {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+	}
+	.modal-alert-box {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		color: var(--danger);
+		padding: 0.85rem 1rem;
+		border-radius: 6px;
+		font-size: 0.9rem;
+	}
+	.alert-warning-icon {
+		flex-shrink: 0;
+	}
+	.modal-footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 1rem;
+		margin-top: 0.5rem;
+	}
+	.btn-secondary {
+		background: rgba(255, 255, 255, 0.05);
+		color: var(--text-secondary);
+		border: 1px solid var(--border-light);
+		cursor: pointer;
+		padding: 8px 16px;
+		border-radius: 6px;
+		font-weight: 600;
+	}
+	.btn-secondary:hover {
+		background: rgba(255, 255, 255, 0.1);
+		color: var(--text-primary);
+	}
+	.btn-danger-action {
+		background: rgba(239, 68, 68, 0.15);
+		color: var(--danger);
+		border: 1px solid rgba(239, 68, 68, 0.4);
+		cursor: pointer;
+		padding: 8px 16px;
+		border-radius: 6px;
+		font-weight: 600;
+		transition: all 0.2s;
+	}
+	.btn-danger-action:hover {
+		background: var(--danger);
+		color: #ffffff;
+	}
+	.btn-danger-solid {
+		background: var(--danger);
+		color: #ffffff;
+		border: 1px solid var(--danger);
+		cursor: pointer;
+		padding: 8px 16px;
+		border-radius: 6px;
+		font-weight: 700;
+		box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+		transition: all 0.2s;
+	}
+	.btn-danger-solid:hover {
+		background: #dc2626;
+		transform: scale(1.02);
 	}
 
 	.sortable-th {

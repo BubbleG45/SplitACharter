@@ -67,9 +67,22 @@ export const actions: Actions = {
 			return fail(400, { message: 'Maximum passengers must be greater than 0.' });
 		}
 
-		// Convert duration "HH:MM" to Postgres interval "HH hours MM minutes"
-		const [hours, minutes] = duration.split(':');
-		const intervalStr = `${hours || 0} hours ${minutes || 0} minutes`;
+		// Convert duration text (e.g. "04:00", "4 hours", "4.5") to Postgres interval
+		let intervalStr = '4 hours';
+		const trimmedDuration = duration.trim();
+		if (trimmedDuration.includes(':')) {
+			const [hours, minutes] = trimmedDuration.split(':');
+			intervalStr = `${parseInt(hours, 10) || 0} hours ${parseInt(minutes, 10) || 0} minutes`;
+		} else {
+			const parsedNum = parseFloat(trimmedDuration);
+			if (!isNaN(parsedNum)) {
+				const hours = Math.floor(parsedNum);
+				const minutes = Math.round((parsedNum - hours) * 60);
+				intervalStr = `${hours} hours ${minutes} minutes`;
+			} else {
+				intervalStr = trimmedDuration;
+			}
+		}
 
 		const { error } = await supabase
 			.from('listing_templates')

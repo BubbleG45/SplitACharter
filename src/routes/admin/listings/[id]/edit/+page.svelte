@@ -96,15 +96,16 @@
 
 			<!-- Row 2: Duration, Passenger Cap & Status -->
 			<div class="form-group">
-				<label for="duration">Duration (Hours & Minutes)</label>
+				<label for="duration">Duration</label>
 				<input
-					type="time"
+					type="text"
 					id="duration"
 					name="duration"
 					value={data.formattedDuration}
+					placeholder="e.g. 4 hours or 04:00"
 					required
 				/>
-				<span class="input-helper">Format: Hours:Minutes (e.g. 04:00 for 4 hours)</span>
+				<span class="input-helper">e.g. 4 hours, 6 hours, or 04:00</span>
 			</div>
 
 			<div class="form-group">

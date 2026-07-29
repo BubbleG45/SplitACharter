@@ -20,19 +20,31 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 
 	const listing = listingRes.data;
 
-	// Format duration from interval to "HH:MM"
-	let formattedDuration = '04:00';
+	// Format duration from interval to descriptive duration string
+	let formattedDuration = '4 hours';
 	if (listing.duration && typeof listing.duration === 'string') {
-		const parts = listing.duration.split(':');
-		if (parts.length >= 2) {
-			const hh = parts[0].padStart(2, '0');
-			const mm = parts[1].padStart(2, '0');
-			formattedDuration = `${hh}:${mm}`;
+		if (listing.duration.includes('hour') || listing.duration.includes('hr')) {
+			formattedDuration = listing.duration;
+		} else {
+			const parts = listing.duration.split(':');
+			if (parts.length >= 2) {
+				const hh = parseInt(parts[0], 10);
+				const mm = parseInt(parts[1], 10);
+				if (mm > 0) {
+					formattedDuration = `${hh} hours ${mm} minutes`;
+				} else {
+					formattedDuration = `${hh} hours`;
+				}
+			}
 		}
 	} else if (listing.duration && typeof listing.duration === 'object') {
-		const hh = String(listing.duration.hours || 0).padStart(2, '0');
-		const mm = String(listing.duration.minutes || 0).padStart(2, '0');
-		formattedDuration = `${hh}:${mm}`;
+		const hh = listing.duration.hours || 0;
+		const mm = listing.duration.minutes || 0;
+		if (mm > 0) {
+			formattedDuration = `${hh} hours ${mm} minutes`;
+		} else {
+			formattedDuration = `${hh} hours`;
+		}
 	}
 
 	return {
@@ -90,8 +102,21 @@ export const actions: Actions = {
 			return fail(400, { message: 'Maximum passengers must be greater than 0.' });
 		}
 
-		const [hours, minutes] = duration.split(':');
-		const intervalStr = `${hours || 0} hours ${minutes || 0} minutes`;
+		let intervalStr = '4 hours';
+		const trimmedDuration = duration.trim();
+		if (trimmedDuration.includes(':')) {
+			const [hours, minutes] = trimmedDuration.split(':');
+			intervalStr = `${parseInt(hours, 10) || 0} hours ${parseInt(minutes, 10) || 0} minutes`;
+		} else {
+			const parsedNum = parseFloat(trimmedDuration);
+			if (!isNaN(parsedNum)) {
+				const hours = Math.floor(parsedNum);
+				const minutes = Math.round((parsedNum - hours) * 60);
+				intervalStr = `${hours} hours ${minutes} minutes`;
+			} else {
+				intervalStr = trimmedDuration;
+			}
+		}
 
 		const { error: updateError } = await supabase
 			.from('listing_templates')
