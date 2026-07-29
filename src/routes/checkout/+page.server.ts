@@ -63,9 +63,9 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 			.not('status', 'in', '("canceled","forfeited")');
 
 		const currentlyBooked = existingBookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
-		maxAvailablePassengers = Math.max(0, listing.max_passengers - currentlyBooked);
+		maxAvailablePassengers = Math.min(4, Math.max(0, listing.max_passengers - currentlyBooked));
 	} else {
-		// First group on a new trip instance is limited to 4 passengers to encourage group matching
+		// Group signups are capped at 4 passengers to encourage group matching
 		maxAvailablePassengers = Math.min(4, listing.max_passengers);
 	}
 
@@ -217,7 +217,7 @@ export const actions: Actions = {
 				}
 			}
 
-			// Validate group size does not exceed remaining open spots for this trip instance
+			// Validate group size does not exceed remaining open seats for this trip instance
 			const { data: existingBookings, error: capacityErr } = await supabaseAdmin
 				.from('bookings')
 				.select('group_size')
@@ -229,15 +229,14 @@ export const actions: Actions = {
 			}
 
 			const currentlyBooked = existingBookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
-			const maxAllowed = currentlyBooked === 0
-				? Math.min(4, listing.max_passengers)
-				: Math.max(0, listing.max_passengers - currentlyBooked);
+			const remainingSeats = Math.max(0, listing.max_passengers - currentlyBooked);
+			const maxAllowed = Math.min(4, remainingSeats);
 
-			if (groupSize > maxAllowed) {
-				const errorMsg = currentlyBooked === 0
-					? 'Initial groups on a new charter trip are limited to a maximum of 4 passengers to encourage group matching.'
+			if (groupSize > maxAllowed || groupSize > 4) {
+				const errorMsg = groupSize > 4
+					? 'Group signups are capped at 4 passengers to encourage group matching and split charter costs evenly.'
 					: (maxAllowed > 0
-						? `Your passenger group size (${groupSize} ${groupSize === 1 ? 'passenger' : 'passengers'}) exceeds the remaining open spots (${maxAllowed} ${maxAllowed === 1 ? 'spot' : 'spots'}) for this charter.`
+						? `Your passenger group size (${groupSize} ${groupSize === 1 ? 'passenger' : 'passengers'}) exceeds the remaining open seats (${maxAllowed} ${maxAllowed === 1 ? 'seat' : 'seats'}) for this charter.`
 						: 'This charter trip is already at full passenger capacity.');
 				return fail(400, { message: errorMsg });
 			}

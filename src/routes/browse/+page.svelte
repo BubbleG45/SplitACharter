@@ -58,16 +58,16 @@
 		}
 	});
 
-	function getRemainingSpots(template: any, matchedInstance?: any): number {
+	function getRemainingSeats(template: any, matchedInstance?: any): number {
 		const maxPax = template?.max_passengers || 6;
 		if (matchedInstance && matchedInstance.status === 'half-booked') {
 			const activeBookings = matchedInstance.bookings?.filter(
 				(b: any) => b.status !== 'canceled' && b.status !== 'forfeited'
 			) || [];
 			const bookedPax = activeBookings.reduce((sum: number, b: any) => sum + (b.group_size || 0), 0);
-			return Math.max(0, maxPax - bookedPax);
+			return Math.min(4, Math.max(0, maxPax - bookedPax));
 		}
-		// First group on a new trip instance is limited to 4 passengers to encourage group matching
+		// Group signups are capped at 4 passengers to encourage group matching
 		return Math.min(4, maxPax);
 	}
 
@@ -208,8 +208,7 @@
 		{ value: '1', label: '1 Passenger' },
 		{ value: '2', label: '2 Passengers' },
 		{ value: '3', label: '3 Passengers' },
-		{ value: '4', label: '4 Passengers' },
-		{ value: '5', label: '5 Passengers' }
+		{ value: '4', label: '4 Passengers' }
 	];
 	const locationOptions = [
 		{ value: 'all', label: 'All Locations' },
@@ -369,9 +368,9 @@
 						{@const template = data.listings.find(l => l.id === trip.listing_template_id)}
 						{#if template}
 							{@const locParts = parseLocation(template.location)}
-							{@const spotsLeft = getRemainingSpots(template, trip)}
+							{@const seatsLeft = getRemainingSeats(template, trip)}
 							{@const reqGroupSize = parseInt(filterGroupSize, 10) || 1}
-							{@const exceedsCapacity = reqGroupSize > spotsLeft}
+							{@const exceedsCapacity = reqGroupSize > seatsLeft}
 							<div class="listing-card glass glass-interactive matched-card">
 								<div class="card-header">
 									<span class="location-badge">
@@ -387,9 +386,9 @@
 										</div>
 									</span>
 									{#if exceedsCapacity}
-										<span class="exceeds-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
+										<span class="exceeds-badge">{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span>
 									{:else}
-										<span class="active-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
+										<span class="active-badge">{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span>
 									{/if}
 								</div>
 
@@ -409,7 +408,7 @@
 											<span class="meta-label">Meeting Area</span>
 											<span class="meta-value" title={template.meeting_area}>{template.meeting_area}</span>
 										</div>
-									</div>
+										</div>
 								</div>
 
 								<div class="card-footer">
@@ -418,7 +417,7 @@
 										<span class="price-total">Total: ${Math.round(template.low_price)}–${Math.round(template.high_price)}</span>
 									</div>
 									{#if exceedsCapacity}
-										<button type="button" class="btn btn-disabled" disabled title="Not enough spots remaining for your group size of {reqGroupSize}">
+										<button type="button" class="btn btn-disabled" disabled title="Not enough seats remaining for your group size of {reqGroupSize}">
 											Exceeds Capacity
 										</button>
 									{:else}
@@ -452,9 +451,9 @@
 			<div class="cards-grid">
 				{#each filteredListings as listing (listing.id)}
 					{@const locParts = parseLocation(listing.location)}
-					{@const spotsLeft = getRemainingSpots(listing, listing.matchedInstance)}
+					{@const seatsLeft = getRemainingSeats(listing, listing.matchedInstance)}
 					{@const reqGroupSize = parseInt(filterGroupSize, 10) || 1}
-					{@const exceedsCapacity = reqGroupSize > spotsLeft}
+					{@const exceedsCapacity = reqGroupSize > seatsLeft}
 					<div class="listing-card glass glass-interactive" class:matched-card={listing.matchedInstance}>
 						<div class="card-header">
 							<span class="location-badge">
@@ -470,9 +469,9 @@
 								</div>
 							</span>
 							{#if exceedsCapacity}
-								<span class="exceeds-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
+								<span class="exceeds-badge">{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span>
 							{:else if listing.matchedInstance}
-								<span class="active-badge">{spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left</span>
+								<span class="active-badge">{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span>
 							{:else}
 								<span class="pax-badge">{listing.max_passengers} Max Pax</span>
 							{/if}
@@ -507,7 +506,7 @@
 								<span class="price-total">Total: ${Math.round(listing.low_price)}–${Math.round(listing.high_price)}</span>
 							</div>
 							{#if exceedsCapacity}
-								<button type="button" class="btn btn-disabled" disabled title="Not enough spots remaining for your group size of {reqGroupSize}">
+								<button type="button" class="btn btn-disabled" disabled title="Not enough seats remaining for your group size of {reqGroupSize}">
 									Exceeds Capacity
 								</button>
 							{:else}

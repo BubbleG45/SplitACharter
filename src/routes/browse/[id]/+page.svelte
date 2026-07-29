@@ -222,7 +222,7 @@
 							<div class="status-alert new-glow">
 								<h4>Start New Charter</h4>
 								<p>No charter is open on this date yet. Book now to open a new trip instance so other groups can join you!</p>
-								<p class="policy-note">ℹ️ Initial group signups are limited to 4 passengers to encourage matching so your charter gets confirmed.</p>
+								<p class="policy-note">ℹ️ Group signups are capped at 4 passengers to encourage group matching and split charter costs evenly.</p>
 								<div class="price-box">
 									<span class="price-num">$50.00</span>
 									<span class="price-lbl">Reservation Fee (per group)</span>
