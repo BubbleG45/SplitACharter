@@ -88,6 +88,18 @@
 				</div>
 			{/if}
 
+			<div class="captain-action-alert glass">
+				<div class="alert-icon">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+					</svg>
+				</div>
+				<div class="alert-content">
+					<strong>Action Required for Captain:</strong>
+					<p>Please contact the groups directly to confirm and provide specific details on where to meet.</p>
+				</div>
+			</div>
+
 			<div class="divider"></div>
 
 			<!-- Trip metadata -->
@@ -109,11 +121,12 @@
 					<span class="meta-label">Total Anglers/Passengers</span>
 					<span class="meta-value highlight-secondary">{totalPassengers} Passengers</span>
 				</div>
-			</div>
-
-			<div class="info-alert info-meeting glass">
-				<p><strong>Meeting Area / Slip:</strong> {template?.meeting_area && !template.meeting_area.toLowerCase().includes('meeting details sent after confirmation') ? template.meeting_area : 'Not Specified'}</p>
-				<p class="meeting-instructions">Please contact the groups directly to confirm and provide specific details on where to meet.</p>
+				{#if template?.meeting_area && !template.meeting_area.toLowerCase().includes('meeting details sent after confirmation')}
+					<div class="meta-card glass meta-card-full">
+						<span class="meta-label">Meeting Area / Slip</span>
+						<span class="meta-value">{template.meeting_area}</span>
+					</div>
+				{/if}
 			</div>
 
 			<div class="divider"></div>
@@ -271,22 +284,47 @@
 		color: var(--secondary);
 	}
 
-	/* Info Alert */
-	.info-alert {
-		padding: 1.25rem;
-		border-radius: 8px;
-		font-size: 0.95rem;
-		line-height: 1.5;
+	.meta-card-full {
+		grid-column: span 2;
 	}
-	.info-meeting {
-		border: 1px solid rgba(6, 182, 212, 0.2);
-		background: rgba(6, 182, 212, 0.02);
-		color: #cffafe;
+
+	/* Captain Action Alert */
+	.captain-action-alert {
+		margin-top: 1.5rem;
+		padding: 1.25rem 1.5rem;
+		border-radius: 12px;
+		border: 1px solid rgba(245, 158, 11, 0.4);
+		background: rgba(245, 158, 11, 0.08);
+		color: #fef3c7;
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
 	}
-	.meeting-instructions {
-		margin-top: 0.5rem;
+	.captain-action-alert .alert-icon {
+		color: #f59e0b;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(245, 158, 11, 0.15);
+		padding: 10px;
+		border-radius: 10px;
+	}
+	.captain-action-alert .alert-content strong {
+		display: block;
 		font-size: 0.9rem;
-		color: #a5f3fc;
+		color: #fbbf24;
+		text-transform: uppercase;
+		letter-spacing: 0.6px;
+		margin-bottom: 4px;
+	}
+	.captain-action-alert .alert-content p {
+		margin: 0;
+		font-size: 1.05rem;
+		font-weight: 600;
+		line-height: 1.4;
+		color: #ffffff;
 	}
 
 	/* Passenger List */
@@ -380,6 +418,13 @@
 		}
 		.meta-grid {
 			grid-template-columns: 1fr;
+		}
+		.meta-card-full {
+			grid-column: span 1;
+		}
+		.captain-action-alert {
+			flex-direction: column;
+			align-items: flex-start;
 		}
 		.passenger-details {
 			flex-direction: column;
