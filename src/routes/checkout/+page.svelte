@@ -16,10 +16,12 @@
 	/* svelte-ignore state_referenced_locally */
 	let groupSize = $state(data.initialGroupSize || 1);
 	let certFields = $state({
-		certified: false,
+		certified: true,
 		level: '',
 		agency: '',
-		lastDive: ''
+		lastDive: '',
+		freediveCertified: false,
+		freediveAgency: ''
 	});
 	
 	let commitment = $state(false);
@@ -32,9 +34,12 @@
 	let paymentOutcome = $state('success');
 	let submitting = $state(false);
 
-	const isDiveTrip = $derived(
-		data.listing.trip_type.toLowerCase().includes('dive') ||
+	const isScubaTrip = $derived(
 		data.listing.trip_type.toLowerCase().includes('scuba')
+	);
+
+	const isFreediveTrip = $derived(
+		data.listing.trip_type.toLowerCase().includes('freedive')
 	);
 </script>
 
@@ -89,7 +94,19 @@
 					<input type="hidden" name="sms_opt_in" value={String(smsOptIn)} />
 					<input type="hidden" name="commitment" value={String(commitment)} />
 					<input type="hidden" name="liability" value={String(liability)} />
-					<input type="hidden" name="certification_fields" value={JSON.stringify(certFields)} />
+					<input type="hidden" name="certification_fields" value={JSON.stringify(
+						isScubaTrip ? {
+							type: 'scuba',
+							certified: true,
+							level: certFields.level,
+							agency: certFields.agency,
+							lastDive: certFields.lastDive
+						} : isFreediveTrip ? {
+							type: 'freedive',
+							freediveCertified: certFields.freediveCertified,
+							freediveAgency: certFields.freediveAgency
+						} : null
+					)} />
 					<input type="hidden" name="payment_outcome" value={paymentOutcome} />
 
 					<!-- Section 1: Customer Profile -->
@@ -190,33 +207,82 @@
 								{/if}
 							</div>
 
-							<!-- Dive Trip fields conditional -->
-							{#if isDiveTrip}
+							<!-- Conditional Certification Fields -->
+							{#if isScubaTrip}
 								<div class="form-group full-width cert-fields-panel glass">
-									<div class="checkbox-row mb-4">
+									<div class="cert-panel-header">
+										<div class="header-title-group">
+											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 icon-accent">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+											</svg>
+											<h4>SCUBA Certification Details</h4>
+										</div>
+										<span class="required-tag">Required for Checkout</span>
+									</div>
+									<p class="panel-subtitle">This is a Scuba Diving charter. Please provide your group's certification details to proceed.</p>
+									<div class="cert-inputs">
+										<div class="form-group">
+											<label for="cert-level">Certification Level <span class="req-star">*</span></label>
+											<input
+												type="text"
+												id="cert-level"
+												placeholder="e.g. Open Water, Advanced"
+												bind:value={certFields.level}
+												required
+											/>
+										</div>
+										<div class="form-group">
+											<label for="cert-agency">Certifying Agency <span class="req-star">*</span></label>
+											<input
+												type="text"
+												id="cert-agency"
+												placeholder="e.g. PADI, NAUI, SSI"
+												bind:value={certFields.agency}
+												required
+											/>
+										</div>
+										<div class="form-group full-width">
+											<label for="cert-last">Date of Last Dive (Optional)</label>
+											<input
+												type="text"
+												id="cert-last"
+												placeholder="e.g. June 2026"
+												bind:value={certFields.lastDive}
+											/>
+										</div>
+									</div>
+								</div>
+							{:else if isFreediveTrip}
+								<div class="form-group full-width cert-fields-panel glass">
+									<div class="cert-panel-header">
+										<div class="header-title-group">
+											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 icon-info">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+											</svg>
+											<h4>Freediving Certification Info</h4>
+										</div>
+										<span class="optional-tag">Optional / Encouraged</span>
+									</div>
+									<p class="panel-subtitle">Help your captain prepare by confirming your group's freediving background (optional).</p>
+									<div class="checkbox-row mb-3 mt-2">
 										<input
 											type="checkbox"
-											id="certified"
-											bind:checked={certFields.certified}
+											id="freediveCertified"
+											bind:checked={certFields.freediveCertified}
 										/>
-										<label for="certified"><strong>Is your group SCUBA certified?</strong></label>
+										<label for="freediveCertified"><strong>Is your group Freedive certified?</strong></label>
 									</div>
-									{#if certFields.certified}
-										<div class="cert-inputs">
-											<div class="form-group">
-												<label for="cert-level">Certification Level</label>
-												<input type="text" id="cert-level" placeholder="e.g. Open Water" bind:value={certFields.level} />
-											</div>
-											<div class="form-group">
-												<label for="cert-agency">Agency</label>
-												<input type="text" id="cert-agency" placeholder="e.g. PADI" bind:value={certFields.agency} />
-											</div>
-											<div class="form-group full-width">
-												<label for="cert-last">Date of Last Dive</label>
-												<input type="text" id="cert-last" placeholder="e.g. June 2026" bind:value={certFields.lastDive} />
-											</div>
+									<div class="cert-inputs">
+										<div class="form-group full-width">
+											<label for="freedive-agency">Certifying Agency (Optional)</label>
+											<input
+												type="text"
+												id="freedive-agency"
+												placeholder="e.g. FII, PADI Freediver, SSI"
+												bind:value={certFields.freediveAgency}
+											/>
 										</div>
-									{/if}
+									</div>
 								</div>
 							{/if}
 
@@ -609,15 +675,66 @@
 		font-weight: 600;
 	}
 
-	/* Dive SCUBA fields */
+	/* Certification panel styles */
 	.cert-fields-panel {
-		padding: 1.25rem;
+		padding: 1.5rem;
 		border: 1px solid var(--border-light);
-		background: rgba(255, 255, 255, 0.01);
-		margin-bottom: 0.5rem;
+		background: rgba(15, 23, 42, 0.4);
+		border-radius: 12px;
+		margin-bottom: 1.5rem;
 	}
-	.mb-4 {
+	.cert-panel-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.header-title-group {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.header-title-group h4 {
+		font-size: 1.05rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin: 0;
+	}
+	.required-tag {
+		background: rgba(239, 68, 68, 0.15);
+		color: #f87171;
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		padding: 3px 8px;
+		border-radius: 12px;
+		font-size: 0.72rem;
+		font-weight: 600;
+	}
+	.optional-tag {
+		background: rgba(99, 102, 241, 0.15);
+		color: var(--secondary);
+		border: 1px solid rgba(99, 102, 241, 0.3);
+		padding: 3px 8px;
+		border-radius: 12px;
+		font-size: 0.72rem;
+		font-weight: 600;
+	}
+	.panel-subtitle {
+		font-size: 0.82rem;
+		color: var(--text-secondary);
 		margin-bottom: 1rem;
+		line-height: 1.4;
+	}
+	.req-star {
+		color: #f87171;
+		font-weight: 700;
+	}
+	.mb-3 {
+		margin-bottom: 0.75rem;
+	}
+	.mt-2 {
+		margin-top: 0.5rem;
 	}
 	.cert-inputs {
 		display: grid;

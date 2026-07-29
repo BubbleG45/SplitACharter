@@ -167,6 +167,18 @@ export const actions: Actions = {
 				return fail(400, { message: 'Invalid listing template ID.' });
 			}
 
+			const isScubaTrip = listing.trip_type.toLowerCase().includes('scuba');
+			if (isScubaTrip) {
+				if (
+					!certFields ||
+					typeof certFields !== 'object' ||
+					!certFields.level?.trim() ||
+					!certFields.agency?.trim()
+				) {
+					return fail(400, { message: 'SCUBA Certification Level and Agency are required for Scuba Diving charters.' });
+				}
+			}
+
 			// 1. Upsert Customer Profile inline
 			const { error: profileError } = await supabaseAdmin
 				.from('customers')
