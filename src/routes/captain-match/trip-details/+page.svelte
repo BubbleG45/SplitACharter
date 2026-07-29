@@ -46,32 +46,6 @@
 
 			<div class="divider"></div>
 
-			<!-- Trip metadata -->
-			<div class="meta-grid">
-				<div class="meta-card glass">
-					<span class="meta-label">Trip Type</span>
-					<span class="meta-value">{template?.trip_type || 'N/A'}</span>
-				</div>
-				<div class="meta-card glass">
-					<span class="meta-label">Date</span>
-					<span class="meta-value highlight-primary">{formatDate(trip.date)}</span>
-				</div>
-				<div class="meta-card glass">
-					<span class="meta-label">Location</span>
-					<span class="meta-value">{template?.location || 'N/A'}</span>
-				</div>
-				<div class="meta-card glass">
-					<span class="meta-label">Total Anglers/Passengers</span>
-					<span class="meta-value highlight-secondary">{totalPassengers} Passengers</span>
-				</div>
-			</div>
-
-			<div class="info-alert info-meeting glass">
-				<p><strong>Meeting Area / Slip:</strong> {template?.meeting_area || 'Not Specified'}</p>
-			</div>
-
-			<div class="divider"></div>
-
 			<!-- Passenger roster list -->
 			<h2>Passenger Roster</h2>
 			{#if bookings.length === 0}
@@ -113,6 +87,34 @@
 					{/each}
 				</div>
 			{/if}
+
+			<div class="divider"></div>
+
+			<!-- Trip metadata -->
+			<h2>Trip Details</h2>
+			<div class="meta-grid">
+				<div class="meta-card glass">
+					<span class="meta-label">Trip Type</span>
+					<span class="meta-value">{template?.trip_type || 'N/A'}</span>
+				</div>
+				<div class="meta-card glass">
+					<span class="meta-label">Date</span>
+					<span class="meta-value highlight-primary">{formatDate(trip.date)}</span>
+				</div>
+				<div class="meta-card glass">
+					<span class="meta-label">Location</span>
+					<span class="meta-value">{template?.location || 'N/A'}</span>
+				</div>
+				<div class="meta-card glass">
+					<span class="meta-label">Total Anglers/Passengers</span>
+					<span class="meta-value highlight-secondary">{totalPassengers} Passengers</span>
+				</div>
+			</div>
+
+			<div class="info-alert info-meeting glass">
+				<p><strong>Meeting Area / Slip:</strong> {template?.meeting_area || 'Not Specified'}</p>
+				<p class="meeting-instructions">Please contact the groups directly to confirm and provide specific details on where to meet.</p>
+			</div>
 
 			<div class="divider"></div>
 
@@ -280,6 +282,11 @@
 		border: 1px solid rgba(6, 182, 212, 0.2);
 		background: rgba(6, 182, 212, 0.02);
 		color: #cffafe;
+	}
+	.meeting-instructions {
+		margin-top: 0.5rem;
+		font-size: 0.9rem;
+		color: #a5f3fc;
 	}
 
 	/* Passenger List */
