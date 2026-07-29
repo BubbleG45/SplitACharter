@@ -18,6 +18,23 @@
 		quote: ''
 	});
 
+	let activeNavSection = $state('sec-notifications');
+	let highlightedSection = $state<string | null>(null);
+
+	function navigateToSection(secId: string) {
+		activeNavSection = secId;
+		const el = document.getElementById(secId);
+		if (el) {
+			el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			highlightedSection = secId;
+			setTimeout(() => {
+				if (highlightedSection === secId) {
+					highlightedSection = null;
+				}
+			}, 2500);
+		}
+	}
+
 	// Automatically select the first template once the settings are loaded
 	$effect(() => {
 		if (!selectedId && data.settings.length > 0) {
@@ -54,11 +71,52 @@
 	<title>Notification Settings — SplitACharter</title>
 </svelte:head>
 
-<div class="admin-header">
+<div class="admin-header header-with-select">
 	<div>
-		<span class="subtitle">Platform Configuration</span>
-		<h1>Notification Settings</h1>
+		<span class="subtitle">Platform Operations</span>
+		<h1>Admin Settings</h1>
 	</div>
+	<div class="header-nav-dropdown-wrap">
+		<label for="settings-section-select" class="nav-select-label">Jump to Section:</label>
+		<select 
+			id="settings-section-select" 
+			class="settings-dropdown-select"
+			bind:value={activeNavSection}
+			onchange={(e) => navigateToSection((e.target as HTMLSelectElement).value)}
+		>
+			<option value="sec-notifications">🔔 Notification Trigger Templates</option>
+			<option value="sec-trip-types">⚓ Allowed Trip Types</option>
+			<option value="sec-reviews">⭐ Landing Page Reviews</option>
+		</select>
+	</div>
+</div>
+
+<!-- Navigation Pill Tabs -->
+<div class="settings-nav-pills glass">
+	<button 
+		type="button" 
+		class="nav-pill-btn" 
+		class:active={activeNavSection === 'sec-notifications'} 
+		onclick={() => navigateToSection('sec-notifications')}
+	>
+		🔔 Notifications
+	</button>
+	<button 
+		type="button" 
+		class="nav-pill-btn" 
+		class:active={activeNavSection === 'sec-trip-types'} 
+		onclick={() => navigateToSection('sec-trip-types')}
+	>
+		⚓ Trip Types
+	</button>
+	<button 
+		type="button" 
+		class="nav-pill-btn" 
+		class:active={activeNavSection === 'sec-reviews'} 
+		onclick={() => navigateToSection('sec-reviews')}
+	>
+		⭐ Reviews Management
+	</button>
 </div>
 
 {#if form?.message}
@@ -67,7 +125,7 @@
 	</div>
 {/if}
 
-<div class="settings-grid">
+<div id="sec-notifications" class="settings-grid" class:section-pulse-highlight={highlightedSection === 'sec-notifications'}>
 	<!-- Left Sidebar List -->
 	<div class="template-sidebar glass">
 		<div class="sidebar-header">
@@ -216,7 +274,7 @@
 
 <div class="divider-main"></div>
 
-<div class="admin-header section-header">
+<div id="sec-trip-types" class="admin-header section-header" class:section-pulse-highlight={highlightedSection === 'sec-trip-types'}>
 	<div>
 		<span class="subtitle">Operations Configuration</span>
 		<h2>Allowed Trip Types</h2>
@@ -283,7 +341,7 @@
 
 <div class="divider-main"></div>
 
-<div class="admin-header section-header">
+<div id="sec-reviews" class="admin-header section-header" class:section-pulse-highlight={highlightedSection === 'sec-reviews'}>
 	<div>
 		<span class="subtitle">Content Management</span>
 		<h2>Landing Page Reviews</h2>
@@ -1280,6 +1338,86 @@
 	@keyframes adminMarquee {
 		0% { transform: translateX(0%); }
 		100% { transform: translateX(-50%); }
+	}
+	.header-with-select {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+	}
+	.header-nav-dropdown-wrap {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	.nav-select-label {
+		font-size: 0.78rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: var(--primary);
+	}
+	.settings-dropdown-select {
+		padding: 10px 16px;
+		font-size: 0.95rem;
+		font-weight: 600;
+		background: #0f172a;
+		border: 1px solid rgba(56, 189, 248, 0.4);
+		border-radius: 8px;
+		color: #f8fafc;
+		cursor: pointer;
+		outline: none;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+		transition: border-color 0.2s, box-shadow 0.2s;
+	}
+	.settings-dropdown-select:hover, .settings-dropdown-select:focus {
+		border-color: var(--primary);
+		box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+	}
+	.settings-nav-pills {
+		display: flex;
+		gap: 0.75rem;
+		padding: 0.75rem 1rem;
+		border: 1px solid var(--border-light);
+		border-radius: 10px;
+		margin-bottom: 2.5rem;
+		background: rgba(15, 23, 42, 0.4);
+		flex-wrap: wrap;
+	}
+	.nav-pill-btn {
+		background: transparent;
+		color: var(--text-secondary);
+		border: 1px solid transparent;
+		font-size: 0.88rem;
+		font-weight: 600;
+		padding: 8px 16px;
+		border-radius: 20px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.nav-pill-btn:hover {
+		color: var(--text-primary);
+		background: rgba(255, 255, 255, 0.05);
+	}
+	.nav-pill-btn.active {
+		background: rgba(56, 189, 248, 0.15);
+		color: #38bdf8;
+		border-color: rgba(56, 189, 248, 0.4);
+	}
+	.section-pulse-highlight {
+		animation: sectionPulse 2s cubic-bezier(0.4, 0, 0.2, 1);
+		border-radius: 12px;
+	}
+	@keyframes sectionPulse {
+		0% {
+			outline: 3px solid var(--primary);
+			box-shadow: 0 0 30px rgba(56, 189, 248, 0.5);
+		}
+		100% {
+			outline: 3px solid transparent;
+			box-shadow: 0 0 0 rgba(56, 189, 248, 0);
+		}
 	}
 	@media (max-width: 992px) {
 		.settings-grid {
