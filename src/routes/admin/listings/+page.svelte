@@ -74,20 +74,16 @@
 	);
 
 	let templateToDelete = $state<any | null>(null);
-	let deleteStep = $state<1 | 2>(1);
+	let deleteConfirmInput = $state('');
 
 	function openDeleteModal(listing: any) {
 		templateToDelete = listing;
-		deleteStep = 1;
+		deleteConfirmInput = '';
 	}
 
 	function closeDeleteModal() {
 		templateToDelete = null;
-		deleteStep = 1;
-	}
-
-	function proceedToStep2() {
-		deleteStep = 2;
+		deleteConfirmInput = '';
 	}
 
 	function formatDuration(intervalStr: string | any) {
@@ -269,54 +265,61 @@
 	</div>
 {/if}
 
-<!-- Double Confirmation Delete Modal -->
+<!-- Confirmation Delete Modal -->
 {#if templateToDelete}
 	<div class="modal-backdrop" onclick={closeDeleteModal} role="presentation">
 		<div class="modal-card glass glow-danger" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-			{#if deleteStep === 1}
-				<div class="modal-header">
-					<span class="modal-badge step-1">Step 1 of 2</span>
-					<h2>Delete Listing Template?</h2>
+			<div class="modal-header">
+				<span class="modal-badge step-2">Permanent Deletion</span>
+				<h2 class="danger-title">Delete Listing Template</h2>
+			</div>
+
+			<div class="modal-body">
+				<p>Are you sure you want to delete the listing template for <strong>"{templateToDelete.trip_type}"</strong> ({templateToDelete.location})?</p>
+
+				<div class="modal-alert-box">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 alert-warning-icon">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+					</svg>
+					<span><strong>Warning:</strong> Deleting this template will remove it and any associated trip instances from your platform. This action cannot be undone.</span>
 				</div>
-				<div class="modal-body">
-					<p>Are you sure you want to delete the listing template for <strong>"{templateToDelete.trip_type}"</strong> ({templateToDelete.location})?</p>
-					<p class="modal-subtext">This action will remove the listing template from your active operational catalog.</p>
+
+				<div class="form-group" style="display: flex; flex-direction: column; gap: 8px;">
+					<label for="confirm-delete-template-input" style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">
+						To confirm deletion, type <strong style="color: var(--danger);">DELETE</strong> in the box below:
+					</label>
+					<input
+						type="text"
+						id="confirm-delete-template-input"
+						name="confirmText"
+						bind:value={deleteConfirmInput}
+						placeholder="Type DELETE to confirm"
+						style="padding: 10px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-light); border-radius: 6px; color: var(--text-primary); font-family: var(--font-body);"
+						autocomplete="off"
+					/>
 				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" onclick={closeDeleteModal}>Cancel</button>
-					<button type="button" class="btn btn-danger-action" onclick={proceedToStep2}>
-						Continue to Final Confirmation &rarr;
+			</div>
+
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" onclick={closeDeleteModal}>Cancel</button>
+				<form method="POST" action="?/deleteTemplate" use:enhance={() => {
+					return async ({ update }) => {
+						await update();
+						closeDeleteModal();
+					};
+				}}>
+					<input type="hidden" name="id" value={templateToDelete.id} />
+					<input type="hidden" name="confirmText" value={deleteConfirmInput} />
+					<button
+						type="submit"
+						class="btn btn-danger-solid"
+						disabled={deleteConfirmInput.trim() !== 'DELETE'}
+						style="opacity: {deleteConfirmInput.trim() === 'DELETE' ? 1 : 0.4}; cursor: {deleteConfirmInput.trim() === 'DELETE' ? 'pointer' : 'not-allowed'};"
+					>
+						Permanently Delete Template
 					</button>
-				</div>
-			{:else}
-				<div class="modal-header">
-					<span class="modal-badge step-2">Step 2 of 2 — Final Warning</span>
-					<h2 class="danger-title">Permanent Removal Confirmation</h2>
-				</div>
-				<div class="modal-body">
-					<div class="modal-alert-box">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 alert-warning-icon">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-						</svg>
-						<span><strong>Warning:</strong> Deleting this template is permanent and cannot be undone.</span>
-					</div>
-					<p>Please confirm one more time that you want to permanently delete <strong>"{templateToDelete.trip_type}"</strong>.</p>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" onclick={closeDeleteModal}>Cancel</button>
-					<form method="POST" action="?/deleteTemplate" use:enhance={() => {
-						return async ({ update }) => {
-							await update();
-							closeDeleteModal();
-						};
-					}}>
-						<input type="hidden" name="id" value={templateToDelete.id} />
-						<button type="submit" class="btn btn-danger-solid">
-							Yes, Permanently Delete Template
-						</button>
-					</form>
-				</div>
-			{/if}
+				</form>
+			</div>
 		</div>
 	</div>
 {/if}
@@ -570,13 +573,6 @@
 		padding: 2px 8px;
 		border-radius: 4px;
 		width: fit-content;
-	}
-	.modal-badge.step-1 {
-		background: rgba(6, 182, 212, 0.15);
-		color: var(--primary);
-		border: 1px solid rgba(6, 182, 212, 0.3);
-	}
-	.modal-badge.step-2 {
 		background: rgba(239, 68, 68, 0.15);
 		color: var(--danger);
 		border: 1px solid rgba(239, 68, 68, 0.3);
@@ -588,10 +584,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
-	}
-	.modal-subtext {
-		font-size: 0.85rem;
-		color: var(--text-muted);
 	}
 	.modal-alert-box {
 		display: flex;
@@ -625,20 +617,6 @@
 	.btn-secondary:hover {
 		background: rgba(255, 255, 255, 0.1);
 		color: var(--text-primary);
-	}
-	.btn-danger-action {
-		background: rgba(239, 68, 68, 0.15);
-		color: var(--danger);
-		border: 1px solid rgba(239, 68, 68, 0.4);
-		cursor: pointer;
-		padding: 8px 16px;
-		border-radius: 6px;
-		font-weight: 600;
-		transition: all 0.2s;
-	}
-	.btn-danger-action:hover {
-		background: var(--danger);
-		color: #ffffff;
 	}
 	.btn-danger-solid {
 		background: var(--danger);

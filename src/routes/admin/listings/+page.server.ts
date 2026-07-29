@@ -41,22 +41,62 @@ export const actions: Actions = {
 	deleteTemplate: async ({ request, locals: { supabase } }) => {
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
+		const confirmText = (formData.get('confirmText') as string)?.trim();
 
 		if (!id) {
 			return fail(400, { message: 'Missing listing template ID' });
 		}
 
-		const { error } = await supabase
+		if (confirmText !== 'DELETE') {
+			return fail(400, { message: 'Confirmation text must equal DELETE' });
+		}
+
+		// 1. Fetch trip instances referencing this template
+		const { data: tripInstances, error: fetchErr } = await supabase
+			.from('trip_instances')
+			.select('id')
+			.eq('listing_template_id', id);
+
+		if (fetchErr) {
+			console.error('Error fetching trip instances for template:', fetchErr);
+			return fail(500, { message: 'Failed to query referenced trip instances.' });
+		}
+
+		if (tripInstances && tripInstances.length > 0) {
+			const tripIds = tripInstances.map((t) => t.id);
+
+			// 2. Delete bookings associated with these trip instances
+			const { error: bookingsErr } = await supabase
+				.from('bookings')
+				.delete()
+				.in('trip_instance_id', tripIds);
+
+			if (bookingsErr) {
+				console.error('Error deleting bookings for template:', bookingsErr);
+				return fail(500, { message: 'Failed to clear associated bookings for template.' });
+			}
+
+			// 3. Delete trip instances associated with this template
+			const { error: tripsErr } = await supabase
+				.from('trip_instances')
+				.delete()
+				.eq('listing_template_id', id);
+
+			if (tripsErr) {
+				console.error('Error deleting trip instances for template:', tripsErr);
+				return fail(500, { message: 'Failed to clear associated trip instances for template.' });
+			}
+		}
+
+		// 4. Delete the listing template
+		const { error: deleteErr } = await supabase
 			.from('listing_templates')
 			.delete()
 			.eq('id', id);
 
-		if (error) {
-			console.error('Error deleting listing template:', error);
-			if (error.code === '23503') {
-				return fail(400, { message: 'Cannot delete template because it is referenced by existing trip instances or bookings.' });
-			}
-			return fail(500, { message: error.message || 'Failed to delete template' });
+		if (deleteErr) {
+			console.error('Error deleting listing template:', deleteErr);
+			return fail(500, { message: deleteErr.message || 'Failed to delete template' });
 		}
 
 		return { success: true };

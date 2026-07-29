@@ -485,43 +485,5 @@ export const actions: Actions = {
 		}
 
 		return { success: true, count: sentCount, message: `Successfully dispatched captain blast to ${sentCount} captain(s).` };
-	},
-
-	deleteTripInstance: async ({ request, locals: { supabase } }) => {
-		const formData = await request.formData();
-		const tripId = formData.get('tripId') as string;
-		const confirmText = (formData.get('confirmText') as string)?.trim();
-
-		if (!tripId) {
-			return fail(400, { message: 'Trip ID is required' });
-		}
-
-		if (confirmText !== 'DELETE') {
-			return fail(400, { message: 'Confirmation text must equal DELETE' });
-		}
-
-		// First delete associated bookings if any
-		const { error: bookingsErr } = await supabase
-			.from('bookings')
-			.delete()
-			.eq('trip_instance_id', tripId);
-
-		if (bookingsErr) {
-			console.error('Error deleting associated bookings:', bookingsErr);
-			return fail(500, { message: 'Failed to clear associated bookings for trip' });
-		}
-
-		// Delete the trip instance
-		const { error: deleteErr } = await supabase
-			.from('trip_instances')
-			.delete()
-			.eq('id', tripId);
-
-		if (deleteErr) {
-			console.error('Error deleting trip instance:', deleteErr);
-			return fail(500, { message: deleteErr.message || 'Failed to delete trip instance' });
-		}
-
-		return { success: true, message: 'Trip instance deleted successfully' };
 	}
 };
