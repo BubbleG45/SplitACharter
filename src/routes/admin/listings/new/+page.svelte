@@ -4,11 +4,11 @@
 
 	let { data, form } = $props();
 
-	// Array state management for whats_included & what_to_bring
-	let whatsIncludedList = $state<string[]>([]);
+	// Array state management for whats_included & what_to_bring initialized from copiedTemplate if copying
+	let whatsIncludedList = $state<string[]>(data.copiedTemplate?.whats_included || []);
 	let newIncludedItem = $state('');
 	
-	let whatToBringList = $state<string[]>([]);
+	let whatToBringList = $state<string[]>(data.copiedTemplate?.what_to_bring || []);
 	let newBringItem = $state('');
 
 	function addIncluded() {
@@ -37,16 +37,25 @@
 </script>
 
 <svelte:head>
-	<title>New Listing Template — SplitACharter</title>
+	<title>{data.copiedTemplate ? 'Create Listing Template (Copy)' : 'New Listing Template'} — SplitACharter</title>
 </svelte:head>
 
 <div class="page-header">
 	<div>
 		<span class="subtitle">Operations</span>
-		<h1>Create Listing Template</h1>
+		<h1>{data.copiedTemplate ? 'Create Listing Template (Copy)' : 'Create Listing Template'}</h1>
 	</div>
 	<a href="/admin/listings" class="btn btn-secondary">Cancel</a>
 </div>
+
+{#if data.copiedTemplate}
+	<div class="alert alert-info glass" style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 12px; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--primary); padding: 1rem 1.25rem; border-radius: 8px;">
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-5 h-5 flex-shrink-0">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5" />
+		</svg>
+		<span><strong>Copying Template:</strong> Pre-filled from <strong>"{data.copiedTemplate.trip_type}"</strong> ({data.copiedTemplate.location}). Duration and Price estimates have been cleared for you to complete.</span>
+	</div>
+{/if}
 
 {#if form?.message}
 	<div class="alert alert-danger glass">
@@ -72,9 +81,9 @@
 					name="trip_type"
 					required
 				>
-					<option value="" disabled selected>Select a Trip Type</option>
+					<option value="" disabled selected={!data.copiedTemplate}>Select a Trip Type</option>
 					{#each data.tripTypes as type}
-						<option value={type.name}>{type.name}</option>
+						<option value={type.name} selected={data.copiedTemplate?.trip_type === type.name}>{type.name}</option>
 					{/each}
 				</select>
 			</div>
@@ -86,10 +95,10 @@
 					name="location"
 					required
 				>
-					<option value="" disabled selected>Select a Location</option>
-					<option value="Lower Keys (Key West, Big Pine Key)">Lower Keys (Key West, Big Pine Key)</option>
-					<option value="Middle Keys (Marathon, Pigeon Key)">Middle Keys (Marathon, Pigeon Key)</option>
-					<option value="Upper Keys (Key Largo, Islamorada)">Upper Keys (Key Largo, Islamorada)</option>
+					<option value="" disabled selected={!data.copiedTemplate}>Select a Location</option>
+					<option value="Lower Keys (Key West, Big Pine Key)" selected={data.copiedTemplate?.location === 'Lower Keys (Key West, Big Pine Key)'}>Lower Keys (Key West, Big Pine Key)</option>
+					<option value="Middle Keys (Marathon, Pigeon Key)" selected={data.copiedTemplate?.location === 'Middle Keys (Marathon, Pigeon Key)'}>Middle Keys (Marathon, Pigeon Key)</option>
+					<option value="Upper Keys (Key Largo, Islamorada)" selected={data.copiedTemplate?.location === 'Upper Keys (Key Largo, Islamorada)'}>Upper Keys (Key Largo, Islamorada)</option>
 				</select>
 			</div>
 
@@ -100,7 +109,7 @@
 					type="text"
 					id="duration"
 					name="duration"
-					value="4 hours"
+					value={data.copiedTemplate ? '' : '4 hours'}
 					placeholder="e.g. 4 hours or 04:00"
 					required
 				/>
@@ -114,6 +123,7 @@
 					id="max_passengers"
 					name="max_passengers"
 					min="1"
+					value={data.copiedTemplate?.max_passengers || ''}
 					placeholder="e.g., 6"
 					required
 				/>
@@ -128,6 +138,7 @@
 					name="low_price"
 					min="0"
 					step="0.01"
+					value=""
 					placeholder="e.g., 600"
 					required
 				/>
@@ -141,6 +152,7 @@
 					name="high_price"
 					min="0"
 					step="0.01"
+					value=""
 					placeholder="e.g., 800"
 					required
 				/>
@@ -153,7 +165,7 @@
 					type="text"
 					id="meeting_area"
 					name="meeting_area"
-					value="Meeting details sent after confirmation"
+					value={data.copiedTemplate?.meeting_area || 'Meeting details sent after confirmation'}
 					placeholder="e.g., Slip 14, Whale Harbor Marina, MM 83.5"
 					required
 				/>
@@ -168,7 +180,7 @@
 					rows="4"
 					placeholder="Provide a compelling description of what this trip template is..."
 					required
-				></textarea>
+				>{data.copiedTemplate?.description || ''}</textarea>
 			</div>
 
 			<!-- Row 6: What's Included (Tags Input) -->

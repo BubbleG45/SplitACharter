@@ -231,6 +231,11 @@
 										<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
 									</svg>
 								</a>
+								<a href="/admin/listings/new?copyFrom={listing.id}" class="btn-icon btn-copy" title="Copy Template">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5" />
+									</svg>
+								</a>
 								<form method="POST" action="?/toggleActive" use:enhance class="toggle-form">
 									<input type="hidden" name="id" value={listing.id} />
 									<input type="hidden" name="active" value={listing.active} />
@@ -514,6 +519,11 @@
 		background: rgba(16, 185, 129, 0.15);
 		color: var(--success);
 		border-color: rgba(16, 185, 129, 0.3);
+	}
+	.btn-copy:hover {
+		background: rgba(6, 182, 212, 0.15);
+		color: var(--primary);
+		border-color: rgba(6, 182, 212, 0.3);
 	}
 	.btn-delete:hover {
 		background: rgba(239, 68, 68, 0.2);

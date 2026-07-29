@@ -1,19 +1,31 @@
 import { fail, redirect, error } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-	const { data: tripTypes, error: ttErr } = await supabase
-		.from('trip_types')
-		.select('*')
-		.order('name', { ascending: true });
+export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
+	const copyFromId = url.searchParams.get('copyFrom');
 
-	if (ttErr) {
-		console.error('Error loading trip types:', ttErr);
+	const [tripTypesRes, copiedRes] = await Promise.all([
+		supabase
+			.from('trip_types')
+			.select('*')
+			.order('name', { ascending: true }),
+		copyFromId
+			? supabase
+					.from('listing_templates')
+					.select('*')
+					.eq('id', copyFromId)
+					.maybeSingle()
+			: Promise.resolve({ data: null, error: null })
+	]);
+
+	if (tripTypesRes.error) {
+		console.error('Error loading trip types:', tripTypesRes.error);
 		throw error(500, 'Failed to load allowed trip types');
 	}
 
 	return {
-		tripTypes: tripTypes || []
+		tripTypes: tripTypesRes.data || [],
+		copiedTemplate: copiedRes.data || null
 	};
 };
 
