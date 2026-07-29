@@ -67,7 +67,8 @@
 			const bookedPax = activeBookings.reduce((sum: number, b: any) => sum + (b.group_size || 0), 0);
 			return Math.max(0, maxPax - bookedPax);
 		}
-		return maxPax;
+		// First group on a new trip instance is limited to 4 passengers to encourage group matching
+		return Math.min(4, maxPax);
 	}
 
 	function matchesLocationFilter(locString: string, filterVal: string) {
@@ -208,8 +209,7 @@
 		{ value: '2', label: '2 Passengers' },
 		{ value: '3', label: '3 Passengers' },
 		{ value: '4', label: '4 Passengers' },
-		{ value: '5', label: '5 Passengers' },
-		{ value: '6', label: '6 Passengers' }
+		{ value: '5', label: '5 Passengers' }
 	];
 	const locationOptions = [
 		{ value: 'all', label: 'All Locations' },

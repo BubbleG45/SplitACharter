@@ -182,9 +182,11 @@
 								{#if data.maxAvailablePassengers <= 0}
 									<span class="input-helper error-text">This charter is already at full capacity for the selected date.</span>
 								{:else if groupSize > data.maxAvailablePassengers}
-									<span class="input-helper error-text">Group size ({groupSize}) exceeds remaining open spots ({data.maxAvailablePassengers}).</span>
+									<span class="input-helper error-text">Group size ({groupSize}) exceeds max allowed ({data.maxAvailablePassengers}).</span>
+								{:else if !data.isJoiningExisting}
+									<span class="input-helper info-text">ℹ️ Initial group signups are capped at 4 passengers to encourage group matching so your charter gets confirmed.</span>
 								{:else}
-									<span class="input-helper">Your group size cannot exceed the remaining capacity of this charter.</span>
+									<span class="input-helper info-text">ℹ️ Joining an existing charter group! Up to {data.maxAvailablePassengers} passengers allowed.</span>
 								{/if}
 							</div>
 

@@ -64,6 +64,9 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 
 		const currentlyBooked = existingBookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
 		maxAvailablePassengers = Math.max(0, listing.max_passengers - currentlyBooked);
+	} else {
+		// First group on a new trip instance is limited to 4 passengers to encourage group matching
+		maxAvailablePassengers = Math.min(4, listing.max_passengers);
 	}
 
 	// Calculate initial group size from URL parameter if available
@@ -226,12 +229,16 @@ export const actions: Actions = {
 			}
 
 			const currentlyBooked = existingBookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
-			const remainingSpots = listing.max_passengers - currentlyBooked;
+			const maxAllowed = currentlyBooked === 0
+				? Math.min(4, listing.max_passengers)
+				: Math.max(0, listing.max_passengers - currentlyBooked);
 
-			if (groupSize > remainingSpots) {
-				const errorMsg = remainingSpots > 0
-					? `Your passenger group size (${groupSize} ${groupSize === 1 ? 'passenger' : 'passengers'}) exceeds the remaining open spots (${remainingSpots} ${remainingSpots === 1 ? 'spot' : 'spots'}) for this charter.`
-					: 'This charter trip is already at full passenger capacity.';
+			if (groupSize > maxAllowed) {
+				const errorMsg = currentlyBooked === 0
+					? 'Initial groups on a new charter trip are limited to a maximum of 4 passengers to encourage group matching.'
+					: (maxAllowed > 0
+						? `Your passenger group size (${groupSize} ${groupSize === 1 ? 'passenger' : 'passengers'}) exceeds the remaining open spots (${maxAllowed} ${maxAllowed === 1 ? 'spot' : 'spots'}) for this charter.`
+						: 'This charter trip is already at full passenger capacity.');
 				return fail(400, { message: errorMsg });
 			}
 
