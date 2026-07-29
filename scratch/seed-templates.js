@@ -85,8 +85,8 @@ const templates = [
     trigger_name: 'captain_confirmed', 
     email_enabled: true, 
     sms_enabled: true,
-    email_template: 'Great news! Captain {captain_name} has accepted your charter on {trip_date} ({trip_type}).\n\nCaptain Contact: {captain_phone}\nMeeting Area: {meeting_area}\n\nPlease reach out to your captain to coordinate any final details.',
-    sms_template: 'Match confirmed! Captain {captain_name} will be your skipper. Contact: {captain_phone}. Location: {meeting_area} on {trip_date}.'
+    email_template: 'Great news! Captain {captain_name} has accepted your charter on {trip_date} ({trip_type}).\n\nMeeting Area: {meeting_area}\n\nYour captain has been provided with your contact details and will reach out to you directly to coordinate any final details before departure.',
+    sms_template: 'Match confirmed! Captain {captain_name} will be your skipper on {trip_date} at {meeting_area}. They have your contact info and will reach out to you with details.'
   },
   {
     trigger_name: 'captain_secured', 

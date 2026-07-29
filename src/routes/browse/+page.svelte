@@ -2,12 +2,18 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import CustomSelect from '$lib/components/CustomSelect.svelte';
+	import CustomMultiSelect from '$lib/components/CustomMultiSelect.svelte';
 
 	let { data } = $props();
 
+	function parseTripTypesParam(paramVal: string | null): string[] {
+		if (!paramVal || paramVal === 'all') return [];
+		return paramVal.split(',').map((s) => s.trim()).filter(Boolean);
+	}
+
 	let filterLocation = $state(page.url.searchParams.get('location') || 'all');
 	let filterDuration = $state(page.url.searchParams.get('duration') || 'all'); // 'all', 'half-day', 'full-day'
-	let filterTripType = $state(page.url.searchParams.get('trip_type') || 'all');
+	let filterTripTypes = $state<string[]>(parseTripTypesParam(page.url.searchParams.get('trip_type')));
 	let filterGroupSize = $state(page.url.searchParams.get('groupSize') || '1');
 	let searchDate = $state(page.url.searchParams.get('date') || '');
 	let minDate = $state('');
@@ -24,7 +30,7 @@
 			searchDate = urlParams.get('date') || '';
 			filterLocation = urlParams.get('location') || 'all';
 			filterDuration = urlParams.get('duration') || 'all';
-			filterTripType = urlParams.get('trip_type') || 'all';
+			filterTripTypes = parseTripTypesParam(urlParams.get('trip_type'));
 			filterGroupSize = urlParams.get('groupSize') || '1';
 		};
 
@@ -40,7 +46,7 @@
 		if (searchDate) params.set('date', searchDate);
 		if (filterLocation !== 'all') params.set('location', filterLocation);
 		if (filterDuration !== 'all') params.set('duration', filterDuration);
-		if (filterTripType !== 'all') params.set('trip_type', filterTripType);
+		if (filterTripTypes.length > 0) params.set('trip_type', filterTripTypes.join(','));
 		if (filterGroupSize !== '1') params.set('groupSize', filterGroupSize);
 
 		const queryString = params.toString();
@@ -108,7 +114,7 @@
 			(filterDuration === 'half-day' && isHalfDay) ||
 			(filterDuration === 'full-day' && isFullDay);
 
-		const matchesTripType = filterTripType === 'all' || template.trip_type === filterTripType;
+		const matchesTripType = filterTripTypes.length === 0 || filterTripTypes.includes(template.trip_type);
 
 		return matchesLocation && matchesDuration && matchesTripType;
 	}
@@ -225,7 +231,7 @@
 		searchDate = '';
 		filterLocation = 'all';
 		filterDuration = 'all';
-		filterTripType = 'all';
+		filterTripTypes = [];
 		filterGroupSize = '1';
 	}
 
@@ -280,7 +286,7 @@
 			<div class="controls-card-header">
 				<div class="controls-title-group">
 					<span class="controls-title">Filter Charters</span>
-					{#if searchDate || filterLocation !== 'all' || filterDuration !== 'all' || filterTripType !== 'all' || filterGroupSize !== '1'}
+					{#if searchDate || filterLocation !== 'all' || filterDuration !== 'all' || filterTripTypes.length > 0 || filterGroupSize !== '1'}
 						<button type="button" class="btn-clear-all" onclick={resetAllFilters}>
 							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -323,10 +329,10 @@
 					options={durationOptions}
 				/>
 
-				<CustomSelect
+				<CustomMultiSelect
 					id="trip-type"
 					label="Trip Type"
-					bind:value={filterTripType}
+					bind:values={filterTripTypes}
 					options={tripTypeOptions}
 				/>
 			</div>
