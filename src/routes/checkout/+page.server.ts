@@ -39,8 +39,10 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		.eq('id', user.id)
 		.maybeSingle();
 
+	const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
 	// Check if there is an existing TripInstance on this date
-	const { data: tripInstance } = await supabase
+	const { data: tripInstance } = await supabaseAdmin
 		.from('trip_instances')
 		.select('id, status')
 		.eq('listing_template_id', templateId)
@@ -56,7 +58,7 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		isJoiningExisting = true;
 		
 		// Sum up group size of existing bookings on this trip instance
-		const { data: existingBookings } = await supabase
+		const { data: existingBookings } = await supabaseAdmin
 			.from('bookings')
 			.select('group_size')
 			.eq('trip_instance_id', tripInstance.id)

@@ -1,4 +1,7 @@
 import { error } from '@sveltejs/kit';
+import { createClient } from '@supabase/supabase-js';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, url, locals: { supabase } }) => {
@@ -15,11 +18,13 @@ export const load: PageServerLoad = async ({ params, url, locals: { supabase } }
 		throw error(404, 'Listing template not found');
 	}
 
+	const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
 	// Fetch existing active trip instances for this listing template
 	// Only fetch instances that are 'half-booked' so the 2nd customer group can join them
-	const { data: tripInstances, error: tripsError } = await supabase
+	const { data: tripInstances, error: tripsError } = await supabaseAdmin
 		.from('trip_instances')
-		.select('id, date, status')
+		.select('id, date, status, bookings(group_size, status)')
 		.eq('listing_template_id', params.id)
 		.eq('status', 'half-booked');
 
