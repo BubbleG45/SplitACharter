@@ -20,6 +20,7 @@
 		admin_trip_cancellation: ['{customer_name}', '{trip_date}', '{trip_type}', '{cancellation_reason}', '{refund_status_text}', '{dashboard_url}'],
 		reservation_pending_match: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
 		match_detected: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
+		match_auto_reconfirmed: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
 		reconfirm_reminder: ['{customer_name}', '{trip_date}', '{deadline_time}', '{dashboard_url}'],
 		reconfirm_forfeited: ['{customer_name}', '{trip_date}'],
 		counterpart_forfeited: ['{customer_name}', '{trip_date}'],
@@ -95,7 +96,7 @@
 						savingId = selectedSetting.id;
 						saveSuccessId = null;
 						return async ({ update, result }) => {
-							await update();
+							await update({ reset: false });
 							savingId = null;
 							if (result.type === 'success') {
 								saveSuccessId = selectedSetting.id;
@@ -117,10 +118,7 @@
 							<label class="toggle-label">
 								<input 
 									type="checkbox" 
-									checked={selectedSetting.email_enabled}
-									onchange={(e) => {
-										selectedSetting.email_enabled = (e.target as HTMLInputElement).checked;
-									}}
+									bind:checked={selectedSetting.email_enabled}
 								/>
 								<span class="toggle-text">Email Channel</span>
 							</label>
@@ -131,10 +129,7 @@
 							<label class="toggle-label">
 								<input 
 									type="checkbox" 
-									checked={selectedSetting.sms_enabled}
-									onchange={(e) => {
-										selectedSetting.sms_enabled = (e.target as HTMLInputElement).checked;
-									}}
+									bind:checked={selectedSetting.sms_enabled}
 								/>
 								<span class="toggle-text">SMS Channel</span>
 							</label>
@@ -153,7 +148,7 @@
 							disabled={!selectedSetting.email_enabled}
 							rows="5"
 							placeholder="Disabled (toggled off)"
-							value={selectedSetting.email_template || ''}
+							bind:value={selectedSetting.email_template}
 						></textarea>
 					</div>
 
@@ -166,9 +161,9 @@
 							disabled={!selectedSetting.sms_enabled}
 							rows="4"
 							placeholder="Disabled (toggled off)"
-							value={selectedSetting.sms_template || ''}
+							bind:value={selectedSetting.sms_template}
 						></textarea>
-					</div>
+					</div>v>
 
 					<!-- Placeholders Cheat-sheet -->
 					<div class="placeholders-info">

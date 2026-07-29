@@ -378,7 +378,7 @@
 	/* Steps Cards Grid */
 	.steps-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		grid-template-columns: repeat(2, 1fr);
 		gap: 1.5rem;
 	}
 
@@ -531,6 +531,9 @@
 	}
 
 	@media (max-width: 768px) {
+		.steps-grid {
+			grid-template-columns: 1fr;
+		}
 		.how-header h1 {
 			font-size: 2.25rem;
 		}
