@@ -1,7 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
-export const defaultSeedReviews = [
+const defaultSeedReviews = [
 	{
 		name: 'Dave & Sarah M.',
 		location: 'Miami, FL',
