@@ -68,6 +68,20 @@
 			: `Split a private boat charter for ${data.listing.trip_type} in ${data.listing.location}. Connect with another small group and pay half.`
 	);
 
+	function formatPriceRange(low: number, high: number) {
+		const min = Math.round(low);
+		const max = Math.round(high);
+		return min === max ? `$${min}` : `$${min} – $${max}`;
+	}
+
+	let totalPriceDisplay = $derived(
+		formatPriceRange(data.listing.low_price, data.listing.high_price)
+	);
+
+	let groupShareDisplay = $derived(
+		formatPriceRange(data.listing.low_price / 2, data.listing.high_price / 2)
+	);
+
 	let requestOrigin = $derived(page.url.origin);
 
 	let currentFullUrl = $derived(
@@ -178,6 +192,43 @@
 
 			<!-- Right side: Date Selector & Booking Card -->
 			<div class="booking-panel glass glow-primary">
+				<!-- Pricing Breakdown Card -->
+				<div class="pricing-card glass">
+					<div class="pricing-card-header">
+						<h3>Trip Cost Breakdown</h3>
+						<span class="savings-badge">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="badge-icon">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+							</svg>
+							50% Split Charter Savings
+						</span>
+					</div>
+
+					<div class="pricing-rows">
+						<div class="pricing-row">
+							<div class="pricing-label-group">
+								<span class="pricing-label">Total Charter Price</span>
+								<span class="sub-label">Full boat cost</span>
+							</div>
+							<span class="pricing-value muted">{totalPriceDisplay}</span>
+						</div>
+						<div class="pricing-row highlight">
+							<div class="pricing-label-group">
+								<span class="pricing-label">Your Group Share</span>
+								<span class="sub-label">50% of total cost</span>
+							</div>
+							<span class="pricing-value primary">{groupShareDisplay}</span>
+						</div>
+						<div class="pricing-row divider-top">
+							<div class="pricing-label-group">
+								<span class="pricing-label">Reservation Deposit</span>
+								<span class="sub-label">Due online today</span>
+							</div>
+							<span class="pricing-value">$50.00</span>
+						</div>
+					</div>
+				</div>
+
 				<h2>Select a Date</h2>
 				<p class="panel-desc">Choose when you want to set sail. Shared charters require two groups to book and reconfirm.</p>
 
@@ -204,7 +255,7 @@
 									</div>
 									<p>Another group has already booked this date. Join them to split the charter cost in half!</p>
 									<div class="price-box">
-										<span class="price-num">${Math.round(data.listing.low_price / 2)} – ${Math.round(data.listing.high_price / 2)}</span>
+										<span class="price-num">{groupShareDisplay}</span>
 										<span class="price-lbl">Your Split Share (50%)</span>
 									</div>
 								</div>
@@ -213,8 +264,8 @@
 									<h4>Charter Already Open</h4>
 									<p>A charter instance is already open on this date. Book now to claim the first slot!</p>
 									<div class="price-box">
-										<span class="price-num">${Math.round(data.listing.low_price / 2)}</span>
-										<span class="price-lbl">Reservation Deposit</span>
+										<span class="price-num">{groupShareDisplay}</span>
+										<span class="price-lbl">Your Split Share (50%)</span>
 									</div>
 								</div>
 							{/if}
@@ -225,7 +276,7 @@
 								<p class="policy-note">ℹ️ Group signups are capped at 4 passengers to encourage group matching and split charter costs evenly.</p>
 								<div class="price-box">
 									<span class="price-num">$50.00</span>
-									<span class="price-lbl">Reservation Fee (per group)</span>
+									<span class="price-lbl">Reservation Deposit (due now)</span>
 								</div>
 							</div>
 						{/if}
@@ -241,7 +292,7 @@
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" width="48" height="48" class="prompt-icon">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
 						</svg>
-						<p>Please select a date above to view availability and price details.</p>
+						<p>Please select a date above to check availability and lock in your reservation.</p>
 					</div>
 				{/if}
 			</div>
@@ -538,6 +589,99 @@
 		color: var(--text-muted);
 		opacity: 0.6;
 		flex-shrink: 0;
+	}
+
+	/* Pricing Breakdown Card Styles */
+	.pricing-card {
+		padding: 1.25rem 1.5rem;
+		margin-bottom: 2rem;
+		border: 1px solid var(--border-light);
+		border-radius: 12px;
+		background: rgba(15, 23, 42, 0.6);
+	}
+	.pricing-card-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		margin-bottom: 1.25rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--border-light);
+		flex-wrap: wrap;
+	}
+	.pricing-card-header h3 {
+		font-size: 1.1rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin: 0;
+	}
+	.savings-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		background: rgba(14, 165, 233, 0.15);
+		color: var(--primary);
+		border: 1px solid rgba(14, 165, 233, 0.3);
+		padding: 4px 8px;
+		border-radius: 20px;
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.2px;
+	}
+	.badge-icon {
+		width: 12px;
+		height: 12px;
+	}
+	.pricing-rows {
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
+	}
+	.pricing-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.pricing-row.highlight {
+		background: rgba(14, 165, 233, 0.08);
+		padding: 8px 12px;
+		border-radius: 8px;
+		margin: 2px -12px;
+		border-left: 3px solid var(--primary);
+	}
+	.pricing-row.divider-top {
+		border-top: 1px dashed var(--border-light);
+		padding-top: 0.85rem;
+		margin-top: 0.25rem;
+	}
+	.pricing-label-group {
+		display: flex;
+		flex-direction: column;
+	}
+	.pricing-label {
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+	.sub-label {
+		font-size: 0.72rem;
+		color: var(--text-muted);
+		font-weight: 400;
+	}
+	.pricing-value {
+		font-family: var(--font-heading);
+		font-size: 1.15rem;
+		font-weight: 700;
+		color: var(--text-primary);
+	}
+	.pricing-value.muted {
+		color: var(--text-secondary);
+		font-weight: 600;
+	}
+	.pricing-value.primary {
+		color: var(--primary);
+		font-size: 1.25rem;
+		font-weight: 800;
 	}
 
 	.w-full {
