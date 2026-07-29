@@ -251,6 +251,7 @@
 											/>
 										</div>
 									</div>
+									<p class="cert-disclaimer-note">ℹ️ <strong>Note:</strong> Proof of certification may be required by your captain prior to departure.</p>
 								</div>
 							{:else if isFreediveTrip}
 								<div class="form-group full-width cert-fields-panel glass">
@@ -283,6 +284,7 @@
 											/>
 										</div>
 									</div>
+									<p class="cert-disclaimer-note">ℹ️ <strong>Note:</strong> Proof of certification may be required by your captain prior to departure.</p>
 								</div>
 							{/if}
 
@@ -742,6 +744,16 @@
 		gap: 1.25rem;
 		border-top: 1px dashed var(--border-light);
 		padding-top: 1.25rem;
+	}
+	.cert-disclaimer-note {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		background: rgba(255, 255, 255, 0.03);
+		padding: 8px 12px;
+		border-radius: 6px;
+		border: 1px solid var(--border-light);
+		margin-top: 1rem;
+		line-height: 1.4;
 	}
 
 	/* Stripe Sandbox form styling */
