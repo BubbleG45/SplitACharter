@@ -35,11 +35,32 @@
 		}
 	}
 
-	// Automatically select the first template once the settings are loaded
+	// Automatically select the first template once the settings are loaded & track active section on scroll
 	$effect(() => {
-		if (!selectedId && data.settings.length > 0) {
+		if (!selectedId && data.settings?.length > 0) {
 			selectedId = data.settings[0].id;
 		}
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (entry.isIntersecting) {
+						activeNavSection = entry.target.id;
+					}
+				}
+			},
+			{ threshold: 0.25 }
+		);
+
+		const sec1 = document.getElementById('sec-notifications');
+		const sec2 = document.getElementById('sec-trip-types');
+		const sec3 = document.getElementById('sec-reviews');
+
+		if (sec1) observer.observe(sec1);
+		if (sec2) observer.observe(sec2);
+		if (sec3) observer.observe(sec3);
+
+		return () => observer.disconnect();
 	});
 
 	const selectedSetting = $derived(data.settings?.find((s: any) => s.id === selectedId));
@@ -71,52 +92,41 @@
 	<title>Notification Settings — SplitACharter</title>
 </svelte:head>
 
-<div class="admin-header header-with-select">
+<div class="admin-header">
 	<div>
 		<span class="subtitle">Platform Operations</span>
 		<h1>Admin Settings</h1>
 	</div>
-	<div class="header-nav-dropdown-wrap">
-		<label for="settings-section-select" class="nav-select-label">Jump to Section:</label>
-		<select 
-			id="settings-section-select" 
-			class="settings-dropdown-select"
-			bind:value={activeNavSection}
-			onchange={(e) => navigateToSection((e.target as HTMLSelectElement).value)}
-		>
-			<option value="sec-notifications">🔔 Notification Trigger Templates</option>
-			<option value="sec-trip-types">⚓ Allowed Trip Types</option>
-			<option value="sec-reviews">⭐ Landing Page Reviews</option>
-		</select>
-	</div>
 </div>
 
-<!-- Navigation Pill Tabs -->
-<div class="settings-nav-pills glass">
-	<button 
-		type="button" 
-		class="nav-pill-btn" 
-		class:active={activeNavSection === 'sec-notifications'} 
-		onclick={() => navigateToSection('sec-notifications')}
-	>
-		🔔 Notifications
-	</button>
-	<button 
-		type="button" 
-		class="nav-pill-btn" 
-		class:active={activeNavSection === 'sec-trip-types'} 
-		onclick={() => navigateToSection('sec-trip-types')}
-	>
-		⚓ Trip Types
-	</button>
-	<button 
-		type="button" 
-		class="nav-pill-btn" 
-		class:active={activeNavSection === 'sec-reviews'} 
-		onclick={() => navigateToSection('sec-reviews')}
-	>
-		⭐ Reviews Management
-	</button>
+<!-- Persistent Sticky Navigation Pill Bar -->
+<div class="sticky-nav-bar-wrapper">
+	<div class="settings-nav-pills glass">
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-notifications'} 
+			onclick={() => navigateToSection('sec-notifications')}
+		>
+			🔔 Notifications
+		</button>
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-trip-types'} 
+			onclick={() => navigateToSection('sec-trip-types')}
+		>
+			⚓ Trip Types
+		</button>
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-reviews'} 
+			onclick={() => navigateToSection('sec-reviews')}
+		>
+			⭐ Reviews Management
+		</button>
+	</div>
 </div>
 
 {#if form?.message}
@@ -1339,50 +1349,26 @@
 		0% { transform: translateX(0%); }
 		100% { transform: translateX(-50%); }
 	}
-	.header-with-select {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-end;
-		gap: 1.5rem;
-		flex-wrap: wrap;
-	}
-	.header-nav-dropdown-wrap {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-	.nav-select-label {
-		font-size: 0.78rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		color: var(--primary);
-	}
-	.settings-dropdown-select {
-		padding: 10px 16px;
-		font-size: 0.95rem;
-		font-weight: 600;
-		background: #0f172a;
-		border: 1px solid rgba(56, 189, 248, 0.4);
-		border-radius: 8px;
-		color: #f8fafc;
-		cursor: pointer;
-		outline: none;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-		transition: border-color 0.2s, box-shadow 0.2s;
-	}
-	.settings-dropdown-select:hover, .settings-dropdown-select:focus {
-		border-color: var(--primary);
-		box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+	.sticky-nav-bar-wrapper {
+		position: sticky;
+		top: 0;
+		z-index: 100;
+		background: rgba(6, 9, 19, 0.85);
+		backdrop-filter: blur(16px);
+		-webkit-backdrop-filter: blur(16px);
+		padding: 0.75rem 0;
+		margin-bottom: 2.5rem;
+		border-bottom: 1px solid rgba(56, 189, 248, 0.15);
 	}
 	.settings-nav-pills {
 		display: flex;
 		gap: 0.75rem;
-		padding: 0.75rem 1rem;
+		padding: 0.4rem 0.6rem;
 		border: 1px solid var(--border-light);
-		border-radius: 10px;
-		margin-bottom: 2.5rem;
-		background: rgba(15, 23, 42, 0.4);
+		border-radius: 30px;
+		background: rgba(15, 23, 42, 0.6);
+		width: max-content;
+		max-width: 100%;
 		flex-wrap: wrap;
 	}
 	.nav-pill-btn {
@@ -1391,19 +1377,20 @@
 		border: 1px solid transparent;
 		font-size: 0.88rem;
 		font-weight: 600;
-		padding: 8px 16px;
+		padding: 8px 18px;
 		border-radius: 20px;
 		cursor: pointer;
 		transition: all 0.2s ease;
 	}
 	.nav-pill-btn:hover {
 		color: var(--text-primary);
-		background: rgba(255, 255, 255, 0.05);
+		background: rgba(255, 255, 255, 0.08);
 	}
 	.nav-pill-btn.active {
-		background: rgba(56, 189, 248, 0.15);
+		background: rgba(56, 189, 248, 0.2);
 		color: #38bdf8;
-		border-color: rgba(56, 189, 248, 0.4);
+		border-color: rgba(56, 189, 248, 0.5);
+		box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
 	}
 	.section-pulse-highlight {
 		animation: sectionPulse 2s cubic-bezier(0.4, 0, 0.2, 1);
