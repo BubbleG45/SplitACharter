@@ -9,6 +9,14 @@
 
 	let editingReview = $state<any | null>(null);
 	let isAddingReview = $state(false);
+	let newReviewDraft = $state({
+		name: '',
+		location: '',
+		trip: '',
+		stars: 5,
+		avatar: '',
+		quote: ''
+	});
 
 	// Automatically select the first template once the settings are loaded
 	$effect(() => {
@@ -291,15 +299,58 @@
 
 <div class="reviews-mgmt-container glass">
 	<div class="reviews-mgmt-header">
-		<h3>Platform Reviews ({data.reviews?.length || 0})</h3>
-		<button 
-			type="button" 
-			class="btn btn-primary" 
-			onclick={() => { isAddingReview = true; editingReview = null; }}
-		>
-			+ Add New Review
-		</button>
+		<div>
+			<h3>Platform Reviews ({data.reviews?.length || 0})</h3>
+			<p class="sub-text">Active reviews will be displayed in the scrolling landing page carousel.</p>
+		</div>
+		<div class="header-btns">
+			{#if !data.reviews || data.reviews.length === 0}
+				<form method="POST" action="?/seedReviews" use:enhance>
+					<button type="submit" class="btn btn-secondary">
+						⚡ Seed 10 Example Reviews to Database
+					</button>
+				</form>
+			{/if}
+			<button 
+				type="button" 
+				class="btn btn-primary" 
+				onclick={() => { isAddingReview = true; editingReview = null; }}
+			>
+				+ Add New Review
+			</button>
+		</div>
 	</div>
+
+	<!-- Live Landing Page Marquee Preview Strip -->
+	{#if data.reviews && data.reviews.length > 0}
+		<div class="preview-marquee-wrapper">
+			<div class="preview-marquee-title">
+				<span>👁️ Live Landing Page Marquee Preview (Scrolls on Public Landing Page)</span>
+			</div>
+			<div class="admin-marquee-container">
+				<div class="admin-marquee-track">
+					{#each [...data.reviews.filter((r: any) => r.active), ...data.reviews.filter((r: any) => r.active)] as r}
+						<div class="review-card preview-card">
+							<div class="card-top">
+								<div class="author-info">
+									<div class="avatar">{r.avatar}</div>
+									<div>
+										<div class="author-name">{r.name}</div>
+										<div class="author-location">{r.location}</div>
+									</div>
+								</div>
+								<div class="stars">
+									{'★'.repeat(r.stars)}
+								</div>
+							</div>
+							<p class="quote">"{r.quote}"</p>
+							<div class="trip-tag">⚓ {r.trip}</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Add New Review Form -->
 	{#if isAddingReview}
@@ -308,119 +359,172 @@
 				<h4>Add New Review</h4>
 				<button type="button" class="btn-text-close" onclick={() => isAddingReview = false}>✕ Close</button>
 			</div>
-			<form method="POST" action="?/addReview" use:enhance={() => {
-				return async ({ update, result }) => {
-					await update();
-					if (result.type === 'success') {
-						isAddingReview = false;
-					}
-				};
-			}} class="review-edit-grid">
-				<div class="form-group">
-					<label for="new-rev-name">Author Name</label>
-					<input id="new-rev-name" type="text" name="name" placeholder="e.g. Dave & Sarah M." required class="text-input" />
+			<div class="form-and-preview-split">
+				<form method="POST" action="?/addReview" use:enhance={() => {
+					return async ({ update, result }) => {
+						await update();
+						if (result.type === 'success') {
+							isAddingReview = false;
+						}
+					};
+				}} class="review-edit-grid">
+					<div class="form-group">
+						<label for="new-rev-name">Author Name</label>
+						<input id="new-rev-name" type="text" name="name" bind:value={newReviewDraft.name} placeholder="e.g. Dave & Sarah M." required class="text-input" />
+					</div>
+					<div class="form-group">
+						<label for="new-rev-location">Location</label>
+						<input id="new-rev-location" type="text" name="location" bind:value={newReviewDraft.location} placeholder="e.g. Miami, FL" required class="text-input" />
+					</div>
+					<div class="form-group">
+						<label for="new-rev-trip">Charter / Trip Type</label>
+						<input id="new-rev-trip" type="text" name="trip" bind:value={newReviewDraft.trip} placeholder="e.g. Islamorada Reef Snorkeling" required class="text-input" />
+					</div>
+					<div class="form-group">
+						<label for="new-rev-stars">Rating (1-5 Stars)</label>
+						<select id="new-rev-stars" name="stars" bind:value={newReviewDraft.stars} class="text-input">
+							<option value={5}>5 Stars (★★★★★)</option>
+							<option value={4}>4 Stars (★★★★☆)</option>
+							<option value={3}>3 Stars (★★★☆☆)</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label for="new-rev-avatar">Avatar Initials</label>
+						<input id="new-rev-avatar" type="text" name="avatar" bind:value={newReviewDraft.avatar} placeholder="e.g. DS" class="text-input" maxLength={3} />
+					</div>
+					<div class="form-group">
+						<label for="new-rev-order">Display Order</label>
+						<input id="new-rev-order" type="number" name="display_order" value={(data.reviews?.length || 0) + 1} class="text-input" />
+					</div>
+					<div class="form-group full-width">
+						<label for="new-rev-quote">Review Quote</label>
+						<textarea id="new-rev-quote" name="quote" rows="3" bind:value={newReviewDraft.quote} placeholder="Write customer review..." required class="text-input"></textarea>
+					</div>
+					<div class="form-actions full-width">
+						<button type="button" class="btn btn-secondary" onclick={() => isAddingReview = false}>Cancel</button>
+						<button type="submit" class="btn btn-primary">Save Review</button>
+					</div>
+				</form>
+
+				<!-- Live Preview Side Box -->
+				<div class="live-preview-box">
+					<span class="preview-badge">Live Card Preview</span>
+					<div class="review-card preview-card-live">
+						<div class="card-top">
+							<div class="author-info">
+								<div class="avatar">{newReviewDraft.avatar || newReviewDraft.name?.substring(0, 2).toUpperCase() || 'AV'}</div>
+								<div>
+									<div class="author-name">{newReviewDraft.name || 'Author Name'}</div>
+									<div class="author-location">{newReviewDraft.location || 'Location, ST'}</div>
+								</div>
+							</div>
+							<div class="stars">
+								{'★'.repeat(Number(newReviewDraft.stars) || 5)}
+							</div>
+						</div>
+						<p class="quote">"{newReviewDraft.quote || 'Your customer review quote will render here in real-time.'}"</p>
+						<div class="trip-tag">⚓ {newReviewDraft.trip || 'Charter Type'}</div>
+					</div>
 				</div>
-				<div class="form-group">
-					<label for="new-rev-location">Location</label>
-					<input id="new-rev-location" type="text" name="location" placeholder="e.g. Miami, FL" required class="text-input" />
-				</div>
-				<div class="form-group">
-					<label for="new-rev-trip">Charter / Trip Type</label>
-					<input id="new-rev-trip" type="text" name="trip" placeholder="e.g. Islamorada Reef Snorkeling" required class="text-input" />
-				</div>
-				<div class="form-group">
-					<label for="new-rev-stars">Rating (1-5 Stars)</label>
-					<select id="new-rev-stars" name="stars" class="text-input">
-						<option value="5">5 Stars (★★★★★)</option>
-						<option value="4">4 Stars (★★★★☆)</option>
-						<option value="3">3 Stars (★★★☆☆)</option>
-					</select>
-				</div>
-				<div class="form-group">
-					<label for="new-rev-avatar">Avatar Initials</label>
-					<input id="new-rev-avatar" type="text" name="avatar" placeholder="e.g. DS" class="text-input" maxLength={3} />
-				</div>
-				<div class="form-group">
-					<label for="new-rev-order">Display Order</label>
-					<input id="new-rev-order" type="number" name="display_order" value={(data.reviews?.length || 0) + 1} class="text-input" />
-				</div>
-				<div class="form-group full-width">
-					<label for="new-rev-quote">Review Quote</label>
-					<textarea id="new-rev-quote" name="quote" rows="3" placeholder="Write customer review..." required class="text-input"></textarea>
-				</div>
-				<div class="form-actions full-width">
-					<button type="button" class="btn btn-secondary" onclick={() => isAddingReview = false}>Cancel</button>
-					<button type="submit" class="btn btn-primary">Save Review</button>
-				</div>
-			</form>
+			</div>
 		</div>
 	{/if}
 
 	<!-- Existing Reviews Table / List -->
 	{#if !data.reviews || data.reviews.length === 0}
-		<p class="empty-msg" style="padding: 2rem; text-align: center;">No reviews in database. Default static reviews are currently displayed on the landing page.</p>
+		<div class="empty-state glass" style="padding: 2rem; text-align: center;">
+			<p>No reviews found in database.</p>
+			<form method="POST" action="?/seedReviews" use:enhance style="margin-top: 1rem;">
+				<button type="submit" class="btn btn-primary">
+					⚡ Seed 10 Example Reviews into Database
+				</button>
+			</form>
+		</div>
 	{:else}
 		<div class="reviews-list">
 			{#each data.reviews as rev}
 				{#if editingReview?.id === rev.id}
 					<div class="review-form-card glass glow-box inline-edit">
 						<div class="form-card-title">
-							<h4>Edit Review</h4>
+							<h4>Edit Review: {rev.name}</h4>
 							<button type="button" class="btn-text-close" onclick={() => editingReview = null}>✕ Cancel</button>
 						</div>
-						<form method="POST" action="?/updateReview" use:enhance={() => {
-							return async ({ update, result }) => {
-								await update();
-								if (result.type === 'success') {
-									editingReview = null;
-								}
-							};
-						}} class="review-edit-grid">
-							<input type="hidden" name="id" value={rev.id} />
-							<div class="form-group">
-								<label for="edit-rev-name-{rev.id}">Author Name</label>
-								<input id="edit-rev-name-{rev.id}" type="text" name="name" bind:value={editingReview.name} required class="text-input" />
+						<div class="form-and-preview-split">
+							<form method="POST" action="?/updateReview" use:enhance={() => {
+								return async ({ update, result }) => {
+									await update();
+									if (result.type === 'success') {
+										editingReview = null;
+									}
+								};
+							}} class="review-edit-grid">
+								<input type="hidden" name="id" value={rev.id} />
+								<div class="form-group">
+									<label for="edit-rev-name-{rev.id}">Author Name</label>
+									<input id="edit-rev-name-{rev.id}" type="text" name="name" bind:value={editingReview.name} required class="text-input" />
+								</div>
+								<div class="form-group">
+									<label for="edit-rev-loc-{rev.id}">Location</label>
+									<input id="edit-rev-loc-{rev.id}" type="text" name="location" bind:value={editingReview.location} required class="text-input" />
+								</div>
+								<div class="form-group">
+									<label for="edit-rev-trip-{rev.id}">Charter / Trip Type</label>
+									<input id="edit-rev-trip-{rev.id}" type="text" name="trip" bind:value={editingReview.trip} required class="text-input" />
+								</div>
+								<div class="form-group">
+									<label for="edit-rev-stars-{rev.id}">Rating (1-5 Stars)</label>
+									<select id="edit-rev-stars-{rev.id}" name="stars" bind:value={editingReview.stars} class="text-input">
+										<option value={5}>5 Stars (★★★★★)</option>
+										<option value={4}>4 Stars (★★★★☆)</option>
+										<option value={3}>3 Stars (★★★☆☆)</option>
+									</select>
+								</div>
+								<div class="form-group">
+									<label for="edit-rev-avatar-{rev.id}">Avatar Initials</label>
+									<input id="edit-rev-avatar-{rev.id}" type="text" name="avatar" bind:value={editingReview.avatar} class="text-input" />
+								</div>
+								<div class="form-group">
+									<label for="edit-rev-order-{rev.id}">Display Order</label>
+									<input id="edit-rev-order-{rev.id}" type="number" name="display_order" bind:value={editingReview.display_order} class="text-input" />
+								</div>
+								<div class="form-group full-width">
+									<label for="edit-rev-quote-{rev.id}">Review Quote</label>
+									<textarea id="edit-rev-quote-{rev.id}" name="quote" rows="3" bind:value={editingReview.quote} required class="text-input"></textarea>
+								</div>
+								<div class="form-group">
+									<label class="toggle-label">
+										<input type="checkbox" name="active_checkbox" bind:checked={editingReview.active} />
+										<span>Active on Landing Page</span>
+									</label>
+									<input type="hidden" name="active" value={editingReview.active ? 'true' : 'false'} />
+								</div>
+								<div class="form-actions full-width">
+									<button type="button" class="btn btn-secondary" onclick={() => editingReview = null}>Cancel</button>
+									<button type="submit" class="btn btn-primary">Update Review</button>
+								</div>
+							</form>
+
+							<!-- Live Preview Side Box for Editing -->
+							<div class="live-preview-box">
+								<span class="preview-badge">Live Card Preview</span>
+								<div class="review-card preview-card-live">
+									<div class="card-top">
+										<div class="author-info">
+											<div class="avatar">{editingReview.avatar || editingReview.name?.substring(0, 2).toUpperCase() || 'AV'}</div>
+											<div>
+												<div class="author-name">{editingReview.name || 'Author Name'}</div>
+												<div class="author-location">{editingReview.location || 'Location, ST'}</div>
+											</div>
+										</div>
+										<div class="stars">
+											{'★'.repeat(Number(editingReview.stars) || 5)}
+										</div>
+									</div>
+									<p class="quote">"{editingReview.quote || 'Quote preview...'}"</p>
+									<div class="trip-tag">⚓ {editingReview.trip || 'Charter Type'}</div>
+								</div>
 							</div>
-							<div class="form-group">
-								<label for="edit-rev-loc-{rev.id}">Location</label>
-								<input id="edit-rev-loc-{rev.id}" type="text" name="location" bind:value={editingReview.location} required class="text-input" />
-							</div>
-							<div class="form-group">
-								<label for="edit-rev-trip-{rev.id}">Charter / Trip Type</label>
-								<input id="edit-rev-trip-{rev.id}" type="text" name="trip" bind:value={editingReview.trip} required class="text-input" />
-							</div>
-							<div class="form-group">
-								<label for="edit-rev-stars-{rev.id}">Rating (1-5 Stars)</label>
-								<select id="edit-rev-stars-{rev.id}" name="stars" bind:value={editingReview.stars} class="text-input">
-									<option value={5}>5 Stars (★★★★★)</option>
-									<option value={4}>4 Stars (★★★★☆)</option>
-									<option value={3}>3 Stars (★★★☆☆)</option>
-								</select>
-							</div>
-							<div class="form-group">
-								<label for="edit-rev-avatar-{rev.id}">Avatar Initials</label>
-								<input id="edit-rev-avatar-{rev.id}" type="text" name="avatar" bind:value={editingReview.avatar} class="text-input" />
-							</div>
-							<div class="form-group">
-								<label for="edit-rev-order-{rev.id}">Display Order</label>
-								<input id="edit-rev-order-{rev.id}" type="number" name="display_order" bind:value={editingReview.display_order} class="text-input" />
-							</div>
-							<div class="form-group full-width">
-								<label for="edit-rev-quote-{rev.id}">Review Quote</label>
-								<textarea id="edit-rev-quote-{rev.id}" name="quote" rows="3" bind:value={editingReview.quote} required class="text-input"></textarea>
-							</div>
-							<div class="form-group">
-								<label class="toggle-label">
-									<input type="checkbox" name="active_checkbox" bind:checked={editingReview.active} />
-									<span>Active on Landing Page</span>
-								</label>
-								<input type="hidden" name="active" value={editingReview.active ? 'true' : 'false'} />
-							</div>
-							<div class="form-actions full-width">
-								<button type="button" class="btn btn-secondary" onclick={() => editingReview = null}>Cancel</button>
-								<button type="submit" class="btn btn-primary">Update Review</button>
-							</div>
-						</form>
+						</div>
 					</div>
 				{:else}
 					<div class="review-row" class:inactive={!rev.active}>
@@ -1045,8 +1149,143 @@
 		color: var(--danger);
 	}
 
+	.sub-text {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		margin-top: 0.25rem;
+	}
+	.header-btns {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
+	}
+	.form-and-preview-split {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: 1.5rem;
+		align-items: start;
+	}
+	.live-preview-box {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 1rem;
+		background: rgba(0, 0, 0, 0.3);
+		border: 1px dashed rgba(56, 189, 248, 0.3);
+		border-radius: 8px;
+	}
+	.preview-badge {
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: #38bdf8;
+	}
+	.review-card {
+		width: 100%;
+		background: #111a2e;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		border-radius: 12px;
+		padding: 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.card-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+	}
+	.author-info {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.avatar {
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		background: linear-gradient(135deg, var(--primary), var(--secondary));
+		color: #ffffff;
+		font-weight: 700;
+		font-size: 0.8rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.author-name {
+		font-size: 0.9rem;
+		font-weight: 700;
+		color: #f1f5f9;
+		line-height: 1.2;
+	}
+	.author-location {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+	}
+	.stars {
+		display: flex;
+		gap: 2px;
+		color: #f59e0b;
+		font-size: 0.85rem;
+	}
+	.quote {
+		font-size: 0.85rem;
+		line-height: 1.4;
+		color: #cbd5e1;
+		font-style: italic;
+	}
+	.trip-tag {
+		font-size: 0.72rem;
+		font-weight: 600;
+		color: #38bdf8;
+		background: rgba(56, 189, 248, 0.1);
+		padding: 4px 8px;
+		border-radius: 6px;
+		align-self: flex-start;
+	}
+	.preview-marquee-wrapper {
+		background: #090f1d;
+		border: 1px solid rgba(56, 189, 248, 0.2);
+		border-radius: 8px;
+		padding: 1rem;
+		margin-bottom: 1.5rem;
+	}
+	.preview-marquee-title {
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: #38bdf8;
+		margin-bottom: 0.75rem;
+	}
+	.admin-marquee-container {
+		width: 100%;
+		overflow: hidden;
+		mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+		-webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+	}
+	.admin-marquee-track {
+		display: flex;
+		gap: 1rem;
+		width: max-content;
+		animation: adminMarquee 35s linear infinite;
+	}
+	.admin-marquee-container:hover .admin-marquee-track {
+		animation-play-state: paused;
+	}
+	.preview-card {
+		width: 280px;
+		flex-shrink: 0;
+	}
+	@keyframes adminMarquee {
+		0% { transform: translateX(0%); }
+		100% { transform: translateX(-50%); }
+	}
 	@media (max-width: 992px) {
 		.settings-grid {
+			grid-template-columns: 1fr;
+		}
+		.form-and-preview-split {
 			grid-template-columns: 1fr;
 		}
 	}
