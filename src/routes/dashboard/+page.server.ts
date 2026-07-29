@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { inngest } from '$lib/inngest/client';
+import { sendNotification } from '$lib/notifications';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { safeGetSession, supabase } }) => {
@@ -232,7 +233,7 @@ export const actions: Actions = {
 		// Re-evaluate remaining active bookings on the trip instance
 		const { data: remainingBookings } = await supabaseAdmin
 			.from('bookings')
-			.select('id, status')
+			.select('id, status, customers(name, email, phone)')
 			.eq('trip_instance_id', booking.trip_instance_id)
 			.not('status', 'in', '("canceled","forfeited")');
 
@@ -240,6 +241,28 @@ export const actions: Actions = {
 		let newTripStatus = 'open';
 		if (activeCount === 1) {
 			newTripStatus = 'half-booked';
+			const remaining = remainingBookings![0];
+			if (['reconfirmed', 'awaiting-reconfirm', 'held', 'paid'].includes(remaining.status)) {
+				await supabaseAdmin
+					.from('bookings')
+					.update({ status: 'paid', reconfirmation_timestamp: null })
+					.eq('id', remaining.id);
+
+				const remainingCustomer = (remaining as any).customers;
+				if (remainingCustomer) {
+					const { data: trip } = await supabaseAdmin
+						.from('trip_instances')
+						.select('date')
+						.eq('id', booking.trip_instance_id)
+						.single();
+
+					await sendNotification(
+						'counterpart_forfeited',
+						{ email: remainingCustomer.email, phone: remainingCustomer.phone, name: remainingCustomer.name },
+						{ trip_date: trip?.date || '' }
+					);
+				}
+			}
 		} else if (activeCount === 2) {
 			const bothReconfirmed = remainingBookings?.every((b) => b.status === 'reconfirmed');
 			newTripStatus = bothReconfirmed ? 'confirmed' : 'pending-reconfirm';

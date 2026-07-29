@@ -135,13 +135,13 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 				.eq('trip_instance_id', booking.trip_instance_id)
 				.neq('id', bookingId);
 
-			// Update counterpart bookings to 'held' and notify them
+			// Update counterpart bookings to 'paid' and notify them
 			if (otherBookings && otherBookings.length > 0) {
 				for (const other of otherBookings) {
-					if (other.status === 'reconfirmed' || other.status === 'paid' || other.status === 'awaiting-reconfirm') {
+					if (other.status === 'reconfirmed' || other.status === 'paid' || other.status === 'awaiting-reconfirm' || other.status === 'held') {
 						await supabaseAdmin
 							.from('bookings')
-							.update({ status: 'held' })
+							.update({ status: 'paid', reconfirmation_timestamp: null })
 							.eq('id', other.id);
 
 						const otherCustomer = (other as any).customers;

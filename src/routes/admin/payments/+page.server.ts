@@ -107,7 +107,7 @@ export const actions: Actions = {
 		// 3. Send notification to customer
 		const { data: bookingDetails } = await supabase
 			.from('bookings')
-			.select('customers(name, email, phone), trip_instances(date, listing_templates(trip_type))')
+			.select('trip_instance_id, customers(name, email, phone), trip_instances(date, listing_templates(trip_type))')
 			.eq('id', bookingId)
 			.single();
 
@@ -124,6 +124,45 @@ export const actions: Actions = {
 					trip_type: tripDetails?.trip_type || ''
 				}
 			);
+		}
+
+		// 4. Re-evaluate remaining active bookings on the trip instance
+		if (bookingDetails?.trip_instance_id) {
+			const { data: remainingBookings } = await supabase
+				.from('bookings')
+				.select('id, status, customers(name, email, phone)')
+				.eq('trip_instance_id', bookingDetails.trip_instance_id)
+				.not('status', 'in', '("canceled","forfeited")');
+
+			const activeCount = remainingBookings?.length || 0;
+			let newTripStatus = 'open';
+			if (activeCount === 1) {
+				newTripStatus = 'half-booked';
+				const remaining = remainingBookings![0];
+				if (['reconfirmed', 'awaiting-reconfirm', 'held', 'paid'].includes(remaining.status)) {
+					await supabase
+						.from('bookings')
+						.update({ status: 'paid', reconfirmation_timestamp: null })
+						.eq('id', remaining.id);
+
+					const remainingCustomer = (remaining as any).customers;
+					if (remainingCustomer) {
+						await sendNotification(
+							'counterpart_forfeited',
+							{ email: remainingCustomer.email, phone: remainingCustomer.phone, name: remainingCustomer.name },
+							{ trip_date: trip?.date || '' }
+						);
+					}
+				}
+			} else if (activeCount === 2) {
+				const bothReconfirmed = remainingBookings?.every((b) => b.status === 'reconfirmed');
+				newTripStatus = bothReconfirmed ? 'confirmed' : 'pending-reconfirm';
+			}
+
+			await supabase
+				.from('trip_instances')
+				.update({ status: newTripStatus })
+				.eq('id', bookingDetails.trip_instance_id);
 		}
 
 		return { success: true };
