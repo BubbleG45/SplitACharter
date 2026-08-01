@@ -299,7 +299,7 @@
 						name="confirmText"
 						bind:value={deleteConfirmInput}
 						placeholder="Type DELETE to confirm"
-						style="padding: 10px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-light); border-radius: 6px; color: var(--text-primary); font-family: var(--font-body);"
+						style="padding: 10px 12px; background: var(--input-bg); border: 1px solid var(--border-light); border-radius: 6px; color: var(--text-primary); font-family: var(--font-body);"
 						autocomplete="off"
 					/>
 				</div>
@@ -412,7 +412,7 @@
 		font-weight: 600;
 		color: var(--text-secondary);
 		border-bottom: 1px solid var(--border-light);
-		background: rgba(255, 255, 255, 0.01);
+		background: var(--input-focus-bg);
 	}
 	.listings-table td {
 		padding: 1.25rem 1.5rem;
@@ -423,7 +423,7 @@
 		transition: background-color 0.2s ease;
 	}
 	.listing-row:hover {
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--input-focus-bg);
 	}
 	.listing-row:last-child td {
 		border-bottom: none;

@@ -300,7 +300,7 @@
 	}
 	.admin-table th {
 		padding: 1rem 1.5rem;
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--input-focus-bg);
 		border-bottom: 1px solid var(--border-light);
 		font-weight: 600;
 		color: var(--text-secondary);
@@ -557,7 +557,7 @@
 		display: flex;
 		gap: 6px;
 		font-size: 0.8rem;
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--input-bg);
 		padding: 6px 10px;
 		border-radius: 4px;
 		border: 1px solid var(--border-light);
@@ -590,7 +590,7 @@
 	}
 	.form-group select, .form-group textarea {
 		width: 100%;
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--input-bg);
 		border: 1px solid var(--border-light);
 		color: var(--text-primary);
 	}

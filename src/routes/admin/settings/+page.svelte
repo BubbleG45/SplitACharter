@@ -690,14 +690,14 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 1.25rem;
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--bg-surface);
 		border: 1px solid var(--border-light);
 		border-radius: 8px;
 		gap: 1.5rem;
 		transition: background 0.2s ease;
 	}
 	.review-row:hover {
-		background: rgba(255, 255, 255, 0.04);
+		background: var(--input-focus-bg);
 	}
 	.review-row.inactive {
 		opacity: 0.55;
@@ -734,7 +734,7 @@
 	}
 	.rev-name {
 		font-weight: 700;
-		color: #f8fafc;
+		color: var(--text-primary);
 		font-size: 0.95rem;
 	}
 	.rev-loc {
@@ -742,7 +742,7 @@
 		font-size: 0.85rem;
 	}
 	.rev-stars {
-		color: #f59e0b;
+		color: var(--accent);
 		font-size: 0.85rem;
 	}
 	.status-badge {
@@ -764,13 +764,13 @@
 	}
 	.rev-quote {
 		font-size: 0.9rem;
-		color: #cbd5e1;
+		color: var(--text-secondary);
 		font-style: italic;
 		line-height: 1.4;
 	}
 	.rev-trip-tag {
 		font-size: 0.75rem;
-		color: #38bdf8;
+		color: var(--primary);
 		font-weight: 600;
 	}
 	.review-actions {
@@ -856,7 +856,7 @@
 		width: 100%;
 		padding: 10px 12px;
 		font-size: 0.9rem;
-		background: rgba(0, 0, 0, 0.2);
+		background: var(--input-bg);
 		border: 1px solid var(--border-light);
 		border-radius: 6px;
 		color: var(--text-primary);
@@ -1205,8 +1205,8 @@
 		flex-direction: column;
 		gap: 0.75rem;
 		padding: 1rem;
-		background: rgba(0, 0, 0, 0.3);
-		border: 1px dashed rgba(56, 189, 248, 0.3);
+		background: var(--input-bg);
+		border: 1px dashed var(--border-light);
 		border-radius: 8px;
 	}
 	.preview-badge {
@@ -1214,7 +1214,7 @@
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
-		color: #38bdf8;
+		color: var(--primary);
 	}
 	.review-card {
 		width: 100%;
@@ -1317,14 +1317,9 @@
 		100% { transform: translateX(-50%); }
 	}
 	.sticky-nav-bar-wrapper {
-		position: sticky;
-		top: 0;
-		z-index: 100;
-		background: var(--bg-base);
-		backdrop-filter: blur(16px);
-		-webkit-backdrop-filter: blur(16px);
+		position: relative;
 		padding: 0.75rem 0;
-		margin-bottom: 2.5rem;
+		margin-bottom: 2rem;
 		border-bottom: 1px solid var(--border-light);
 	}
 	.settings-nav-pills {
