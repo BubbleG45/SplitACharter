@@ -38,6 +38,7 @@ export const actions: Actions = {
 		const low_price = parseFloat(formData.get('low_price') as string);
 		const high_price = parseFloat(formData.get('high_price') as string);
 		const max_passengers = parseInt(formData.get('max_passengers') as string, 10);
+		const max_group_size = parseInt(formData.get('max_group_size') as string, 10);
 		const description = formData.get('description') as string;
 		const meeting_area = formData.get('meeting_area') as string;
 		const active = formData.get('active') === 'true';
@@ -57,7 +58,7 @@ export const actions: Actions = {
 		}
 
 		// Validations
-		if (!trip_type || !location || !duration || isNaN(low_price) || isNaN(high_price) || isNaN(max_passengers) || !description || !meeting_area) {
+		if (!trip_type || !location || !duration || isNaN(low_price) || isNaN(high_price) || isNaN(max_passengers) || isNaN(max_group_size) || !description || !meeting_area) {
 			return fail(400, { message: 'All fields are required and must be valid.' });
 		}
 
@@ -77,6 +78,10 @@ export const actions: Actions = {
 
 		if (max_passengers <= 0) {
 			return fail(400, { message: 'Maximum passengers must be greater than 0.' });
+		}
+
+		if (max_group_size <= 0) {
+			return fail(400, { message: 'Maximum group size per reservation must be greater than 0.' });
 		}
 
 		// Convert duration text (e.g. "04:00", "4 hours", "4.5") to Postgres interval
@@ -105,6 +110,7 @@ export const actions: Actions = {
 				low_price,
 				high_price,
 				max_passengers,
+				max_group_size,
 				description,
 				whats_included,
 				what_to_bring,

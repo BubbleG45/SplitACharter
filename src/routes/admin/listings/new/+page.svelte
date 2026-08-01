@@ -5,9 +5,11 @@
 	let { data, form } = $props();
 
 	// Array state management for whats_included & what_to_bring initialized from copiedTemplate if copying
+	/* svelte-ignore state_referenced_locally */
 	let whatsIncludedList = $state<string[]>(data.copiedTemplate?.whats_included || []);
 	let newIncludedItem = $state('');
 	
+	/* svelte-ignore state_referenced_locally */
 	let whatToBringList = $state<string[]>(data.copiedTemplate?.what_to_bring || []);
 	let newBringItem = $state('');
 
@@ -72,94 +74,113 @@
 		<input type="hidden" name="whats_included" value={JSON.stringify(whatsIncludedList)} />
 		<input type="hidden" name="what_to_bring" value={JSON.stringify(whatToBringList)} />
 
-		<div class="form-grid">
+		<div class="form-layout">
 			<!-- Row 1: Trip Type & Location -->
-			<div class="form-group">
-				<label for="trip_type">Trip Type / Name</label>
-				<select
-					id="trip_type"
-					name="trip_type"
-					required
-				>
-					<option value="" disabled selected={!data.copiedTemplate}>Select a Trip Type</option>
-					{#each data.tripTypes as type}
-						<option value={type.name} selected={data.copiedTemplate?.trip_type === type.name}>{type.name}</option>
-					{/each}
-				</select>
+			<div class="form-row form-row-2">
+				<div class="form-group">
+					<label for="trip_type">Trip Type / Name</label>
+					<select
+						id="trip_type"
+						name="trip_type"
+						required
+					>
+						<option value="" disabled selected={!data.copiedTemplate}>Select a Trip Type</option>
+						{#each data.tripTypes as type}
+							<option value={type.name} selected={data.copiedTemplate?.trip_type === type.name}>{type.name}</option>
+						{/each}
+					</select>
+				</div>
+
+				<div class="form-group">
+					<label for="location">Location / Region</label>
+					<select
+						id="location"
+						name="location"
+						required
+					>
+						<option value="" disabled selected={!data.copiedTemplate}>Select a Location</option>
+						<option value="Lower Keys (Key West, Big Pine Key)" selected={data.copiedTemplate?.location === 'Lower Keys (Key West, Big Pine Key)'}>Lower Keys (Key West, Big Pine Key)</option>
+						<option value="Middle Keys (Marathon, Pigeon Key)" selected={data.copiedTemplate?.location === 'Middle Keys (Marathon, Pigeon Key)'}>Middle Keys (Marathon, Pigeon Key)</option>
+						<option value="Upper Keys (Key Largo, Islamorada)" selected={data.copiedTemplate?.location === 'Upper Keys (Key Largo, Islamorada)'}>Upper Keys (Key Largo, Islamorada)</option>
+					</select>
+				</div>
 			</div>
 
-			<div class="form-group">
-				<label for="location">Location / Region</label>
-				<select
-					id="location"
-					name="location"
-					required
-				>
-					<option value="" disabled selected={!data.copiedTemplate}>Select a Location</option>
-					<option value="Lower Keys (Key West, Big Pine Key)" selected={data.copiedTemplate?.location === 'Lower Keys (Key West, Big Pine Key)'}>Lower Keys (Key West, Big Pine Key)</option>
-					<option value="Middle Keys (Marathon, Pigeon Key)" selected={data.copiedTemplate?.location === 'Middle Keys (Marathon, Pigeon Key)'}>Middle Keys (Marathon, Pigeon Key)</option>
-					<option value="Upper Keys (Key Largo, Islamorada)" selected={data.copiedTemplate?.location === 'Upper Keys (Key Largo, Islamorada)'}>Upper Keys (Key Largo, Islamorada)</option>
-				</select>
+			<!-- Row 2: Duration, Max Passenger Capacity & Max Group Size Per Reservation -->
+			<div class="form-row form-row-3">
+				<div class="form-group">
+					<label for="duration">Duration</label>
+					<input
+						type="text"
+						id="duration"
+						name="duration"
+						value={data.copiedTemplate ? '' : '4 hours'}
+						placeholder="e.g. 4 hours or 04:00"
+						required
+					/>
+					<span class="input-helper">e.g. 4 hours, 6 hours, or 04:00</span>
+				</div>
+
+				<div class="form-group">
+					<label for="max_passengers">Max Passenger Capacity</label>
+					<input
+						type="number"
+						id="max_passengers"
+						name="max_passengers"
+						min="1"
+						value={data.copiedTemplate?.max_passengers || ''}
+						placeholder="e.g., 6"
+						required
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="max_group_size">Max Group Size Per Reservation</label>
+					<input
+						type="number"
+						id="max_group_size"
+						name="max_group_size"
+						min="1"
+						value={data.copiedTemplate?.max_group_size || 4}
+						placeholder="e.g., 4"
+						required
+					/>
+				</div>
 			</div>
 
-			<!-- Row 2: Duration, Passenger Cap & Status -->
-			<div class="form-group">
-				<label for="duration">Duration</label>
-				<input
-					type="text"
-					id="duration"
-					name="duration"
-					value={data.copiedTemplate ? '' : '4 hours'}
-					placeholder="e.g. 4 hours or 04:00"
-					required
-				/>
-				<span class="input-helper">e.g. 4 hours, 6 hours, or 04:00</span>
-			</div>
+			<!-- Row 3: Price Range Estimates -->
+			<div class="form-row form-row-2">
+				<div class="form-group">
+					<label for="low_price">Low Price Estimate ($)</label>
+					<input
+						type="number"
+						id="low_price"
+						name="low_price"
+						min="0"
+						step="0.01"
+						value=""
+						placeholder="e.g., 600"
+						required
+					/>
+				</div>
 
-			<div class="form-group">
-				<label for="max_passengers">Max Passenger Capacity</label>
-				<input
-					type="number"
-					id="max_passengers"
-					name="max_passengers"
-					min="1"
-					value={data.copiedTemplate?.max_passengers || ''}
-					placeholder="e.g., 6"
-					required
-				/>
-			</div>
-
-			<!-- Row 3: Price Range -->
-			<div class="form-group">
-				<label for="low_price">Low Price Estimate ($)</label>
-				<input
-					type="number"
-					id="low_price"
-					name="low_price"
-					min="0"
-					step="0.01"
-					value=""
-					placeholder="e.g., 600"
-					required
-				/>
-			</div>
-
-			<div class="form-group">
-				<label for="high_price">High Price Estimate ($)</label>
-				<input
-					type="number"
-					id="high_price"
-					name="high_price"
-					min="0"
-					step="0.01"
-					value=""
-					placeholder="e.g., 800"
-					required
-				/>
+				<div class="form-group">
+					<label for="high_price">High Price Estimate ($)</label>
+					<input
+						type="number"
+						id="high_price"
+						name="high_price"
+						min="0"
+						step="0.01"
+						value=""
+						placeholder="e.g., 800"
+						required
+					/>
+				</div>
 			</div>
 
 			<!-- Row 4: Meeting Area -->
-			<div class="form-group full-width">
+			<div class="form-group">
 				<label for="meeting_area">Meeting Area / Detailed Address</label>
 				<input
 					type="text"
@@ -172,7 +193,7 @@
 			</div>
 
 			<!-- Row 5: Description -->
-			<div class="form-group full-width">
+			<div class="form-group">
 				<label for="description">Trip Description</label>
 				<textarea
 					id="description"
@@ -184,7 +205,7 @@
 			</div>
 
 			<!-- Row 6: What's Included (Tags Input) -->
-			<div class="form-group full-width">
+			<div class="form-group">
 				<label for="whats_included_input">What's Included</label>
 				<div class="tag-input-wrapper">
 					<input
@@ -214,7 +235,7 @@
 			</div>
 
 			<!-- Row 7: What to Bring (Tags Input) -->
-			<div class="form-group full-width">
+			<div class="form-group">
 				<label for="what_to_bring_input">What to Bring</label>
 				<div class="tag-input-wrapper">
 					<input
@@ -244,7 +265,7 @@
 			</div>
 
 			<!-- Row 8: Active Status -->
-			<div class="form-group full-width checkbox-group">
+			<div class="form-group checkbox-group">
 				<label class="switch-container">
 					<input type="checkbox" name="active" value="true" checked />
 					<span class="switch-slider"></span>
@@ -310,19 +331,26 @@
 		padding: 2.5rem;
 		border: 1px solid var(--border-light);
 	}
-	.form-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
+	.form-layout {
+		display: flex;
+		flex-direction: column;
 		gap: 1.5rem;
 		margin-bottom: 2rem;
+	}
+	.form-row {
+		display: grid;
+		gap: 1.5rem;
+	}
+	.form-row-2 {
+		grid-template-columns: 1fr 1fr;
+	}
+	.form-row-3 {
+		grid-template-columns: 1fr 1fr 1fr;
 	}
 	.form-group {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-	}
-	.full-width {
-		grid-column: span 2;
 	}
 	label {
 		font-size: 0.9rem;
@@ -467,11 +495,9 @@
 	}
 
 	@media (max-width: 768px) {
-		.form-grid {
+		.form-row-2,
+		.form-row-3 {
 			grid-template-columns: 1fr;
-		}
-		.full-width {
-			grid-column: span 1;
 		}
 		.form-container {
 			padding: 1.5rem;

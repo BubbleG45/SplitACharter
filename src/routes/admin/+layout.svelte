@@ -211,13 +211,13 @@
 	}
 
 	.sidebar-header {
-		padding: 2rem 1.5rem;
+		padding: 1.25rem 1.25rem;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 	}
 	.sidebar-condensed .sidebar-header {
-		padding: 1.5rem 0.5rem;
+		padding: 1.25rem 0.5rem;
 		flex-direction: column;
 		gap: 0.75rem;
 		justify-content: center;
@@ -225,14 +225,14 @@
 	.logo {
 		font-family: var(--font-heading);
 		font-weight: 800;
-		font-size: 1.25rem;
+		font-size: 1.2rem;
 		color: var(--text-primary);
 		letter-spacing: -0.5px;
 	}
 	.logo-short {
 		font-family: var(--font-heading);
 		font-weight: 800;
-		font-size: 1.4rem;
+		font-size: 1.3rem;
 		color: var(--primary);
 	}
 	.badge {
@@ -276,21 +276,34 @@
 
 	.sidebar-nav {
 		flex: 1;
-		padding: 1rem 0.75rem;
+		padding: 0.5rem 0.75rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.35rem;
+		overflow-y: auto;
+		scrollbar-width: thin;
+		scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+	}
+	.sidebar-nav::-webkit-scrollbar {
+		width: 4px;
+	}
+	.sidebar-nav::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.sidebar-nav::-webkit-scrollbar-thumb {
+		background: rgba(255, 255, 255, 0.15);
+		border-radius: 4px;
 	}
 	.nav-link {
 		display: flex;
 		align-items: center;
-		gap: 0.85rem;
-		padding: 0.85rem 1rem;
+		gap: 0.75rem;
+		padding: 0.65rem 0.85rem;
 		color: var(--text-secondary);
 		text-decoration: none;
 		border-radius: 8px;
 		font-weight: 500;
-		font-size: 0.95rem;
+		font-size: 0.88rem;
 		transition: all 0.2s ease;
 	}
 	.nav-link:hover {
@@ -303,8 +316,9 @@
 		border: 1px solid rgba(6, 182, 212, 0.2);
 	}
 	.nav-icon {
-		width: 20px;
-		height: 20px;
+		width: 18px;
+		height: 18px;
+		flex-shrink: 0;
 		transition: transform 0.2s ease;
 	}
 	.nav-link:hover .nav-icon {
@@ -315,11 +329,12 @@
 	}
 
 	.sidebar-footer {
-		padding: 1.5rem;
+		padding: 1rem 1.25rem;
 		border-top: 1px solid var(--border-light);
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 0.75rem;
+		flex-shrink: 0;
 	}
 	.user-profile {
 		display: flex;
@@ -327,16 +342,17 @@
 		gap: 0.75rem;
 	}
 	.avatar {
-		width: 40px;
-		height: 40px;
+		width: 36px;
+		height: 36px;
 		border-radius: 50%;
 		background: linear-gradient(135deg, var(--primary), var(--secondary));
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		font-weight: 700;
-		font-size: 1.1rem;
+		font-size: 1rem;
 		border: 2px solid rgba(255, 255, 255, 0.1);
+		flex-shrink: 0;
 	}
 	.info {
 		display: flex;
@@ -345,10 +361,10 @@
 	}
 	.user-name {
 		font-weight: 600;
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 	}
 	.user-email {
-		font-size: 0.75rem;
+		font-size: 0.72rem;
 		color: var(--text-muted);
 		text-overflow: ellipsis;
 		overflow: hidden;
@@ -363,8 +379,11 @@
 		background: rgba(239, 68, 68, 0.1);
 		color: var(--danger);
 		border: 1px solid rgba(239, 68, 68, 0.15);
-		padding: 0.65rem;
-		font-size: 0.9rem;
+		padding: 0.55rem;
+		font-size: 0.85rem;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 0.2s ease;
 	}
 	.btn-signout:hover {
 		background: var(--danger);
