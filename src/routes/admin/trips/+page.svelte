@@ -1618,9 +1618,9 @@
 		color: var(--text-muted);
 	}
 	.winning-message-box {
-		background: rgba(0, 0, 0, 0.25);
-		border: 1px solid var(--border-light);
-		padding: 8px 12px;
+		background: rgba(16, 185, 129, 0.08);
+		border: 1px solid rgba(16, 185, 129, 0.25);
+		padding: 10px 14px;
 		border-radius: 6px;
 	}
 	.winning-message-label {
@@ -1818,7 +1818,7 @@
 
 	.timeline-item {
 		padding: 1rem;
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--bg-surface);
 		border: 1px solid var(--border-light);
 		border-radius: 8px;
 		display: flex;
@@ -1852,10 +1852,10 @@
 		font-size: 0.85rem;
 		line-height: 1.5;
 		color: var(--text-primary);
-		background: rgba(0, 0, 0, 0.25);
-		padding: 10px;
+		background: rgba(6, 182, 212, 0.08);
+		padding: 10px 14px;
 		border-radius: 6px;
-		border: 1px solid rgba(255, 255, 255, 0.03);
+		border: 1px solid rgba(6, 182, 212, 0.22);
 		white-space: pre-wrap;
 		word-break: break-word;
 	}
@@ -2167,7 +2167,7 @@
 	.captains-log-table th {
 		text-align: left;
 		padding: 10px 12px;
-		background: rgba(0, 0, 0, 0.3);
+		background: var(--input-focus-bg);
 		color: var(--text-secondary);
 		font-size: 0.75rem;
 		text-transform: uppercase;
