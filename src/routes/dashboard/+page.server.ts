@@ -281,7 +281,7 @@ export const actions: Actions = {
 				: 'Your booking has been canceled. Per our policy, fees for reconfirmed trips are non-refundable.'
 		};
 	},
-	updateName: async ({ request, locals: { safeGetSession } }) => {
+	updateName: async ({ request, locals: { safeGetSession, supabase } }) => {
 		const { session, user } = await safeGetSession();
 
 		if (!session || !user) {
@@ -301,18 +301,29 @@ export const actions: Actions = {
 
 		const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+		// Fetch existing customer row if present to preserve fields
+		const { data: existingCustomer } = await supabaseAdmin
+			.from('customers')
+			.select('email, phone, sms_opt_in, how_heard')
+			.eq('id', user.id)
+			.maybeSingle();
+
+		const email = existingCustomer?.email || user.email || `user_${user.id}@splitacharter.com`;
+		const phone = existingCustomer?.phone || user.phone || null;
+
 		const { error: updateErr } = await supabaseAdmin
 			.from('customers')
 			.upsert({
 				id: user.id,
 				name,
-				email: user.email,
-				phone: user.phone
+				email,
+				phone,
+				updated_at: new Date().toISOString()
 			}, { onConflict: 'id' });
 
 		if (updateErr) {
-			console.error('Error updating customer name:', updateErr);
-			return fail(500, { message: 'Failed to update name. Please try again.' });
+			console.error('Error updating customer name in Supabase:', updateErr);
+			return fail(500, { message: `Failed to update name: ${updateErr.message || updateErr.details || 'Database error'}` });
 		}
 
 		return {
@@ -322,4 +333,5 @@ export const actions: Actions = {
 		};
 	}
 };
+
 
