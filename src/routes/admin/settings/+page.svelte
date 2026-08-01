@@ -412,7 +412,19 @@
 					</div>
 					<div class="form-group">
 						<label for="new-rev-trip">Charter / Trip Type</label>
-						<input id="new-rev-trip" type="text" name="trip" bind:value={newReviewDraft.trip} placeholder="e.g. Islamorada Reef Snorkeling" required class="text-input" />
+						<select id="new-rev-trip" name="trip" bind:value={newReviewDraft.trip} required class="text-input">
+							<option value="" disabled selected>Select a Trip Type...</option>
+							{#if data.tripTypes && data.tripTypes.length > 0}
+								{#each data.tripTypes as type}
+									<option value={type.name}>{type.name}</option>
+								{/each}
+							{:else}
+								<option value="Half-Day Reef Fishing">Half-Day Reef Fishing</option>
+								<option value="Full-Day Offshore Deep Sea">Full-Day Offshore Deep Sea</option>
+								<option value="Sunset Champagne Cruise">Sunset Champagne Cruise</option>
+								<option value="Islamorada Reef Snorkeling">Islamorada Reef Snorkeling</option>
+							{/if}
+						</select>
 					</div>
 					<div class="form-group">
 						<label for="new-rev-stars">Rating (1-5 Stars)</label>
@@ -503,7 +515,18 @@
 								</div>
 								<div class="form-group">
 									<label for="edit-rev-trip-{rev.id}">Charter / Trip Type</label>
-									<input id="edit-rev-trip-{rev.id}" type="text" name="trip" bind:value={editingReview.trip} required class="text-input" />
+									<select id="edit-rev-trip-{rev.id}" name="trip" bind:value={editingReview.trip} required class="text-input">
+										{#if data.tripTypes && data.tripTypes.length > 0}
+											{#each data.tripTypes as type}
+												<option value={type.name}>{type.name}</option>
+											{/each}
+										{:else}
+											<option value="Half-Day Reef Fishing">Half-Day Reef Fishing</option>
+											<option value="Full-Day Offshore Deep Sea">Full-Day Offshore Deep Sea</option>
+											<option value="Sunset Champagne Cruise">Sunset Champagne Cruise</option>
+											<option value="Islamorada Reef Snorkeling">Islamorada Reef Snorkeling</option>
+										{/if}
+									</select>
 								</div>
 								<div class="form-group">
 									<label for="edit-rev-stars-{rev.id}">Rating (1-5 Stars)</label>
