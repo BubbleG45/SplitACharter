@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			amount,
 			status,
 			created_at,
-			bookings (
+			bookings:booking_id (
 				id,
 				group_size,
 				status,
