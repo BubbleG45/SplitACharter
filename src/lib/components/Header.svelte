@@ -1,7 +1,6 @@
 <script lang="ts">
 	import logoWhite from '$lib/assets/logo-white.svg';
 	import logoDark from '$lib/assets/logo.svg';
-	import { theme } from '$lib/stores/theme';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { page } from '$app/state';
 
@@ -16,7 +15,8 @@
 <header class="site-header">
 	<div class="header-container">
 		<a href="/" class="logo-link">
-			<img src={$theme === 'light' ? logoDark : logoWhite} alt="SplitACharter Logo" class="header-logo" />
+			<img src={logoWhite} alt="SplitACharter Logo" class="header-logo logo-dark-theme" />
+			<img src={logoDark} alt="SplitACharter Logo" class="header-logo logo-light-theme" />
 		</a>
 		<nav class="nav-links">
 			<a href="/how-it-works" class="nav-link-custom" class:active={currentPath === '/how-it-works'}>How It Works</a>
@@ -64,6 +64,20 @@
 	.header-logo {
 		height: 72px;
 		display: block;
+	}
+	:root[data-theme="light"] .logo-dark-theme {
+		display: none !important;
+	}
+	:root[data-theme="light"] .logo-light-theme {
+		display: block !important;
+	}
+	:root[data-theme="dark"] .logo-dark-theme,
+	:root:not([data-theme]) .logo-dark-theme {
+		display: block !important;
+	}
+	:root[data-theme="dark"] .logo-light-theme,
+	:root:not([data-theme]) .logo-light-theme {
+		display: none !important;
 	}
 	.nav-links {
 		display: flex;

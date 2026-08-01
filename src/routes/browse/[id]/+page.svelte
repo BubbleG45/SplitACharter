@@ -598,7 +598,7 @@
 		margin-bottom: 2rem;
 		border: 1px solid var(--border-light);
 		border-radius: 12px;
-		background: rgba(15, 23, 42, 0.6);
+		background: var(--input-bg);
 	}
 	.pricing-card-header {
 		display: flex;

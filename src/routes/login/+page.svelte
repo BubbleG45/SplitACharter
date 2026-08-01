@@ -36,7 +36,8 @@
 	<main class="login-container glass glow-primary">
 		<div class="login-header">
 			<a href="/" class="logo-link" style="margin: 0 auto 1.5rem auto; display: inline-block;">
-				<img src={$theme === 'light' ? logoDark : logoWhite} alt="SplitACharter Logo" class="header-logo" style="height: 60px;" />
+				<img src={logoWhite} alt="SplitACharter Logo" class="header-logo logo-dark-theme" style="height: 60px;" />
+				<img src={logoDark} alt="SplitACharter Logo" class="header-logo logo-light-theme" style="height: 60px;" />
 			</a>
 			<h2>Welcome back</h2>
 			<p class="subtitle">Passwordless login to manage or book your shared charters</p>
@@ -204,6 +205,20 @@
 	}
 	.logo-link:hover {
 		transform: scale(1.02);
+	}
+	:root[data-theme="light"] .logo-dark-theme {
+		display: none !important;
+	}
+	:root[data-theme="light"] .logo-light-theme {
+		display: block !important;
+	}
+	:root[data-theme="dark"] .logo-dark-theme,
+	:root:not([data-theme]) .logo-dark-theme {
+		display: block !important;
+	}
+	:root[data-theme="dark"] .logo-light-theme,
+	:root:not([data-theme]) .logo-light-theme {
+		display: none !important;
 	}
 	.login-header h2 {
 		font-size: 1.5rem;

@@ -663,18 +663,18 @@
 	}
 
 	.exceeds-badge {
-		background: rgba(239, 68, 68, 0.15);
-		color: #fca5a5;
-		border: 1px solid rgba(239, 68, 68, 0.3);
-		padding: 2px 8px;
-		border-radius: 4px;
-		font-size: 0.75rem;
-		font-weight: 600;
+		background: rgba(239, 68, 68, 0.18);
+		color: var(--danger);
+		border: 1px solid rgba(239, 68, 68, 0.4);
+		padding: 3px 10px;
+		border-radius: 6px;
+		font-size: 0.78rem;
+		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
 	}
 	.btn-disabled {
-		background: rgba(255, 255, 255, 0.05) !important;
+		background: var(--input-bg) !important;
 		color: var(--text-muted) !important;
 		border: 1px solid var(--border-light) !important;
 		cursor: not-allowed !important;
@@ -683,29 +683,28 @@
 		transform: none !important;
 	}
 
-
-
 	/* Card Badge customizations */
 	.active-badge {
-		background: rgba(99, 102, 241, 0.12);
-		color: #a5b4fc;
-		border: 1px solid rgba(99, 102, 241, 0.3);
-		padding: 2px 8px;
-		border-radius: 4px;
-		font-size: 0.75rem;
-		font-weight: 600;
+		background: rgba(99, 102, 241, 0.18);
+		color: var(--secondary);
+		border: 1px solid rgba(99, 102, 241, 0.4);
+		padding: 3px 10px;
+		border-radius: 6px;
+		font-size: 0.78rem;
+		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
 	}
 	.date-badge {
-		background: rgba(6, 182, 212, 0.12);
-		border: 1px solid rgba(6, 182, 212, 0.3);
+		background: rgba(6, 182, 212, 0.16);
+		border: 1px solid var(--border-glow);
 		color: var(--primary);
-		padding: 2px 8px;
+		padding: 4px 10px;
 		border-radius: 6px;
-		font-size: 0.78rem;
-		font-weight: 600;
+		font-size: 0.82rem;
+		font-weight: 700;
 		white-space: nowrap;
+		box-shadow: 0 2px 8px rgba(6, 182, 212, 0.15);
 	}
 	.title-row {
 		display: flex;

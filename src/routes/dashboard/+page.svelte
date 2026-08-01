@@ -659,10 +659,10 @@
 		align-items: flex-start;
 		gap: 12px;
 	}
-	.info-primary { border: 1px solid rgba(6, 182, 212, 0.2); background: rgba(6, 182, 212, 0.03); color: #a5f3fc; }
-	.info-warning { border: 1px solid rgba(245, 158, 11, 0.2); background: rgba(245, 158, 11, 0.03); color: #fde68a; }
-	.info-success { border: 1px solid rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.03); color: #a7f3d0; }
-	.info-danger { border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.03); color: #fca5a5; }
+	.info-primary { border: 1px solid var(--border-glow); background: rgba(6, 182, 212, 0.06); color: var(--primary); }
+	.info-warning { border: 1px solid rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.06); color: var(--accent); }
+	.info-success { border: 1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.06); color: var(--success); }
+	.info-danger { border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.06); color: var(--danger); }
 
 	.pulse-dot {
 		width: 8px;
