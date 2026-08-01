@@ -35,6 +35,17 @@
 	function removeBring(index: number) {
 		whatToBringList = whatToBringList.filter((_, i) => i !== index);
 	}
+
+	/* svelte-ignore state_referenced_locally */
+	let maxPassengers = $state<number | ''>(data.listing.max_passengers || '');
+	/* svelte-ignore state_referenced_locally */
+	let customMaxGroupSize = $state<number | ''>(data.listing.max_group_size || '');
+
+	let suggestedMaxGroupSize = $derived.by(() => {
+		const mp = typeof maxPassengers === 'number' ? maxPassengers : parseInt(String(maxPassengers || 0), 10);
+		if (isNaN(mp) || mp <= 0) return 4;
+		return mp >= 6 ? 4 : Math.max(1, Math.floor(mp / 2));
+	});
 </script>
 
 <svelte:head>
@@ -115,10 +126,24 @@
 					id="max_passengers"
 					name="max_passengers"
 					min="1"
-					value={data.listing.max_passengers}
+					bind:value={maxPassengers}
 					placeholder="e.g., 6"
 					required
 				/>
+			</div>
+
+			<div class="form-group">
+				<label for="max_group_size">Max Group Size Per Reservation</label>
+				<input
+					type="number"
+					id="max_group_size"
+					name="max_group_size"
+					min="1"
+					max={typeof maxPassengers === 'number' && maxPassengers > 1 ? maxPassengers - 1 : 4}
+					bind:value={customMaxGroupSize}
+					placeholder="Auto: {suggestedMaxGroupSize}"
+				/>
+				<span class="input-helper">Max seats 1 group can book. Default: {suggestedMaxGroupSize} seat{suggestedMaxGroupSize === 1 ? '' : 's'} (leaves room for Group 2).</span>
 			</div>
 
 			<!-- Row 3: Price Range -->

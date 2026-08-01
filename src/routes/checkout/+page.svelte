@@ -202,7 +202,7 @@
 									<span class="input-helper error-text">Group size ({groupSize}) exceeds the max available open seats ({data.maxAvailablePassengers}) for this charter.</span>
 								{:else}
 									<span class="input-helper info-text">
-										ℹ️ {#if data.isJoiningExisting}Joining an existing charter group! Up to {data.maxAvailablePassengers} open {data.maxAvailablePassengers === 1 ? 'seat is' : 'seats are'} available for your group.{:else}Group signups are capped at 4 passengers to encourage group matching and split charter costs evenly.{/if}
+										ℹ️ {#if data.isJoiningExisting}Joining an existing charter group! Up to {data.maxAvailablePassengers} open {data.maxAvailablePassengers === 1 ? 'seat is' : 'seats are'} available for your group.{:else}Group signups are capped at {data.listing.max_group_size || (data.listing.max_passengers >= 6 ? 4 : Math.max(1, Math.floor(data.listing.max_passengers / 2)))} passenger{data.maxAvailablePassengers === 1 ? '' : 's'} per reservation to encourage group matching and split charter costs evenly.{/if}
 									</span>
 								{/if}
 							</div>

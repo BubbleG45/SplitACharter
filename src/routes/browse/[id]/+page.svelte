@@ -91,6 +91,11 @@
 	let ogImageUrl = $derived(
 		`${requestOrigin}/og-banner.png`
 	);
+
+	let maxGroupCap = $derived(
+		data.listing.max_group_size ||
+			(data.listing.max_passengers >= 6 ? 4 : Math.max(1, Math.floor(data.listing.max_passengers / 2)))
+	);
 </script>
 
 <svelte:head>
@@ -273,7 +278,7 @@
 							<div class="status-alert new-glow">
 								<h4>Start New Charter</h4>
 								<p>No charter is open on this date yet. Book now to open a new trip instance so other groups can join you!</p>
-								<p class="policy-note">ℹ️ Group signups are capped at 4 passengers to encourage group matching and split charter costs evenly.</p>
+								<p class="policy-note">ℹ️ Group signups are capped at {maxGroupCap} passenger{maxGroupCap === 1 ? '' : 's'} per reservation to encourage group matching and split charter costs evenly.</p>
 								<div class="price-box">
 									<span class="price-num">$50.00</span>
 									<span class="price-lbl">Reservation Deposit (due now)</span>

@@ -96,6 +96,16 @@ export const actions: Actions = {
 			}
 		}
 
+		const max_group_size_raw = formData.get('max_group_size') as string;
+		let max_group_size = max_group_size_raw ? parseInt(max_group_size_raw, 10) : NaN;
+		if (isNaN(max_group_size) || max_group_size < 1) {
+			max_group_size = max_passengers >= 6 ? 4 : Math.max(1, Math.floor(max_passengers / 2));
+		}
+
+		if (max_group_size >= max_passengers && max_passengers > 1) {
+			return fail(400, { message: 'Max Group Size per reservation must be less than Total Boat Capacity so a 2nd group can join.' });
+		}
+
 		const { error } = await supabase
 			.from('listing_templates')
 			.insert({
@@ -105,6 +115,7 @@ export const actions: Actions = {
 				low_price,
 				high_price,
 				max_passengers,
+				max_group_size,
 				description,
 				whats_included,
 				what_to_bring,

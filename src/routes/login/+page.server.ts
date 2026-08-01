@@ -39,7 +39,7 @@ export const actions: Actions = {
 			.ilike('email', email)
 			.maybeSingle();
 
-		const nextPath = adminEmailMatch ? '/admin' : '/dashboard';
+		const nextPath = adminEmailMatch ? '/admin' : '/';
 		const siteUrl = getSiteUrl(url.origin);
 		const { data, error } = await supabaseAdmin.auth.admin.generateLink({
 			type: 'magiclink',

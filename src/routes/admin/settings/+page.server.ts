@@ -104,16 +104,22 @@ const defaultSeedReviews = [
 	}
 ];
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-	const [settingsRes, tripTypesRes, reviewsRes] = await Promise.all([
+export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
+	const activeTab = url.searchParams.get('tab') || 'notifications';
+
+	const [settingsRes, tripTypesRes, listingTemplatesRes, reviewsRes] = await Promise.all([
 		supabase
 			.from('admin_notification_settings')
 			.select('*')
 			.order('trigger_name', { ascending: true }),
 		supabase
 			.from('trip_types')
-			.select('*')
+			.select('name')
 			.order('name', { ascending: true }),
+		supabase
+			.from('listing_templates')
+			.select('trip_type')
+			.order('trip_type', { ascending: true }),
 		supabase
 			.from('landing_reviews')
 			.select('*')
@@ -130,6 +136,21 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		console.error('Error loading trip types:', tripTypesRes.error);
 		throw error(500, 'Failed to load trip types');
 	}
+
+	// Extract unique base trip types from trip_types table and listing_templates table
+	const tripTypeSet = new Set<string>();
+	(tripTypesRes.data || []).forEach((t: { name: string }) => {
+		if (t.name) tripTypeSet.add(t.name.trim());
+	});
+	(listingTemplatesRes.data || []).forEach((l: { trip_type: string }) => {
+		if (l.trip_type) tripTypeSet.add(l.trip_type.trim());
+	});
+
+	if (tripTypeSet.size === 0) {
+		['Offshore Fishing', 'Reef Snorkeling', 'Spearfishing', 'Sunset Cruise', 'Sandbar & Eco Tour', 'Wreck Diving', 'Catamaran Cruise'].forEach((t) => tripTypeSet.add(t));
+	}
+
+	const availableTripTypes = Array.from(tripTypeSet).sort();
 
 	let reviews = reviewsRes.data || [];
 
@@ -148,12 +169,14 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		}
 	} else if (reviewsRes.error) {
 		console.warn('Could not query landing_reviews table, using static fallbacks:', reviewsRes.error.message);
-		reviews = defaultSeedReviews.map((r, i) => ({ id: `default-${i+1}`, ...r }));
+		reviews = defaultSeedReviews.map((r, i) => ({ id: `default-${i + 1}`, ...r }));
 	}
 
 	return {
+		activeTab,
 		settings: settingsRes.data || [],
 		tripTypes: tripTypesRes.data || [],
+		availableTripTypes,
 		reviews
 	};
 };

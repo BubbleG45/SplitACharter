@@ -50,7 +50,8 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		.in('status', ['open', 'half-booked'])
 		.maybeSingle();
 
-	// Calculate maximum group size for this booking
+	// Calculate maximum group size for this booking based on template max_group_size
+	const templateGroupCap = listing.max_group_size || (listing.max_passengers >= 6 ? 4 : Math.max(1, Math.floor(listing.max_passengers / 2)));
 	let maxAvailablePassengers = listing.max_passengers;
 	let isJoiningExisting = false;
 
@@ -65,10 +66,10 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 			.not('status', 'in', '("canceled","forfeited")');
 
 		const currentlyBooked = existingBookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
-		maxAvailablePassengers = Math.min(4, Math.max(0, listing.max_passengers - currentlyBooked));
+		maxAvailablePassengers = Math.min(templateGroupCap, Math.max(0, listing.max_passengers - currentlyBooked));
 	} else {
-		// Group signups are capped at 4 passengers to encourage group matching
-		maxAvailablePassengers = Math.min(4, listing.max_passengers);
+		// Group signups are capped at templateGroupCap to encourage group matching
+		maxAvailablePassengers = Math.min(templateGroupCap, listing.max_passengers);
 	}
 
 	// Calculate initial group size from URL parameter if available
@@ -158,7 +159,7 @@ export const actions: Actions = {
 			// Fetch Listing details
 			const { data: listing, error: listingErr } = await supabaseAdmin
 				.from('listing_templates')
-				.select('trip_type, max_passengers')
+				.select('trip_type, max_passengers, max_group_size')
 				.eq('id', templateId)
 				.maybeSingle();
 
@@ -244,11 +245,12 @@ export const actions: Actions = {
 
 			const currentlyBooked = existingBookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
 			const remainingSeats = Math.max(0, listing.max_passengers - currentlyBooked);
-			const maxAllowed = Math.min(4, remainingSeats);
+			const templateGroupCap = listing.max_group_size || (listing.max_passengers >= 6 ? 4 : Math.max(1, Math.floor(listing.max_passengers / 2)));
+			const maxAllowed = Math.min(templateGroupCap, remainingSeats);
 
-			if (groupSize > maxAllowed || groupSize > 4) {
-				const errorMsg = groupSize > 4
-					? 'Group signups are capped at 4 passengers to encourage group matching and split charter costs evenly.'
+			if (groupSize > maxAllowed || groupSize > templateGroupCap) {
+				const errorMsg = groupSize > templateGroupCap
+					? `Group signups for this charter are capped at ${templateGroupCap} passenger${templateGroupCap === 1 ? '' : 's'} per reservation to encourage group matching.`
 					: (maxAllowed > 0
 						? `Your passenger group size (${groupSize} ${groupSize === 1 ? 'passenger' : 'passengers'}) exceeds the remaining open seats (${maxAllowed} ${maxAllowed === 1 ? 'seat' : 'seats'}) for this charter.`
 						: 'This charter trip is already at full passenger capacity.');
