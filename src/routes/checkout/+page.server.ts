@@ -4,6 +4,7 @@ import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { inngest } from '$lib/inngest/client';
 import { sendNotification } from '$lib/notifications';
+import { initiateAccountLinking } from '$lib/account_linking';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supabase } }) => {
@@ -86,13 +87,15 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		maxAvailablePassengers,
 		isJoiningExisting,
 		tripInstanceId: tripInstance?.id || null,
-		initialGroupSize
+		initialGroupSize,
+		userEmail: user.email || ''
 	};
 };
 
 export const actions: Actions = {
 	checkout: async ({ request, url, locals: { safeGetSession } }) => {
 		try {
+			let accountLinkingTriggered = false;
 			const { session, user } = await safeGetSession();
 
 			if (!session || !user) {
@@ -106,6 +109,8 @@ export const actions: Actions = {
 			// Customer Profile Details
 			const name = formData.get('name') as string;
 			const phone = formData.get('phone') as string;
+			const submittedEmail = (formData.get('email') as string)?.trim();
+			const emailToUse = submittedEmail || user.email || '';
 			const smsOptIn = formData.get('sms_opt_in') === 'true';
 			const howHeard = formData.get('how_heard') as string;
 
@@ -125,8 +130,8 @@ export const actions: Actions = {
 			}
 
 			// Profile and Agreement Validations
-			if (!name || !phone || !howHeard) {
-				return fail(400, { message: 'Profile details are required.' });
+			if (!name || !phone || !emailToUse || !howHeard) {
+				return fail(400, { message: 'Profile details (including email and phone) are required.' });
 			}
 			if (!commitment || !liability) {
 				return fail(400, { message: 'You must agree to the booking commitments and liability disclaimer.' });
@@ -142,7 +147,7 @@ export const actions: Actions = {
 			const { data: flaggedMatch, error: flaggedErr } = await supabaseAdmin
 				.from('customers')
 				.select('id, name, flagged, strike_count')
-				.or(`id.eq.${user.id},email.eq.${user.email || ''},phone.eq.${phone}`)
+				.or(`id.eq.${user.id},email.eq.${emailToUse},phone.eq.${phone}`)
 				.or('flagged.eq.true,strike_count.gte.3')
 				.limit(1)
 				.maybeSingle();
@@ -153,6 +158,49 @@ export const actions: Actions = {
 
 			if (flaggedMatch) {
 				return fail(400, { message: 'Booking blocked. This customer account has been suspended due to strikes or flagging.' });
+			}
+
+			// Check for Account Linking collision (if user signed in via SMS and enters an existing Email user's email address)
+			accountLinkingTriggered = false;
+			let customerRecordEmail = emailToUse;
+
+			if (emailToUse && (!user.email || user.email.toLowerCase() !== emailToUse.toLowerCase())) {
+				const { data: existingCust } = await supabaseAdmin
+					.from('customers')
+					.select('id')
+					.ilike('email', emailToUse)
+					.neq('id', user.id)
+					.maybeSingle();
+
+				let primaryUserId = existingCust?.id;
+
+				if (!primaryUserId) {
+					try {
+						const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+						const matchedAuthUser = authUsers?.users?.find(
+							(u) => u.id !== user.id && u.email?.toLowerCase() === emailToUse.toLowerCase()
+						);
+						if (matchedAuthUser) {
+							primaryUserId = matchedAuthUser.id;
+						}
+					} catch (authListErr) {
+						console.error('Error checking auth.users for existing email:', authListErr);
+					}
+				}
+
+				if (primaryUserId) {
+					// Found an existing account with this email! Trigger verification link
+					await initiateAccountLinking({
+						primaryUserId,
+						secondaryUserId: user.id,
+						email: emailToUse,
+						phone,
+						origin: url.origin
+					});
+					accountLinkingTriggered = true;
+					// Use temporary placeholder email on customer record to avoid UNIQUE constraint violation before merge
+					customerRecordEmail = `unlinked_${user.id}@temp.splitacharter.boats`;
+				}
 			}
 
 			// Fetch Listing details
@@ -185,7 +233,7 @@ export const actions: Actions = {
 				.upsert({
 					id: user.id,
 					name,
-					email: user.email || '',
+					email: customerRecordEmail,
 					phone,
 					sms_opt_in: smsOptIn,
 					how_heard: howHeard,
@@ -457,12 +505,17 @@ export const actions: Actions = {
 					console.error('Inngest match.detected / reconfirmed event failed (non-fatal):', inngestErr);
 				}
 			}
+
+			if (accountLinkingTriggered) {
+				throw redirect(303, '/dashboard?account_linking_sent=true');
+			}
+
+			// Redirect to customer dashboard on successful checkout
+			throw redirect(303, '/dashboard');
 		} catch (err: any) {
+			if (err?.status === 303) throw err;
 			console.error('Unhandled exception during checkout:', err);
 			return fail(500, { message: err?.message || 'An unexpected error occurred during checkout processing.' });
 		}
-
-		// Redirect to customer dashboard on successful checkout
-		throw redirect(303, '/dashboard');
 	}
 };

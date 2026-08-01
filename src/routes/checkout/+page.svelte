@@ -9,6 +9,8 @@
 	/* svelte-ignore state_referenced_locally */
 	let phone = $state(data.profile?.phone || '');
 	/* svelte-ignore state_referenced_locally */
+	let email = $state(data.profile?.email || data.userEmail || '');
+	/* svelte-ignore state_referenced_locally */
 	let smsOptIn = $state(data.profile?.sms_opt_in || false);
 	/* svelte-ignore state_referenced_locally */
 	let howHeard = $state(data.profile?.how_heard || '');
@@ -144,6 +146,20 @@
 									required
 								/>
 								<span class="input-helper">SMS updates are sent here</span>
+							</div>
+
+							<div class="form-group">
+								<label for="email">Email Address</label>
+								<input
+									type="email"
+									id="email"
+									name="email"
+									autocomplete="email"
+									bind:value={email}
+									placeholder="e.g., john@example.com"
+									required
+								/>
+								<span class="input-helper">Booking & receipt confirmations sent here</span>
 							</div>
 
 							<div class="form-group full-width">

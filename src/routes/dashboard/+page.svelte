@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 
 	let { data } = $props();
 
@@ -65,6 +66,30 @@
 				</form>
 			</div>
 		</header>
+
+		{#if page.url.searchParams.get('account_linking_sent') === 'true'}
+			<div class="alert alert-info glass mb-6">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 alert-icon text-cyan-400">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+				</svg>
+				<div class="alert-content">
+					<strong>Verification Link Sent to Your Email!</strong>
+					<p>We noticed that your email address is associated with an existing account. We sent a verification link to your email—click it to merge your phone number and reservations into your primary account.</p>
+				</div>
+			</div>
+		{/if}
+
+		{#if page.url.searchParams.get('account_merged') === 'true'}
+			<div class="alert alert-success glass mb-6">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 alert-icon text-emerald-400">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+				</svg>
+				<div class="alert-content">
+					<strong>Accounts Successfully Merged!</strong>
+					<p>Your SMS and Email account identities are now fully linked under your main profile. All your reservations and contact details have been unified.</p>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Profile info summary -->
 		<div class="profile-card glass">
@@ -940,5 +965,40 @@
 		.detail-row {
 			gap: 1.5rem;
 		}
+	}
+
+	.mb-6 {
+		margin-bottom: 1.5rem;
+	}
+	.alert-info {
+		background: rgba(6, 182, 212, 0.12);
+		border: 1px solid rgba(6, 182, 212, 0.25);
+		color: #e0f2fe;
+		padding: 1.25rem 1.5rem;
+		border-radius: 12px;
+		display: flex;
+		align-items: flex-start;
+		gap: 1rem;
+	}
+	.alert-success {
+		background: rgba(16, 185, 129, 0.12);
+		border: 1px solid rgba(16, 185, 129, 0.25);
+		color: #ecfdf5;
+		padding: 1.25rem 1.5rem;
+		border-radius: 12px;
+		display: flex;
+		align-items: flex-start;
+		gap: 1rem;
+	}
+	.alert-content strong {
+		display: block;
+		font-size: 1rem;
+		margin-bottom: 0.25rem;
+	}
+	.alert-content p {
+		margin: 0;
+		font-size: 0.88rem;
+		line-height: 1.5;
+		opacity: 0.9;
 	}
 </style>
