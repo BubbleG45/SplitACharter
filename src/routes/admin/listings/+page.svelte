@@ -551,7 +551,7 @@
 		width: 100%;
 		border-radius: 12px;
 		border: 1px solid var(--border-light);
-		background: #12182b;
+		background: var(--bg-surface);
 		padding: 2rem;
 		display: flex;
 		flex-direction: column;

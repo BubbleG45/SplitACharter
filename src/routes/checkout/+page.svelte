@@ -404,9 +404,9 @@
 
 							<div class="form-group" style="margin-top: 1rem; text-align: left;">
 								<label for="payment-outcome" style="display: block; margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Sandbox Payment Outcome</label>
-								<select id="payment-outcome" bind:value={paymentOutcome} class="card-input" style="cursor: pointer; background: rgba(255,255,255,0.05); border: 1px solid var(--border-light); border-radius: 4px; padding: 0.6rem; color: var(--text-primary); width: 100%;">
-									<option value="success" style="background: #18181b; color: #10b981; font-weight: bold;">✔ Success (Approved)</option>
-									<option value="fail" style="background: #18181b; color: #ef4444; font-weight: bold;">❌ Failure (Card Declined)</option>
+								<select id="payment-outcome" bind:value={paymentOutcome} class="card-input" style="cursor: pointer; background: var(--input-bg); border: 1px solid var(--border-light); border-radius: 4px; padding: 0.6rem; color: var(--text-primary); width: 100%;">
+									<option value="success" style="background: var(--bg-surface); color: var(--success); font-weight: bold;">✔ Success (Approved)</option>
+									<option value="fail" style="background: var(--bg-surface); color: var(--danger); font-weight: bold;">❌ Failure (Card Declined)</option>
 								</select>
 							</div>
 						</div>
@@ -484,7 +484,8 @@
 		min-height: 100vh;
 		position: relative;
 		overflow: hidden;
-		background: #060913;
+		background: var(--bg-base);
+		color: var(--text-primary);
 		padding: 4rem 2rem;
 	}
 

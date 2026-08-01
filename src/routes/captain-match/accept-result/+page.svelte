@@ -97,7 +97,8 @@
 		min-height: 100vh;
 		position: relative;
 		overflow: hidden;
-		background: #060913;
+		background: var(--bg-base);
+		color: var(--text-primary);
 		padding: 6rem 2rem;
 		display: flex;
 		align-items: center;

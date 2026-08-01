@@ -164,7 +164,8 @@
 		min-height: 100vh;
 		position: relative;
 		overflow: hidden;
-		background: #060913;
+		background: var(--bg-base);
+		color: var(--text-primary);
 	}
 
 	/* Glowing decorative blobs */
@@ -218,6 +219,7 @@
 		line-height: 1.15;
 		letter-spacing: -1.5px;
 		margin-bottom: 1.5rem;
+		color: var(--text-primary);
 	}
 	.highlight {
 		background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -249,11 +251,11 @@
 		flex-direction: column;
 		gap: 2rem;
 		padding: 2.5rem;
-		background: #0b1220;
-		border: 1px solid rgba(56, 189, 248, 0.25);
+		background: var(--bg-surface);
+		border: 1px solid var(--border-light);
 		border-top: 3px solid var(--primary);
 		border-radius: 16px;
-		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+		box-shadow: var(--glass-shadow);
 		margin-bottom: 3rem;
 	}
 
@@ -269,16 +271,16 @@
 		font-weight: 700;
 		letter-spacing: 0.5px;
 		text-transform: uppercase;
-		background: rgba(56, 189, 248, 0.15);
-		color: #38bdf8;
-		border: 1px solid rgba(56, 189, 248, 0.3);
+		background: rgba(6, 182, 212, 0.15);
+		color: var(--primary);
+		border: 1px solid var(--border-glow);
 		border-radius: 20px;
 		margin-bottom: 0.75rem;
 	}
 	.reviews-header h2 {
 		font-size: 2rem;
 		font-weight: 800;
-		color: #f8fafc;
+		color: var(--text-primary);
 		margin-bottom: 0.5rem;
 	}
 	.reviews-header p {
@@ -318,8 +320,8 @@
 	.review-card {
 		width: 320px;
 		flex-shrink: 0;
-		background: #111a2e;
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: var(--glass-bg);
+		border: 1px solid var(--border-light);
 		border-radius: 12px;
 		padding: 1.5rem;
 		display: flex;
@@ -331,7 +333,7 @@
 
 	.review-card:hover {
 		transform: translateY(-4px);
-		border-color: rgba(56, 189, 248, 0.4);
+		border-color: var(--border-glow);
 	}
 
 	.card-top {
@@ -363,7 +365,7 @@
 	.author-name {
 		font-size: 0.95rem;
 		font-weight: 700;
-		color: #f1f5f9;
+		color: var(--text-primary);
 		line-height: 1.2;
 	}
 
@@ -375,14 +377,14 @@
 	.stars {
 		display: flex;
 		gap: 2px;
-		color: #f59e0b;
+		color: var(--accent);
 		font-size: 0.9rem;
 	}
 
 	.quote {
 		font-size: 0.9rem;
 		line-height: 1.5;
-		color: #cbd5e1;
+		color: var(--text-secondary);
 		font-style: italic;
 		flex: 1;
 	}
@@ -390,8 +392,8 @@
 	.trip-tag {
 		font-size: 0.75rem;
 		font-weight: 600;
-		color: #38bdf8;
-		background: rgba(56, 189, 248, 0.1);
+		color: var(--primary);
+		background: rgba(6, 182, 212, 0.1);
 		padding: 6px 10px;
 		border-radius: 6px;
 		align-self: flex-start;

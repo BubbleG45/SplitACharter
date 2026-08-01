@@ -1251,8 +1251,8 @@
 	}
 	.review-card {
 		width: 100%;
-		background: #111a2e;
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: var(--glass-bg);
+		border: 1px solid var(--border-light);
 		border-radius: 12px;
 		padding: 1.25rem;
 		display: flex;
@@ -1285,7 +1285,7 @@
 	.author-name {
 		font-size: 0.9rem;
 		font-weight: 700;
-		color: #f1f5f9;
+		color: var(--text-primary);
 		line-height: 1.2;
 	}
 	.author-location {
@@ -1295,27 +1295,27 @@
 	.stars {
 		display: flex;
 		gap: 2px;
-		color: #f59e0b;
+		color: var(--accent);
 		font-size: 0.85rem;
 	}
 	.quote {
 		font-size: 0.85rem;
 		line-height: 1.4;
-		color: #cbd5e1;
+		color: var(--text-secondary);
 		font-style: italic;
 	}
 	.trip-tag {
 		font-size: 0.72rem;
 		font-weight: 600;
-		color: #38bdf8;
-		background: rgba(56, 189, 248, 0.1);
+		color: var(--primary);
+		background: rgba(6, 182, 212, 0.1);
 		padding: 4px 8px;
 		border-radius: 6px;
 		align-self: flex-start;
 	}
 	.preview-marquee-wrapper {
-		background: #090f1d;
-		border: 1px solid rgba(56, 189, 248, 0.2);
+		background: var(--bg-surface);
+		border: 1px solid var(--border-light);
 		border-radius: 8px;
 		padding: 1rem;
 		margin-bottom: 1.5rem;

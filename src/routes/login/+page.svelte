@@ -1,5 +1,7 @@
 <script lang="ts">
 	import logoWhite from '$lib/assets/logo-white.svg';
+	import logoDark from '$lib/assets/logo.svg';
+	import { theme } from '$lib/stores/theme';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 
@@ -31,10 +33,10 @@
 	<div class="bg-blur bg-blur-1"></div>
 	<div class="bg-blur bg-blur-2"></div>
 
-	<div class="login-container glass glow-primary">
+	<main class="login-container glass glow-primary">
 		<div class="login-header">
 			<a href="/" class="logo-link" style="margin: 0 auto 1.5rem auto; display: inline-block;">
-				<img src={logoWhite} alt="SplitACharter Logo" class="header-logo" style="height: 60px;" />
+				<img src={$theme === 'light' ? logoDark : logoWhite} alt="SplitACharter Logo" class="header-logo" style="height: 60px;" />
 			</a>
 			<h2>Welcome back</h2>
 			<p class="subtitle">Passwordless login to manage or book your shared charters</p>
@@ -146,7 +148,7 @@
 				</form>
 			{/if}
 		{/if}
-	</div>
+	</main>
 </div>
 
 <style>
@@ -157,7 +159,8 @@
 		min-height: 100vh;
 		position: relative;
 		overflow: hidden;
-		background: #060913;
+		background: var(--bg-base);
+		color: var(--text-primary);
 		padding: 1.5rem;
 	}
 

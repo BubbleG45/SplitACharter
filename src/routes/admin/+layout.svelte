@@ -138,7 +138,8 @@
 		min-height: 100vh;
 		position: relative;
 		overflow: hidden;
-		background: #060913;
+		background: var(--bg-base);
+		color: var(--text-primary);
 	}
 
 	/* Glowing decorative blobs */
