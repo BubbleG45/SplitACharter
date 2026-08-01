@@ -23,44 +23,13 @@
 
 	function navigateToSection(secId: string) {
 		activeNavSection = secId;
-		const el = document.getElementById(secId);
-		if (el) {
-			el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-			highlightedSection = secId;
-			setTimeout(() => {
-				if (highlightedSection === secId) {
-					highlightedSection = null;
-				}
-			}, 2500);
-		}
 	}
 
-	// Automatically select the first template once the settings are loaded & track active section on scroll
+	// Automatically select the first template once settings are loaded
 	$effect(() => {
 		if (!selectedId && data.settings?.length > 0) {
 			selectedId = data.settings[0].id;
 		}
-
-		const observer = new IntersectionObserver(
-			(entries) => {
-				for (const entry of entries) {
-					if (entry.isIntersecting) {
-						activeNavSection = entry.target.id;
-					}
-				}
-			},
-			{ threshold: 0.25 }
-		);
-
-		const sec1 = document.getElementById('sec-notifications');
-		const sec2 = document.getElementById('sec-trip-types');
-		const sec3 = document.getElementById('sec-reviews');
-
-		if (sec1) observer.observe(sec1);
-		if (sec2) observer.observe(sec2);
-		if (sec3) observer.observe(sec3);
-
-		return () => observer.disconnect();
 	});
 
 	const selectedSetting = $derived(data.settings?.find((s: any) => s.id === selectedId));
@@ -135,228 +104,225 @@
 	</div>
 {/if}
 
-<div id="sec-notifications" class="settings-grid" class:section-pulse-highlight={highlightedSection === 'sec-notifications'}>
-	<!-- Left Sidebar List -->
-	<div class="template-sidebar glass">
-		<div class="sidebar-header">
-			<h3>Select Template</h3>
-		</div>
-		<div class="sidebar-list">
-			{#each data.settings as setting}
-				<button 
-					type="button" 
-					class="sidebar-item" 
-					class:active={selectedId === setting.id}
-					onclick={() => selectedId = setting.id}
-				>
-					<div class="item-title">{formatTriggerName(setting.trigger_name)}</div>
-					<div class="item-meta">
-						<span class="status-dot" class:enabled={setting.email_enabled || setting.sms_enabled}></span>
-						<span class="meta-code">{setting.trigger_name}</span>
-					</div>
-				</button>
-			{/each}
-		</div>
-	</div>
-
-	<!-- Right Form Editor -->
-	<div class="template-detail">
-		{#if selectedSetting}
-			<div class="template-card glass">
-				<div class="card-header">
-					<h2>{formatTriggerName(selectedSetting.trigger_name)}</h2>
-					<span class="code-ref">{selectedSetting.trigger_name}</span>
-				</div>
-				
-				<form 
-					method="POST" 
-					action="?/saveTemplate"
-					use:enhance={() => {
-						savingId = selectedSetting.id;
-						saveSuccessId = null;
-						return async ({ update, result }) => {
-							await update({ reset: false });
-							savingId = null;
-							if (result.type === 'success') {
-								saveSuccessId = selectedSetting.id;
-								setTimeout(() => {
-									if (saveSuccessId === selectedSetting.id) {
-										saveSuccessId = null;
-									}
-								}, 3000);
-							}
-						};
-					}}
-					class="card-body"
-				>
-					<input type="hidden" name="id" value={selectedSetting.id} />
-
-					<!-- Channel Status Toggles -->
-					<div class="channels-row">
-						<div class="toggle-group">
-							<label class="toggle-label">
-								<input 
-									type="checkbox" 
-									bind:checked={selectedSetting.email_enabled}
-								/>
-								<span class="toggle-text">Email Channel</span>
-							</label>
-							<input type="hidden" name="email_enabled" value={selectedSetting.email_enabled ? 'true' : 'false'} />
-						</div>
-
-						<div class="toggle-group">
-							<label class="toggle-label">
-								<input 
-									type="checkbox" 
-									bind:checked={selectedSetting.sms_enabled}
-								/>
-								<span class="toggle-text">SMS Channel</span>
-							</label>
-							<input type="hidden" name="sms_enabled" value={selectedSetting.sms_enabled ? 'true' : 'false'} />
-						</div>
-					</div>
-
-					<div class="divider"></div>
-
-					<!-- Email Template Editor -->
-					<div class="form-group" class:disabled={!selectedSetting.email_enabled}>
-						<label for="email-template-{selectedSetting.id}">Email Body Template</label>
-						<textarea 
-							id="email-template-{selectedSetting.id}" 
-							name="email_template" 
-							disabled={!selectedSetting.email_enabled}
-							rows="5"
-							placeholder="Disabled (toggled off)"
-							bind:value={selectedSetting.email_template}
-						></textarea>
-					</div>
-
-					<!-- SMS Template Editor -->
-					<div class="form-group" class:disabled={!selectedSetting.sms_enabled}>
-						<label for="sms-template-{selectedSetting.id}">SMS Text Template</label>
-						<textarea 
-							id="sms-template-{selectedSetting.id}" 
-							name="sms_template" 
-							disabled={!selectedSetting.sms_enabled}
-							rows="4"
-							placeholder="Disabled (toggled off)"
-							bind:value={selectedSetting.sms_template}
-						></textarea>
-					</div>v>
-
-					<!-- Placeholders Cheat-sheet -->
-					<div class="placeholders-info">
-						<span class="info-title">Supported Placeholders:</span>
-						<div class="placeholders-chips">
-							{#each triggerPlaceholders[selectedSetting.trigger_name] || ['{customer_name}'] as ph}
-								<code class="ph-chip">{ph}</code>
-							{/each}
-						</div>
-					</div>
-
-					<div class="card-footer">
-						{#if saveSuccessId === selectedSetting.id}
-							<span class="status-alert success-msg">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 inline">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-								</svg>
-								Changes saved!
-							</span>
-						{/if}
-
-						<button 
-							type="submit" 
-							class="btn btn-primary"
-							disabled={savingId === selectedSetting.id}
-						>
-							{savingId === selectedSetting.id ? 'Saving...' : 'Save Configuration'}
-						</button>
-					</div>
-				</form>
+{#if activeNavSection === 'sec-notifications'}
+	<div id="sec-notifications" class="settings-grid">
+		<!-- Left Sidebar List -->
+		<div class="template-sidebar glass">
+			<div class="sidebar-header">
+				<h3>Select Template</h3>
 			</div>
-		{:else}
-			<div class="empty-state glass">
-				<p>Select a notification trigger template from the sidebar list to edit its channels and templates.</p>
+			<div class="sidebar-list">
+				{#each data.settings as setting}
+					<button 
+						type="button" 
+						class="sidebar-item" 
+						class:active={selectedId === setting.id}
+						onclick={() => selectedId = setting.id}
+					>
+						<div class="item-title">{formatTriggerName(setting.trigger_name)}</div>
+						<div class="item-meta">
+							<span class="status-dot" class:enabled={setting.email_enabled || setting.sms_enabled}></span>
+							<span class="meta-code">{setting.trigger_name}</span>
+						</div>
+					</button>
+				{/each}
 			</div>
-		{/if}
-	</div>
-</div>
-
-<div class="divider-main"></div>
-
-<div id="sec-trip-types" class="admin-header section-header" class:section-pulse-highlight={highlightedSection === 'sec-trip-types'}>
-	<div>
-		<span class="subtitle">Operations Configuration</span>
-		<h2>Allowed Trip Types</h2>
-		<p class="section-desc">Manage the exact categories of charters allowed on the platform.</p>
-	</div>
-</div>
-
-{#if form?.tripTypeMessage}
-	<div class="alert alert-error glass">
-		<p>{form.tripTypeMessage}</p>
-	</div>
-{/if}
-
-<div class="trip-types-container glass">
-	<div class="trip-types-grid">
-		<div class="add-type-form">
-			<h3>Add New Trip Type</h3>
-			<form method="POST" action="?/addTripType" use:enhance class="type-form">
-				<div class="form-group">
-					<label for="new-trip-type">Trip Type Name</label>
-					<input 
-						id="new-trip-type" 
-						type="text" 
-						name="name" 
-						placeholder="e.g. Eco Tour" 
-						required 
-						class="text-input"
-					/>
-				</div>
-				<button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; align-self: flex-start;">Add Trip Type</button>
-			</form>
 		</div>
 
-		<div class="types-list-section">
-			<h3>Active Trip Types ({data.tripTypes?.length || 0})</h3>
-			{#if !data.tripTypes || data.tripTypes.length === 0}
-				<p class="empty-msg">No trip types defined. The system requires at least one.</p>
-			{:else}
-				<div class="types-table glass">
-					{#each data.tripTypes as type}
-						<div class="type-row">
-							<span class="type-name">{type.name}</span>
-							<form method="POST" action="?/deleteTripType" use:enhance class="delete-form">
-								<input type="hidden" name="name" value={type.name} />
-								<button 
-									type="submit" 
-									class="btn-danger-action"
-									onclick={(e) => {
-										if (!confirm(`Are you sure you want to delete "${type.name}"?`)) {
-											e.preventDefault();
+		<!-- Right Form Editor -->
+		<div class="template-detail">
+			{#if selectedSetting}
+				<div class="template-card glass">
+					<div class="card-header">
+						<h2>{formatTriggerName(selectedSetting.trigger_name)}</h2>
+						<span class="code-ref">{selectedSetting.trigger_name}</span>
+					</div>
+					
+					<form 
+						method="POST" 
+						action="?/saveTemplate"
+						use:enhance={() => {
+							savingId = selectedSetting.id;
+							saveSuccessId = null;
+							return async ({ update, result }) => {
+								await update({ reset: false });
+								savingId = null;
+								if (result.type === 'success') {
+									saveSuccessId = selectedSetting.id;
+									setTimeout(() => {
+										if (saveSuccessId === selectedSetting.id) {
+											saveSuccessId = null;
 										}
-									}}
-								>
-									Delete
-								</button>
-							</form>
+									}, 3000);
+								}
+							};
+						}}
+						class="card-body"
+					>
+						<input type="hidden" name="id" value={selectedSetting.id} />
+
+						<!-- Channel Status Toggles -->
+						<div class="channels-row">
+							<div class="toggle-group">
+								<label class="toggle-label">
+									<input 
+										type="checkbox" 
+										bind:checked={selectedSetting.email_enabled}
+									/>
+									<span class="toggle-text">Email Channel</span>
+								</label>
+								<input type="hidden" name="email_enabled" value={selectedSetting.email_enabled ? 'true' : 'false'} />
+							</div>
+
+							<div class="toggle-group">
+								<label class="toggle-label">
+									<input 
+										type="checkbox" 
+										bind:checked={selectedSetting.sms_enabled}
+									/>
+									<span class="toggle-text">SMS Channel</span>
+								</label>
+								<input type="hidden" name="sms_enabled" value={selectedSetting.sms_enabled ? 'true' : 'false'} />
+							</div>
 						</div>
-					{/each}
+
+						<div class="divider"></div>
+
+						<!-- Email Template Editor -->
+						<div class="form-group" class:disabled={!selectedSetting.email_enabled}>
+							<label for="email-template-{selectedSetting.id}">Email Body Template</label>
+							<textarea 
+								id="email-template-{selectedSetting.id}" 
+								name="email_template" 
+								disabled={!selectedSetting.email_enabled}
+								rows="5"
+								placeholder="Disabled (toggled off)"
+								bind:value={selectedSetting.email_template}
+							></textarea>
+						</div>
+
+						<!-- SMS Template Editor -->
+						<div class="form-group" class:disabled={!selectedSetting.sms_enabled}>
+							<label for="sms-template-{selectedSetting.id}">SMS Text Template</label>
+							<textarea 
+								id="sms-template-{selectedSetting.id}" 
+								name="sms_template" 
+								disabled={!selectedSetting.sms_enabled}
+								rows="4"
+								placeholder="Disabled (toggled off)"
+								bind:value={selectedSetting.sms_template}
+							></textarea>
+						</div>
+
+						<!-- Placeholders Cheat-sheet -->
+						<div class="placeholders-info">
+							<span class="info-title">Supported Placeholders:</span>
+							<div class="placeholders-chips">
+								{#each triggerPlaceholders[selectedSetting.trigger_name] || ['{customer_name}'] as ph}
+									<code class="ph-chip">{ph}</code>
+								{/each}
+							</div>
+						</div>
+
+						<div class="card-footer">
+							{#if saveSuccessId === selectedSetting.id}
+								<span class="status-alert success-msg">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 inline">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+									</svg>
+									Changes saved!
+								</span>
+							{/if}
+
+							<button 
+								type="submit" 
+								class="btn btn-primary"
+								disabled={savingId === selectedSetting.id}
+							>
+								{savingId === selectedSetting.id ? 'Saving...' : 'Save Configuration'}
+							</button>
+						</div>
+					</form>
+				</div>
+			{:else}
+				<div class="empty-state glass">
+					<p>Select a notification trigger template from the sidebar list to edit its channels and templates.</p>
 				</div>
 			{/if}
 		</div>
 	</div>
-</div>
-
-<div class="divider-main"></div>
-
-<div id="sec-reviews" class="admin-header section-header" class:section-pulse-highlight={highlightedSection === 'sec-reviews'}>
-	<div>
-		<span class="subtitle">Content Management</span>
-		<h2>Landing Page Reviews</h2>
-		<p class="section-desc">Manage guest and captain testimonials displayed in the landing page marquee carousel.</p>
+{:else if activeNavSection === 'sec-trip-types'}
+	<div id="sec-trip-types" class="admin-header section-header">
+		<div>
+			<span class="subtitle">Operations Configuration</span>
+			<h2>Allowed Trip Types</h2>
+			<p class="section-desc">Manage the exact categories of charters allowed on the platform.</p>
+		</div>
 	</div>
+
+	{#if form?.tripTypeMessage}
+		<div class="alert alert-error glass">
+			<p>{form.tripTypeMessage}</p>
+		</div>
+	{/if}
+
+	<div class="trip-types-container glass">
+		<div class="trip-types-grid">
+			<div class="add-type-form">
+				<h3>Add New Trip Type</h3>
+				<form method="POST" action="?/addTripType" use:enhance class="type-form">
+					<div class="form-group">
+						<label for="new-trip-type">Trip Type Name</label>
+						<input 
+							id="new-trip-type" 
+							type="text" 
+							name="name" 
+							placeholder="e.g. Eco Tour" 
+							required 
+							class="text-input"
+						/>
+					</div>
+					<button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; align-self: flex-start;">Add Trip Type</button>
+				</form>
+			</div>
+
+			<div class="types-list-section">
+				<h3>Active Trip Types ({data.tripTypes?.length || 0})</h3>
+				{#if !data.tripTypes || data.tripTypes.length === 0}
+					<p class="empty-msg">No trip types defined. The system requires at least one.</p>
+				{:else}
+					<div class="types-table glass">
+						{#each data.tripTypes as type}
+							<div class="type-row">
+								<span class="type-name">{type.name}</span>
+								<form method="POST" action="?/deleteTripType" use:enhance class="delete-form">
+									<input type="hidden" name="name" value={type.name} />
+									<button 
+										type="submit" 
+										class="btn-danger-action"
+										onclick={(e) => {
+											if (!confirm(`Are you sure you want to delete "${type.name}"?`)) {
+												e.preventDefault();
+											}
+										}}
+									>
+										Delete
+									</button>
+								</form>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+{:else if activeNavSection === 'sec-reviews'}
+	<div id="sec-reviews" class="admin-header section-header">
+		<div>
+			<span class="subtitle">Content Management</span>
+			<h2>Landing Page Reviews</h2>
+			<p class="section-desc">Manage guest and captain testimonials displayed in the landing page marquee carousel.</p>
+		</div>
 </div>
 
 {#if form?.reviewMessage}
@@ -649,13 +615,14 @@
 		</div>
 	{/if}
 </div>
+{/if}
 
 <style>
 	.reviews-mgmt-container {
 		border: 1px solid var(--border-light);
 		padding: 2rem;
 		border-radius: 8px;
-		background: rgba(255, 255, 255, 0.01);
+		background: var(--input-bg);
 		margin-bottom: 4rem;
 	}
 	.reviews-mgmt-header {
@@ -673,7 +640,7 @@
 		padding: 1.5rem;
 		border: 1px solid var(--border-light);
 		border-radius: 8px;
-		background: rgba(15, 23, 42, 0.6);
+		background: var(--bg-surface);
 		margin-bottom: 1.5rem;
 	}
 	.form-card-title {
@@ -1353,12 +1320,12 @@
 		position: sticky;
 		top: 0;
 		z-index: 100;
-		background: rgba(6, 9, 19, 0.85);
+		background: var(--bg-base);
 		backdrop-filter: blur(16px);
 		-webkit-backdrop-filter: blur(16px);
 		padding: 0.75rem 0;
 		margin-bottom: 2.5rem;
-		border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+		border-bottom: 1px solid var(--border-light);
 	}
 	.settings-nav-pills {
 		display: flex;
@@ -1366,10 +1333,11 @@
 		padding: 0.4rem 0.6rem;
 		border: 1px solid var(--border-light);
 		border-radius: 30px;
-		background: rgba(15, 23, 42, 0.6);
+		background: var(--bg-surface);
 		width: max-content;
 		max-width: 100%;
 		flex-wrap: wrap;
+		box-shadow: var(--glass-shadow);
 	}
 	.nav-pill-btn {
 		background: transparent;
@@ -1384,13 +1352,13 @@
 	}
 	.nav-pill-btn:hover {
 		color: var(--text-primary);
-		background: rgba(255, 255, 255, 0.08);
+		background: var(--input-focus-bg);
 	}
 	.nav-pill-btn.active {
-		background: rgba(56, 189, 248, 0.2);
-		color: #38bdf8;
-		border-color: rgba(56, 189, 248, 0.5);
-		box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+		background: var(--input-focus-bg);
+		color: var(--primary);
+		border-color: var(--border-glow);
+		box-shadow: 0 0 12px var(--border-glow);
 	}
 	.section-pulse-highlight {
 		animation: sectionPulse 2s cubic-bezier(0.4, 0, 0.2, 1);

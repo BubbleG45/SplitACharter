@@ -1125,7 +1125,7 @@
 		width: 580px;
 		max-width: 92vw;
 		max-height: 85vh;
-		background: var(--bg-surface-dark);
+		background: var(--bg-surface);
 		border: 1px solid var(--border-light);
 		border-radius: 12px;
 		z-index: 220;
@@ -1468,13 +1468,14 @@
 	/* Nested Table Styles */
 	.nested-row td {
 		padding: 0;
-		background: rgba(0, 0, 0, 0.2);
+		background: var(--input-bg);
 	}
 	.nested-container {
 		padding: 1.5rem;
 		margin: 1rem 1.5rem 1.5rem 1.5rem;
 		border-radius: 8px;
 		border: 1px solid var(--border-light);
+		background: var(--bg-surface);
 	}
 	.nested-container h4 {
 		font-size: 1rem;
@@ -1493,13 +1494,13 @@
 	}
 	.nested-table th {
 		padding: 0.75rem 1rem;
-		background: rgba(255, 255, 255, 0.01);
+		background: var(--input-focus-bg);
 		border-bottom: 1px solid var(--border-light);
 		color: var(--text-secondary);
 	}
 	.nested-table td {
 		padding: 0.85rem 1rem;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+		border-bottom: 1px solid var(--border-light);
 	}
 	.nested-table tr:last-child td {
 		border-bottom: none;
@@ -1733,7 +1734,7 @@
 		width: 480px;
 		max-width: 92vw;
 		height: 100vh;
-		background: var(--bg-surface-dark);
+		background: var(--bg-surface);
 		border-left: 1px solid var(--border-light);
 		box-shadow: -10px 0 40px rgba(0, 0, 0, 0.6);
 		z-index: 250;
@@ -1918,7 +1919,7 @@
 		width: 580px;
 		max-width: 92vw;
 		max-height: 85vh;
-		background: var(--bg-surface-dark);
+		background: var(--bg-surface);
 		border: 1px solid rgba(239, 68, 68, 0.3);
 		border-radius: 12px;
 		z-index: 300;
@@ -2021,7 +2022,7 @@
 	.radio-dot.selected {
 		border-color: var(--primary);
 		background: var(--primary);
-		box-shadow: inset 0 0 0 3px var(--bg-surface-dark);
+		box-shadow: inset 0 0 0 3px var(--bg-surface);
 	}
 	.radio-content {
 		display: flex;
@@ -2060,7 +2061,7 @@
 		gap: 12px;
 		padding: 1rem 1.75rem 1.5rem 1.75rem;
 		border-top: 1px solid var(--border-light);
-		background: var(--bg-surface-dark);
+		background: var(--bg-surface);
 	}
 
 	/* Captain's Log Modal Styles */
@@ -2095,7 +2096,7 @@
 		width: 720px;
 		max-width: 94vw;
 		max-height: 85vh;
-		background: var(--bg-surface-dark);
+		background: var(--bg-surface);
 		border: 1px solid rgba(6, 182, 212, 0.3);
 		border-radius: 12px;
 		z-index: 300;

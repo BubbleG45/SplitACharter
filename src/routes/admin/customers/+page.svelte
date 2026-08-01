@@ -440,7 +440,7 @@
 		width: 500px;
 		max-width: 90vw;
 		height: 100vh;
-		background: var(--bg-surface-dark);
+		background: var(--bg-surface);
 		border-left: 1px solid var(--border-light);
 		border-radius: 0;
 		z-index: 210;
