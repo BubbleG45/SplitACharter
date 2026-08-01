@@ -143,8 +143,8 @@
 		max-height: 250px;
 		overflow-y: auto;
 		border-radius: 8px !important;
-		border: 1px solid rgba(255, 255, 255, 0.15);
-		background: #12182b !important;
+		border: 1px solid var(--border-light);
+		background: var(--bg-surface) !important;
 		backdrop-filter: blur(16px);
 		box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.7), 0 0 20px 0 rgba(6, 182, 212, 0.15);
 	}

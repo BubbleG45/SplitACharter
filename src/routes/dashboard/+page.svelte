@@ -795,7 +795,7 @@
 		transform: translate(-50%, -50%);
 		width: 520px;
 		max-width: 92vw;
-		background: #0a0f1d;
+		background: var(--bg-surface);
 		border: 1px solid rgba(239, 68, 68, 0.3);
 		border-radius: 12px;
 		padding: 1.75rem;

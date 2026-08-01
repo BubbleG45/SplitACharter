@@ -316,3 +316,14 @@ Reference it directly rather than re-explaining the domain, e.g.:
 Update this file if and only if the actual spec or an approved architectural decision
 changes — not to match whatever an agent happened to build. If a task's Implementation Plan
 contradicts this file, the file wins until you decide otherwise.
+
+---
+
+## 11. Theme System & UI Guidelines
+
+The application supports both Dark Mode and Light Mode with seamless theme toggling and zero flash of unstyled content (FOUC).
+
+- **Theme Persistence & State:** Theme state is stored in `localStorage` under key `'theme'` (`'dark' | 'light'`) and synced via `$lib/stores/theme.ts`. The HTML element has attribute `data-theme="dark"` or `data-theme="light"`. An inline anti-FOUC script in `src/app.html` sets this attribute before initial DOM render.
+- **Mandatory Semantic CSS Variables:** All components and pages must use the semantic CSS variables defined in `src/app.css` (`var(--bg-base)`, `var(--bg-surface)`, `var(--text-primary)`, `var(--text-secondary)`, `var(--border-light)`, `var(--glass-bg)`, `var(--input-bg)`, etc.).
+- **Prohibited Patterns:** Never hardcode static hex values (e.g. `#0a0f1d`, `#12182b`, `#ffffff`) or fixed dark/light RGBA strings directly in component CSS or inline styles for layout elements. New components must rely on global semantic CSS custom properties to ensure consistent rendering across both light and dark themes.
+

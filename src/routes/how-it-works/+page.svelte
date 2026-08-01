@@ -337,7 +337,7 @@
 		max-width: 500px;
 		width: 100%;
 		margin: 0 auto 3.5rem auto;
-		background: rgba(18, 24, 43, 0.6);
+		background: var(--input-bg);
 		border: 1px solid var(--border-light);
 	}
 

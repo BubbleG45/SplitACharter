@@ -1,5 +1,8 @@
 <script lang="ts">
 	import logoWhite from '$lib/assets/logo-white.svg';
+	import logoDark from '$lib/assets/logo.svg';
+	import { theme } from '$lib/stores/theme';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { page } from '$app/state';
 
 	let { session, isAdmin } = $props<{
@@ -13,7 +16,7 @@
 <header class="site-header">
 	<div class="header-container">
 		<a href="/" class="logo-link">
-			<img src={logoWhite} alt="SplitACharter Logo" class="header-logo" />
+			<img src={$theme === 'light' ? logoDark : logoWhite} alt="SplitACharter Logo" class="header-logo" />
 		</a>
 		<nav class="nav-links">
 			<a href="/how-it-works" class="nav-link-custom" class:active={currentPath === '/how-it-works'}>How It Works</a>
@@ -30,6 +33,7 @@
 			{:else}
 				<a href="/login" class="nav-btn-primary">Sign In</a>
 			{/if}
+			<ThemeToggle />
 		</nav>
 	</div>
 </header>
