@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 
 	let { data, form } = $props();
+
+	onMount(() => {
+		window.scrollTo(0, 0);
+	});
 
 	// Array state management initialized from existing data
 	/* svelte-ignore state_referenced_locally */

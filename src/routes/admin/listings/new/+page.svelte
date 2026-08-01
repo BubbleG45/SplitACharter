@@ -1,8 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 
 	let { data, form } = $props();
+
+	onMount(() => {
+		window.scrollTo(0, 0);
+	});
 
 	// Array state management for whats_included & what_to_bring initialized from copiedTemplate if copying
 	/* svelte-ignore state_referenced_locally */

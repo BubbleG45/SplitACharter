@@ -24,6 +24,18 @@
 		}
 	}
 
+	$effect(() => {
+		// Reset scroll position on route changes within admin dashboard
+		const pathname = $page.url.pathname;
+		if (typeof window !== 'undefined') {
+			window.scrollTo(0, 0);
+			const mainEl = document.querySelector('.admin-main');
+			if (mainEl) {
+				mainEl.scrollTop = 0;
+			}
+		}
+	});
+
 	const navItems = [
 		{ name: 'Dashboard', path: '/admin', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z' },
 		{ name: 'Available Charters', path: '/browse', icon: 'M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
