@@ -280,5 +280,46 @@ export const actions: Actions = {
 				? 'Your booking has been canceled and your $50 reservation deposit has been fully refunded.'
 				: 'Your booking has been canceled. Per our policy, fees for reconfirmed trips are non-refundable.'
 		};
+	},
+	updateName: async ({ request, locals: { safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+
+		if (!session || !user) {
+			return fail(401, { message: 'Unauthorized. Please sign in.' });
+		}
+
+		const formData = await request.formData();
+		const name = (formData.get('name') as string)?.trim();
+
+		if (!name) {
+			return fail(400, { message: 'Name cannot be empty.' });
+		}
+
+		if (name.length > 100) {
+			return fail(400, { message: 'Name must be 100 characters or less.' });
+		}
+
+		const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+		const { error: updateErr } = await supabaseAdmin
+			.from('customers')
+			.upsert({
+				id: user.id,
+				name,
+				email: user.email,
+				phone: user.phone
+			}, { onConflict: 'id' });
+
+		if (updateErr) {
+			console.error('Error updating customer name:', updateErr);
+			return fail(500, { message: 'Failed to update name. Please try again.' });
+		}
+
+		return {
+			success: true,
+			nameUpdated: true,
+			message: 'Name updated successfully.'
+		};
 	}
 };
+

@@ -3,8 +3,10 @@
 	import { invalidate } from '$app/navigation';
 	import { page } from '$app/state';
 	import Header from '$lib/components/Header.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
+
 
 	let { data, children } = $props();
 
@@ -86,3 +88,8 @@
 {/if}
 
 {@render children()}
+
+{#if !isAdminRoute}
+	<Footer />
+{/if}
+

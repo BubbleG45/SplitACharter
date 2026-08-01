@@ -33,6 +33,16 @@
 	let reconfirmingId = $state<string | null>(null);
 	let reconfirmedSuccessId = $state<string | null>(null);
 
+	let isEditingName = $state(false);
+	let nameValue = $state('');
+	let isUpdatingName = $state(false);
+	let nameSuccessMsg = $state('');
+	let nameErrorMsg = $state('');
+
+	$effect(() => {
+		nameValue = data.profile?.name || '';
+	});
+
 	function handleCopy(id: string) {
 		navigator.clipboard.writeText(id);
 		copiedId = id;
@@ -91,12 +101,79 @@
 			</div>
 		{/if}
 
+		{#if nameSuccessMsg}
+			<div class="alert alert-success glass mb-6">
+				<div class="alert-content">
+					<strong>Success</strong>
+					<p>{nameSuccessMsg}</p>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Profile info summary -->
 		<div class="profile-card glass">
 			<div class="profile-avatar">
 				{data.profile?.name?.charAt(0).toUpperCase() || 'C'}
 			</div>
 			<div class="profile-info">
+				<div class="info-group">
+					<span class="label">Full Name</span>
+					{#if isEditingName}
+						<form
+							method="POST"
+							action="?/updateName"
+							class="name-edit-form"
+							use:enhance={() => {
+								isUpdatingName = true;
+								nameErrorMsg = '';
+								nameSuccessMsg = '';
+								return async ({ result, update }) => {
+									await update();
+									isUpdatingName = false;
+									if (result.type === 'success') {
+										isEditingName = false;
+										nameSuccessMsg = 'Your name has been updated successfully.';
+										setTimeout(() => { nameSuccessMsg = ''; }, 4000);
+									} else if (result.type === 'failure' && result.data?.message) {
+										nameErrorMsg = result.data.message as string;
+									}
+								};
+							}}
+						>
+							<div class="input-with-actions">
+								<input
+									type="text"
+									name="name"
+									bind:value={nameValue}
+									class="name-input"
+									placeholder="Enter your full name"
+									required
+									maxLength={100}
+									disabled={isUpdatingName}
+								/>
+								<button type="submit" class="btn btn-primary btn-xs" disabled={isUpdatingName || !nameValue.trim()}>
+									{isUpdatingName ? 'Saving...' : 'Save'}
+								</button>
+								<button type="button" class="btn btn-secondary btn-xs" disabled={isUpdatingName} onclick={() => { isEditingName = false; nameValue = data.profile?.name || ''; nameErrorMsg = ''; }}>
+									Cancel
+								</button>
+							</div>
+							{#if nameErrorMsg}
+								<span class="error-msg">{nameErrorMsg}</span>
+							{/if}
+						</form>
+					{:else}
+						<div class="name-display">
+							<span class="value">{data.profile?.name || 'Not provided'}</span>
+							<button type="button" class="btn-edit-icon" title="Change name" onclick={() => { isEditingName = true; nameValue = data.profile?.name || ''; }}>
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+								</svg>
+								<span>Edit</span>
+							</button>
+						</div>
+					{/if}
+				</div>
 				<div class="info-group">
 					<span class="label">Email Address</span>
 					<span class="value">{data.profile?.email}</span>
@@ -119,6 +196,7 @@
 				</div>
 			</div>
 		</div>
+
 
 		<!-- Bookings List -->
 		<section class="bookings-section">
@@ -1002,4 +1080,62 @@
 		line-height: 1.5;
 		opacity: 0.9;
 	}
+
+	.name-display {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.btn-edit-icon {
+		background: none;
+		border: none;
+		color: var(--primary);
+		font-size: 0.75rem;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 2px 6px;
+		border-radius: 4px;
+		transition: background-color 0.2s ease, opacity 0.2s ease;
+		opacity: 0.8;
+	}
+	.btn-edit-icon:hover {
+		opacity: 1;
+		background: rgba(6, 182, 212, 0.12);
+	}
+	.name-edit-form {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.input-with-actions {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.name-input {
+		background: var(--input-bg, rgba(255, 255, 255, 0.05));
+		border: 1px solid var(--border-light);
+		color: var(--text-primary);
+		padding: 4px 8px;
+		border-radius: 4px;
+		font-size: 0.9rem;
+		outline: none;
+	}
+	.name-input:focus {
+		border-color: var(--primary);
+	}
+	.btn-xs {
+		padding: 4px 8px;
+		font-size: 0.75rem;
+		border-radius: 4px;
+		cursor: pointer;
+	}
+	.error-msg {
+		color: var(--danger);
+		font-size: 0.75rem;
+		margin-top: 2px;
+	}
 </style>
+
