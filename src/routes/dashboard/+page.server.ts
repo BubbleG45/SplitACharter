@@ -310,6 +310,8 @@ export const actions: Actions = {
 
 		const email = existingCustomer?.email || user.email || `user_${user.id}@splitacharter.com`;
 		const phone = existingCustomer?.phone || user.phone || null;
+		const howHeard = existingCustomer?.how_heard || 'Other';
+		const smsOptIn = existingCustomer?.sms_opt_in ?? true;
 
 		const { error: updateErr } = await supabaseAdmin
 			.from('customers')
@@ -318,8 +320,11 @@ export const actions: Actions = {
 				name,
 				email,
 				phone,
+				how_heard: howHeard,
+				sms_opt_in: smsOptIn,
 				updated_at: new Date().toISOString()
 			}, { onConflict: 'id' });
+
 
 		if (updateErr) {
 			console.error('Error updating customer name in Supabase:', updateErr);
