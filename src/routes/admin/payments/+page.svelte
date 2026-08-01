@@ -202,7 +202,7 @@
 							</span>
 						</td>
 						<td>
-							{#if payment.amount > 0 && payment.status === 'succeeded' && booking?.status !== 'canceled'}
+							{#if booking != null && payment.amount > 0 && payment.status === 'succeeded' && booking.status !== 'canceled'}
 								<form 
 									method="POST" 
 									action="?/triggerRefund" 
