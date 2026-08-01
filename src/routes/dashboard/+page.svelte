@@ -1051,8 +1051,8 @@
 	}
 	.alert-info {
 		background: rgba(6, 182, 212, 0.12);
-		border: 1px solid rgba(6, 182, 212, 0.25);
-		color: #e0f2fe;
+		border: 1px solid rgba(6, 182, 212, 0.3);
+		color: var(--text-primary);
 		padding: 1.25rem 1.5rem;
 		border-radius: 12px;
 		display: flex;
@@ -1061,8 +1061,8 @@
 	}
 	.alert-success {
 		background: rgba(16, 185, 129, 0.12);
-		border: 1px solid rgba(16, 185, 129, 0.25);
-		color: #ecfdf5;
+		border: 1px solid rgba(16, 185, 129, 0.3);
+		color: var(--text-primary);
 		padding: 1.25rem 1.5rem;
 		border-radius: 12px;
 		display: flex;
@@ -1073,13 +1073,15 @@
 		display: block;
 		font-size: 1rem;
 		margin-bottom: 0.25rem;
+		color: var(--text-primary);
 	}
 	.alert-content p {
 		margin: 0;
 		font-size: 0.88rem;
 		line-height: 1.5;
-		opacity: 0.9;
+		color: var(--text-secondary);
 	}
+
 
 	.name-display {
 		display: flex;
