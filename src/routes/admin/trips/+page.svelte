@@ -1953,7 +1953,7 @@
 		padding: 1rem;
 		border-radius: 8px;
 		border: 1px solid var(--border-light);
-		background: rgba(0, 0, 0, 0.2);
+		background: var(--input-bg);
 		font-size: 0.85rem;
 	}
 	.affected-title {
@@ -1976,9 +1976,10 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--bg-surface);
 		padding: 6px 10px;
 		border-radius: 6px;
+		border: 1px solid var(--border-light);
 	}
 
 	.form-label {
@@ -2000,7 +2001,7 @@
 		padding: 12px 14px;
 		border-radius: 8px;
 		border: 1px solid var(--border-light);
-		background: rgba(255, 255, 255, 0.02);
+		background: var(--bg-surface);
 		cursor: pointer;
 		text-align: left;
 		transition: all 0.2s ease;
@@ -2008,7 +2009,7 @@
 	}
 	.radio-card.active {
 		border-color: var(--primary);
-		background: rgba(6, 182, 212, 0.06);
+		background: var(--input-focus-bg);
 	}
 	.radio-dot {
 		width: 16px;
@@ -2043,7 +2044,7 @@
 	.reason-textarea {
 		width: 100%;
 		padding: 10px 12px;
-		background: rgba(0, 0, 0, 0.3);
+		background: var(--input-bg);
 		border: 1px solid var(--border-light);
 		border-radius: 8px;
 		color: var(--text-primary);

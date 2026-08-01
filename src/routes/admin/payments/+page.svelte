@@ -10,11 +10,12 @@
 	let summary = $derived.by(() => {
 		let collected = 0;
 		let refunded = 0;
-		for (const p of data.payments) {
+		for (const p of data.payments || []) {
+			if (!p) continue;
 			if (p.status === 'succeeded') {
-				collected += Number(p.amount);
+				collected += Number(p.amount || 0);
 			} else if (p.status === 'refunded') {
-				refunded += Number(p.amount);
+				refunded += Number(p.amount || 0);
 			}
 		}
 		return {
@@ -26,11 +27,13 @@
 
 	// Filter payments based on status select
 	let filteredPayments = $derived(
-		selectedStatus === 'all'
-			? data.payments
-			: selectedStatus === 'charges'
-				? data.payments.filter((p) => p.status === 'succeeded')
-				: data.payments.filter((p) => p.status === 'refunded')
+		(data.payments || []).filter((p) => {
+			if (!p) return false;
+			if (selectedStatus === 'all') return true;
+			if (selectedStatus === 'charges') return p.status === 'succeeded';
+			if (selectedStatus === 'refunds') return p.status === 'refunded';
+			return true;
+		})
 	);
 
 	function formatDate(dateStr: string) {
@@ -56,7 +59,8 @@
 	function exportToCSV() {
 		let csvContent = 'Date,Transaction ID,Customer Name,Customer Email,Trip Date,Trip Type,Amount,Status\n';
 		
-		for (const p of data.payments) {
+		for (const p of data.payments || []) {
+			if (!p) continue;
 			const booking = p.bookings as any;
 			const customer = booking?.customers;
 			const trip = booking?.trip_instances;
