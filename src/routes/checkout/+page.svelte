@@ -714,7 +714,7 @@
 	.cert-fields-panel {
 		padding: 1.5rem;
 		border: 1px solid var(--border-light);
-		background: rgba(15, 23, 42, 0.4);
+		background: var(--input-bg);
 		border-radius: 12px;
 		margin-bottom: 1.5rem;
 	}
@@ -781,7 +781,7 @@
 	.cert-disclaimer-note {
 		font-size: 0.8rem;
 		color: var(--text-muted);
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--input-focus-bg);
 		padding: 8px 12px;
 		border-radius: 6px;
 		border: 1px solid var(--border-light);
