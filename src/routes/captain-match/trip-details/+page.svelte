@@ -83,6 +83,70 @@
 									</a>
 								{/if}
 							</div>
+
+							{#if b.certification_fields && typeof b.certification_fields === 'object' && Object.keys(b.certification_fields).length > 0}
+								{@const cert = b.certification_fields}
+								<div class="cert-info-badge-panel">
+									<div class="cert-panel-title">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 icon-diver">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+										</svg>
+										<span>
+											{#if cert.type === 'scuba' || template?.trip_type?.toLowerCase().includes('scuba')}
+												SCUBA Certification & Details
+											{:else if cert.type === 'freedive' || template?.trip_type?.toLowerCase().includes('freedive')}
+												Freediving Details
+											{:else}
+												Additional Trip Details
+											{/if}
+										</span>
+									</div>
+									<div class="cert-details-grid">
+										{#if cert.type === 'scuba' || cert.level || cert.agency || cert.lastDive}
+											{#if cert.level}
+												<div class="cert-item">
+													<span class="cert-label">Level:</span>
+													<span class="cert-val">{cert.level}</span>
+												</div>
+											{/if}
+											{#if cert.agency}
+												<div class="cert-item">
+													<span class="cert-label">Agency:</span>
+													<span class="cert-val">{cert.agency}</span>
+												</div>
+											{/if}
+											{#if cert.lastDive}
+												<div class="cert-item">
+													<span class="cert-label">Last Dive:</span>
+													<span class="cert-val">{cert.lastDive}</span>
+												</div>
+											{/if}
+										{:else if cert.type === 'freedive' || cert.freediveCertified !== undefined || cert.freediveAgency}
+											{#if cert.freediveCertified !== undefined}
+												<div class="cert-item">
+													<span class="cert-label">Freedive Certified:</span>
+													<span class="cert-val">{cert.freediveCertified ? 'Yes' : 'No'}</span>
+												</div>
+											{/if}
+											{#if cert.freediveAgency}
+												<div class="cert-item">
+													<span class="cert-label">Agency:</span>
+													<span class="cert-val">{cert.freediveAgency}</span>
+												</div>
+											{/if}
+										{:else}
+											{#each Object.entries(cert) as [key, val]}
+												{#if key !== 'type' && val !== null && val !== undefined && String(val).trim() !== ''}
+													<div class="cert-item">
+														<span class="cert-label">{key}:</span>
+														<span class="cert-val">{String(val)}</span>
+													</div>
+												{/if}
+											{/each}
+										{/if}
+									</div>
+								</div>
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -391,6 +455,53 @@
 	}
 	.contact-link:hover {
 		color: var(--primary);
+	}
+
+	.cert-info-badge-panel {
+		margin-top: 10px;
+		padding: 12px 14px;
+		border-radius: 8px;
+		background: rgba(6, 182, 212, 0.08);
+		border: 1px solid rgba(6, 182, 212, 0.2);
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.cert-panel-title {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		color: var(--primary);
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+
+	.icon-diver {
+		color: var(--primary);
+	}
+
+	.cert-details-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px 20px;
+		font-size: 0.88rem;
+	}
+
+	.cert-item {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.cert-label {
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+
+	.cert-val {
+		color: var(--text-primary);
+		font-weight: 700;
 	}
 
 	.empty-state {

@@ -82,7 +82,7 @@ export const load: PageServerLoad = async ({ url, parent }) => {
 	// 4. Fetch Active (paid/reconfirmed/held) Bookings & Passenger info
 	const { data: bookings, error: bookingsErr } = await supabaseAdmin
 		.from('bookings')
-		.select('id, group_size, status, customers(name, phone, email)')
+		.select('id, group_size, status, certification_fields, customers(name, phone, email)')
 		.eq('trip_instance_id', tripId)
 		.not('status', 'in', '("canceled","forfeited")');
 
