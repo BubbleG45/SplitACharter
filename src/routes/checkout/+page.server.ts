@@ -113,6 +113,7 @@ export const actions: Actions = {
 			const emailToUse = submittedEmail || user.email || '';
 			const smsOptIn = formData.get('sms_opt_in') === 'true';
 			const howHeard = formData.get('how_heard') as string;
+			const referralPromoCode = (formData.get('referral_promo_code') as string)?.trim()?.toUpperCase();
 
 			// Booking Details
 			const groupSize = parseInt(formData.get('group_size') as string, 10);
@@ -142,6 +143,21 @@ export const actions: Actions = {
 
 			// Instantiate service role admin client to bypass RLS write restrictions
 			const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+			// Look up referring captain if referral promo code was provided
+			let referringCaptainId: string | null = null;
+			if (referralPromoCode) {
+				const { data: captainMatch } = await supabaseAdmin
+					.from('captains')
+					.select('id')
+					.ilike('referral_promo_code', referralPromoCode)
+					.eq('active', true)
+					.maybeSingle();
+
+				if (captainMatch) {
+					referringCaptainId = captainMatch.id;
+				}
+			}
 
 			// Check if the current user profile, email, or phone is flagged or suspended
 			const { data: flaggedMatch, error: flaggedErr } = await supabaseAdmin
@@ -252,7 +268,7 @@ export const actions: Actions = {
 			if (!tripInstanceId) {
 				const { data: existingTrip } = await supabaseAdmin
 					.from('trip_instances')
-					.select('id')
+					.select('id, referring_captain_id')
 					.eq('listing_template_id', templateId)
 					.eq('date', date)
 					.in('status', ['open', 'half-booked'])
@@ -260,13 +276,20 @@ export const actions: Actions = {
 
 				if (existingTrip) {
 					tripInstanceId = existingTrip.id;
+					if (referringCaptainId && !existingTrip.referring_captain_id) {
+						await supabaseAdmin
+							.from('trip_instances')
+							.update({ referring_captain_id: referringCaptainId })
+							.eq('id', tripInstanceId);
+					}
 				} else {
 					const { data: newTrip, error: tripCreateError } = await supabaseAdmin
 						.from('trip_instances')
 						.insert({
 							listing_template_id: templateId,
 							date,
-							status: 'open'
+							status: 'open',
+							referring_captain_id: referringCaptainId
 						})
 						.select('id')
 						.single();
@@ -277,7 +300,14 @@ export const actions: Actions = {
 					}
 					tripInstanceId = newTrip.id;
 				}
+			} else if (referringCaptainId) {
+				await supabaseAdmin
+					.from('trip_instances')
+					.update({ referring_captain_id: referringCaptainId })
+					.eq('id', tripInstanceId)
+					.is('referring_captain_id', null);
 			}
+
 
 			// Validate group size does not exceed remaining open seats for this trip instance
 			const { data: existingBookings, error: capacityErr } = await supabaseAdmin

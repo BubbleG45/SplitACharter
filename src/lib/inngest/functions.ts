@@ -2,12 +2,13 @@ import { inngest } from './client';
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
-import { calculateReconfirmSchedule } from '../reconfirmation';
+import { calculateReconfirmSchedule, calculateCaptainPriorityHours } from '../reconfirmation';
 import { sendSMS } from '../sms';
 import { sendNotification } from '../notifications';
 import { env } from '$env/dynamic/private';
 
 const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
 
 // A simple hello world background function to verify the end-to-end integration
 export const helloWorld = inngest.createFunction(
@@ -182,6 +183,7 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 );
 
 // Captain Matching Workflow
+
 export const captainMatchingWorkflow = inngest.createFunction(
 	{
 		id: 'captain-matching-workflow',
@@ -197,16 +199,16 @@ export const captainMatchingWorkflow = inngest.createFunction(
 	async ({ event, step }) => {
 		const { tripInstanceId } = event.data;
 
-		// 1. Fetch Trip details and find eligible captains
+		// 1. Fetch Trip details including referring captain and eligible captains
 		const matchData = await step.run('find-eligible-captains', async () => {
 			const { data: trip } = await supabaseAdmin
 				.from('trip_instances')
-				.select('id, date, listing_templates(trip_type, location, meeting_area)')
+				.select('id, date, referring_captain_id, listing_templates(trip_type, location, meeting_area)')
 				.eq('id', tripInstanceId)
 				.single();
 
 			if (!trip) {
-				return { trip: null, captains: [] };
+				return { trip: null, referringCaptain: null, captains: [] };
 			}
 
 			const tripDetails = (trip as any).listing_templates;
@@ -220,34 +222,76 @@ export const captainMatchingWorkflow = inngest.createFunction(
 				.eq('active', true);
 
 			if (!captains) {
-				return { trip, captains: [] };
+				return { trip, referringCaptain: null, captains: [] };
 			}
 
-			// Filter in JS
+			// Filter eligible captains
 			const eligible = captains.filter((c) =>
 				c.trip_types?.includes(tripType) &&
 				c.locations?.includes(location)
 			);
 
-			return { trip, captains: eligible };
+			let referringCaptain = null;
+			if (trip.referring_captain_id) {
+				referringCaptain = captains.find((c) => c.id === trip.referring_captain_id) || null;
+			}
+
+			return { trip, referringCaptain, captains: eligible };
 		});
 
 		if (!matchData.trip) {
 			return { status: 'skipped', reason: 'Trip not found' };
 		}
 
-		// 2. Dispatch simultaneous SMS blast to all matching captains
-		await step.run('dispatch-sms-blast', async () => {
-			const trip = matchData.trip;
-			const tripDetails = (trip as any).listing_templates;
-			const captains = matchData.captains;
+		const trip = matchData.trip;
+		const tripDetails = (trip as any).listing_templates;
+		const baseUrl = env.PUBLIC_SITE_URL || 'http://localhost:5173';
 
+		// 2. Handle Referring Captain Priority Head-Start Window
+		if (matchData.referringCaptain && matchData.referringCaptain.phone) {
+			const priorityHours = calculateCaptainPriorityHours(
+				`${trip.date}T08:00:00.000Z`
+			);
+
+			await step.run('dispatch-referring-captain-priority-sms', async () => {
+				const c = matchData.referringCaptain!;
+				const acceptUrl = `${baseUrl}/api/captain-match/accept?tripId=${trip.id}&captainId=${c.id}`;
+				await sendNotification(
+					'captain_blast',
+					{ phone: c.phone, name: c.name },
+					{
+						trip_type: tripDetails?.trip_type || '',
+						trip_date: trip.date,
+						location: tripDetails?.location || '',
+						accept_url: acceptUrl
+					}
+				);
+				return { status: 'priority_sms_sent', captainId: c.id, priorityHours };
+			});
+
+			// Sleep for the priority duration before opening blast to all remaining captains
+			const priorityDurationMs = Math.round(priorityHours * 60 * 60 * 1000);
+			await step.sleep('wait-referring-captain-priority-window', priorityDurationMs);
+		}
+
+		// 3. Dispatch simultaneous SMS blast to all matching captains (if trip is still unmatched)
+		await step.run('dispatch-sms-blast', async () => {
+			// Check if captain claimed the trip during priority window
+			const { data: updatedTrip } = await supabaseAdmin
+				.from('trip_instances')
+				.select('captain_id')
+				.eq('id', tripInstanceId)
+				.single();
+
+			if (updatedTrip?.captain_id) {
+				return { status: 'already_matched', captain_id: updatedTrip.captain_id };
+			}
+
+			const captains = matchData.captains;
 			if (captains.length === 0) {
 				console.log(`[Captain Blast] No eligible captains found for trip ${tripInstanceId}`);
 				return { status: 'no_captains' };
 			}
-
-			const baseUrl = env.PUBLIC_SITE_URL || 'http://localhost:5173'; // Default dev app url
 
 			for (const c of captains) {
 				if (c.phone) {
@@ -268,14 +312,14 @@ export const captainMatchingWorkflow = inngest.createFunction(
 			return { status: 'blast_sent', count: captains.length };
 		});
 
-		// 3. Sleep until 24 hours before trip departure date (assumed 8am local time departure)
+		// 4. Sleep until 24 hours before trip departure date
 		const tripDate = matchData.trip.date;
 		const deadlineDate = new Date(`${tripDate}T08:00:00.000Z`);
 		const matchingTimeoutTime = new Date(deadlineDate.getTime() - 24 * 60 * 60 * 1000);
 
 		await step.sleepUntil('sleep-until-notice-deadline', matchingTimeoutTime);
 
-		// 4. Enforce timeout if no captain matched in time
+		// 5. Enforce timeout if no captain matched in time
 		const result = await step.run('enforce-timeout', async () => {
 			const { data: trip } = await supabaseAdmin
 				.from('trip_instances')
@@ -287,18 +331,15 @@ export const captainMatchingWorkflow = inngest.createFunction(
 				return { status: 'skipped', reason: 'Trip not found' };
 			}
 
-			// If captain was assigned, do nothing (matching was successful)
 			if (trip.captain_id) {
 				return { status: 'skipped', reason: 'Captain was successfully matched' };
 			}
 
-			// Otherwise, matching timed out. Cancel trip instance and refund customers
 			await supabaseAdmin
 				.from('trip_instances')
 				.update({ status: 'canceled' })
 				.eq('id', tripInstanceId);
 
-			// Retrieve all active bookings for this trip
 			const { data: bookings } = await supabaseAdmin
 				.from('bookings')
 				.select('id, customer_id, customers(name, phone, email)')
@@ -309,24 +350,21 @@ export const captainMatchingWorkflow = inngest.createFunction(
 				const tripDetails = (trip as any).listing_templates;
 
 				for (const b of bookings) {
-					// Update booking to canceled
 					await supabaseAdmin
 						.from('bookings')
 						.update({ status: 'canceled' })
 						.eq('id', b.id);
 
-					// Record refund
 					const stripeRefundId = `re_mock_${Math.random().toString(36).substring(2, 15)}`;
 					await supabaseAdmin
 						.from('payment_records')
 						.insert({
 							booking_id: b.id,
 							stripe_payment_intent_id: stripeRefundId,
-							amount: 50.00, // Positive amount to satisfy DB constraints
+							amount: 50.00,
 							status: 'refunded'
 						});
 
-					// Send refund notifications to customer
 					const customer = (b as any).customers;
 					if (customer) {
 						await sendNotification(
@@ -345,6 +383,101 @@ export const captainMatchingWorkflow = inngest.createFunction(
 		});
 
 		return result;
+	}
+);
+
+// Half-Booked Upgrade Prompts Workflow (72h and 48h pre-trip buyout prompts for Group 1)
+export const halfBookedUpgradeWorkflow = inngest.createFunction(
+	{
+		id: 'half-booked-upgrade-workflow',
+		name: 'Half Booked Upgrade Prompts Workflow',
+		triggers: [{ event: 'trip/half-booked.created' }],
+		cancelOn: [
+			{
+				event: 'trip/match.detected',
+				match: 'data.tripInstanceId'
+			},
+			{
+				event: 'trip/cancelled',
+				match: 'data.tripInstanceId'
+			}
+		]
+	},
+	async ({ event, step }) => {
+		const { tripInstanceId, tripDateTime } = event.data;
+		const departureDate = new Date(tripDateTime);
+
+		// 1. Sleep until 72 hours before departure for 1st upgrade prompt
+		const prompt72hTime = new Date(departureDate.getTime() - 72 * 60 * 60 * 1000);
+		if (prompt72hTime.getTime() > Date.now()) {
+			await step.sleepUntil('sleep-until-72h-upgrade-prompt', prompt72hTime);
+			await step.run('send-72h-upgrade-prompt', async () => {
+				const { data: trip } = await supabaseAdmin
+					.from('trip_instances')
+					.select('id, status, date, listing_templates(trip_type)')
+					.eq('id', tripInstanceId)
+					.single();
+
+				if (trip && trip.status === 'half-booked') {
+					const { data: bookings } = await supabaseAdmin
+						.from('bookings')
+						.select('id, customers(name, phone, email)')
+						.eq('trip_instance_id', tripInstanceId)
+						.eq('status', 'paid');
+
+					for (const b of bookings || []) {
+						const customer = (b as any).customers;
+						if (customer) {
+							await sendNotification(
+								'reservation_pending_match',
+								{ email: customer.email, phone: customer.phone, name: customer.name },
+								{
+									trip_date: trip.date,
+									trip_type: (trip as any).listing_templates?.trip_type || ''
+								}
+							);
+						}
+					}
+				}
+			});
+		}
+
+		// 2. Sleep until 48 hours before departure for final 48h upgrade prompt
+		const prompt48hTime = new Date(departureDate.getTime() - 48 * 60 * 60 * 1000);
+		if (prompt48hTime.getTime() > Date.now()) {
+			await step.sleepUntil('sleep-until-48h-upgrade-prompt', prompt48hTime);
+			await step.run('send-48h-upgrade-prompt', async () => {
+				const { data: trip } = await supabaseAdmin
+					.from('trip_instances')
+					.select('id, status, date, listing_templates(trip_type)')
+					.eq('id', tripInstanceId)
+					.single();
+
+				if (trip && trip.status === 'half-booked') {
+					const { data: bookings } = await supabaseAdmin
+						.from('bookings')
+						.select('id, customers(name, phone, email)')
+						.eq('trip_instance_id', tripInstanceId)
+						.eq('status', 'paid');
+
+					for (const b of bookings || []) {
+						const customer = (b as any).customers;
+						if (customer) {
+							await sendNotification(
+								'reservation_pending_match',
+								{ email: customer.email, phone: customer.phone, name: customer.name },
+								{
+									trip_date: trip.date,
+									trip_type: (trip as any).listing_templates?.trip_type || ''
+								}
+							);
+						}
+					}
+				}
+			});
+		}
+
+		return { status: 'upgrade_prompts_completed', tripInstanceId };
 	}
 );
 
@@ -445,4 +578,5 @@ export const unmatchedTripTimeoutWorkflow = inngest.createFunction(
 );
 
 // Export all functions as an array for the serve handler
-export const functions = [helloWorld, reconfirmBookingWorkflow, captainMatchingWorkflow, unmatchedTripTimeoutWorkflow];
+export const functions = [helloWorld, reconfirmBookingWorkflow, captainMatchingWorkflow, halfBookedUpgradeWorkflow, unmatchedTripTimeoutWorkflow];
+

@@ -14,9 +14,11 @@
 	let smsOptIn = $state(data.profile?.sms_opt_in || false);
 	/* svelte-ignore state_referenced_locally */
 	let howHeard = $state(data.profile?.how_heard || '');
+	let referralPromoCode = $state('');
 	
 	/* svelte-ignore state_referenced_locally */
 	let groupSize = $state(data.initialGroupSize || 1);
+
 	let certFields = $state({
 		certified: true,
 		level: '',
@@ -173,6 +175,20 @@
 									<option value="Other">Other</option>
 								</select>
 							</div>
+
+							<div class="form-group full-width">
+								<label for="referral_promo_code">Captain Referral / Promo Code <span class="optional-tag">(Optional)</span></label>
+								<input
+									type="text"
+									id="referral_promo_code"
+									name="referral_promo_code"
+									bind:value={referralPromoCode}
+									placeholder="e.g. CAPT-SMITH-10"
+									style="text-transform: uppercase;"
+								/>
+								<span class="input-helper">Have a promo code from a captain? Enter it here to grant them booking priority!</span>
+							</div>
+
 
 							<div class="form-group full-width checkbox-row">
 								<input

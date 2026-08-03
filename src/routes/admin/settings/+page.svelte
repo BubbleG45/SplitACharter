@@ -95,8 +95,17 @@
 		>
 			⭐ Reviews Management
 		</button>
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-timings'} 
+			onclick={() => navigateToSection('sec-timings')}
+		>
+			⏱️ System Timings & Rules
+		</button>
 	</div>
 </div>
+
 
 {#if form?.message}
 	<div class="alert alert-error glass">
@@ -638,9 +647,140 @@
 		</div>
 	{/if}
 </div>
+{:else if activeNavSection === 'sec-timings'}
+
+
+	<div id="sec-timings" class="admin-header section-header">
+		<div>
+			<span class="subtitle">System Reference</span>
+			<h2>System Timings & Background Rules</h2>
+			<p class="section-desc">Centralized reference for automated reconfirmation schedules, captain priority windows, and broadcast trigger rules.</p>
+		</div>
+	</div>
+
+	<div class="timings-grid">
+		<!-- Reconfirmation Windows Card -->
+		<div class="timing-card glass">
+			<div class="timing-card-header">
+				<div class="timing-icon">⏳</div>
+				<div>
+					<h3>Customer Reconfirmation Windows</h3>
+					<p class="sub-text">Rules governing group reconfirmation deadlines and automated reminders.</p>
+				</div>
+			</div>
+			<div class="timing-table-wrapper">
+				<table class="timing-table">
+					<thead>
+						<tr>
+							<th>Time Until Trip</th>
+							<th>Reconfirmation Window</th>
+							<th>Automated Reminders</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><span class="tier-tag tier-blue">&gt; 72 Hours</span></td>
+							<td><strong>24 Hours</strong></td>
+							<td>At 12h remaining &amp; 2h remaining</td>
+						</tr>
+						<tr>
+							<td><span class="tier-tag tier-amber">48 – 72 Hours</span></td>
+							<td><strong>12 Hours</strong></td>
+							<td>At 6h remaining &amp; 2h remaining</td>
+						</tr>
+						<tr>
+							<td><span class="tier-tag tier-red">&lt; 24 Hours</span></td>
+							<td><strong>2 Hours</strong> (or remaining time)</td>
+							<td>At 1h remaining</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="card-footer-note">
+				ℹ️ <strong>Rule:</strong> If a group fails to reconfirm within their window, their $50 reservation fee is <em>forfeited</em> and a strike is issued. The partner group's fee is <em>held</em> for re-matching.
+			</div>
+		</div>
+
+		<!-- Captain Promo Code Priority Card -->
+		<div class="timing-card glass">
+			<div class="timing-card-header">
+				<div class="timing-icon">👑</div>
+				<div>
+					<h3>Captain Promo Code Priority Windows</h3>
+					<p class="sub-text">Exclusive head-start duration given to referring captains before general SMS broadcast.</p>
+				</div>
+			</div>
+			<div class="timing-table-wrapper">
+				<table class="timing-table">
+					<thead>
+						<tr>
+							<th>Time Until Trip</th>
+							<th>Exclusive Priority Head Start</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><span class="tier-tag tier-purple">&gt; 7 Days Out</span></td>
+							<td><strong>12 Hours</strong> exclusive priority</td>
+						</tr>
+						<tr>
+							<td><span class="tier-tag tier-blue">3 – 7 Days Out</span></td>
+							<td><strong>6 Hours</strong> exclusive priority</td>
+						</tr>
+						<tr>
+							<td><span class="tier-tag tier-amber">48 – 72 Hours Out</span></td>
+							<td><strong>2 Hours</strong> exclusive priority</td>
+						</tr>
+						<tr>
+							<td><span class="tier-tag tier-red">&lt; 48 Hours Out</span></td>
+							<td><strong>30 Minutes</strong> exclusive priority</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="card-footer-note">
+				ℹ️ <strong>Rule:</strong> If the referring captain does not claim the trip within their priority window, the automated text blast fires to all eligible captains.
+			</div>
+		</div>
+
+		<!-- Half-Booked Upgrade Prompts & Captain Blast Card -->
+		<div class="timing-card glass full-width-card">
+			<div class="timing-card-header">
+				<div class="timing-icon">⚡</div>
+				<div>
+					<h3>Upgrade Prompts &amp; Captain Blast Automation</h3>
+					<p class="sub-text">Automated triggers executed by Inngest background workers.</p>
+				</div>
+			</div>
+			<div class="automation-rules-grid">
+				<div class="rule-box">
+					<div class="rule-title">
+						<span class="rule-badge">Prompt 1</span>
+						<h4>72 Hours Pre-Trip</h4>
+					</div>
+					<p>First prompt sent to Group 1 offering to buy out the remaining half to guarantee the trip if unmatched.</p>
+				</div>
+				<div class="rule-box">
+					<div class="rule-title">
+						<span class="rule-badge">Prompt 2</span>
+						<h4>48 Hours Pre-Trip</h4>
+					</div>
+					<p>Final prompt sent to Group 1 to buy out the open slot before the charter listing closes.</p>
+				</div>
+				<div class="rule-box accent-box">
+					<div class="rule-title">
+						<span class="rule-badge auto-badge">Auto-Blast</span>
+						<h4>Instant Captain Text Blast</h4>
+					</div>
+					<p>Fires automatically the instant both groups confirm (2-of-2 reconfirmed) or priority window expires. <strong>No admin gate required.</strong></p>
+				</div>
+			</div>
+		</div>
+	</div>
 {/if}
 
 <style>
+
 	.reviews-mgmt-container {
 		border: 1px solid var(--border-light);
 		padding: 2rem;
@@ -1392,6 +1532,138 @@
 			box-shadow: 0 0 0 rgba(56, 189, 248, 0);
 		}
 	}
+	.timings-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+		gap: 1.5rem;
+		margin-bottom: 3rem;
+	}
+	.timing-card {
+		border: 1px solid var(--border-light);
+		background: var(--input-bg);
+		border-radius: 12px;
+		padding: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+	.full-width-card {
+		grid-column: 1 / -1;
+	}
+	.timing-card-header {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+	.timing-icon {
+		font-size: 1.75rem;
+		background: var(--bg-surface);
+		width: 48px;
+		height: 48px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 10px;
+		border: 1px solid var(--border-light);
+	}
+	.timing-card-header h3 {
+		margin: 0;
+		font-size: 1.15rem;
+		color: var(--text-primary);
+	}
+	.sub-text {
+		margin: 0;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+	}
+	.timing-table-wrapper {
+		overflow-x: auto;
+	}
+	.timing-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.9rem;
+	}
+	.timing-table th, .timing-table td {
+		padding: 0.75rem 1rem;
+		text-align: left;
+		border-bottom: 1px solid var(--border-light);
+	}
+	.timing-table th {
+		color: var(--text-secondary);
+		font-weight: 600;
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.tier-tag {
+		display: inline-block;
+		padding: 0.25rem 0.6rem;
+		border-radius: 6px;
+		font-size: 0.8rem;
+		font-weight: 600;
+	}
+	.tier-blue { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+	.tier-amber { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+	.tier-red { background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+	.tier-purple { background: rgba(192, 132, 252, 0.15); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
+
+	.card-footer-note {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		background: var(--bg-surface);
+		padding: 0.75rem 1rem;
+		border-radius: 8px;
+		border-left: 3px solid var(--primary);
+	}
+	.automation-rules-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		gap: 1rem;
+	}
+	.rule-box {
+		background: var(--bg-surface);
+		border: 1px solid var(--border-light);
+		padding: 1.25rem;
+		border-radius: 10px;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.rule-box.accent-box {
+		border-color: rgba(56, 189, 248, 0.4);
+		background: rgba(56, 189, 248, 0.05);
+	}
+	.rule-title {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.rule-title h4 {
+		margin: 0;
+		font-size: 0.95rem;
+		color: var(--text-primary);
+	}
+	.rule-badge {
+		font-size: 0.75rem;
+		padding: 0.2rem 0.5rem;
+		border-radius: 4px;
+		background: var(--input-bg);
+		color: var(--text-secondary);
+		font-weight: 600;
+		border: 1px solid var(--border-light);
+	}
+	.auto-badge {
+		background: rgba(56, 189, 248, 0.2);
+		color: #38bdf8;
+		border-color: rgba(56, 189, 248, 0.4);
+	}
+	.rule-box p {
+		margin: 0;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		line-height: 1.4;
+	}
 	@media (max-width: 992px) {
 		.settings-grid {
 			grid-template-columns: 1fr;
@@ -1399,5 +1671,9 @@
 		.form-and-preview-split {
 			grid-template-columns: 1fr;
 		}
+		.timings-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>
+

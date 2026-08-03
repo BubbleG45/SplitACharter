@@ -32,11 +32,11 @@ export function calculateReconfirmSchedule(
 		windowHours = 12;
 		reminderOffsets = [6, 2];
 	} else if (diffHours >= 24) {
-		windowHours = 6;
-		reminderOffsets = [3, 2];
+		windowHours = 12; // 24-48h tier uses 12h max window cap
+		reminderOffsets = [6, 2];
 	} else {
-		windowHours = Math.max(0.5, Math.min(2, diffHours)); // minimum 30 min window, maximum 2h
-		reminderOffsets = [windowHours / 2];
+		windowHours = Math.max(0.5, Math.min(2, diffHours)); // max 2h window, or time remaining until departure
+		reminderOffsets = [1]; // 1 hour remaining for under 24hr window
 	}
 
 	const windowMs = windowHours * 60 * 60 * 1000;
@@ -64,3 +64,30 @@ export function calculateReconfirmSchedule(
 		reminderDates
 	};
 }
+
+/**
+ * Calculates referring captain priority window length in hours based on time until trip departure.
+ * > 7 days (168h) out -> 12 hours
+ * 3 to 7 days (72h to 168h) out -> 6 hours
+ * 48 to 72 hours out -> 2 hours
+ * < 48 hours out -> 0.5 hours (30 minutes)
+ */
+export function calculateCaptainPriorityHours(
+	tripDateTimeStr: string,
+	currentTimeStr: string = new Date().toISOString()
+): number {
+	const tripTime = new Date(tripDateTimeStr).getTime();
+	const currentTime = new Date(currentTimeStr).getTime();
+	const diffHours = (tripTime - currentTime) / (1000 * 60 * 60);
+
+	if (diffHours >= 168) {
+		return 12;
+	} else if (diffHours >= 72) {
+		return 6;
+	} else if (diffHours >= 48) {
+		return 2;
+	} else {
+		return 0.5;
+	}
+}
+
