@@ -190,6 +190,8 @@
 		}
 	}
 
+	let copiedToast = $state(false);
+
 	function fillTestCardData() {
 		cardNumber = '4242 4242 4242 4242';
 		expiry = '12/28';
@@ -197,6 +199,10 @@
 		paymentOutcome = 'success';
 		if (navigator.clipboard) {
 			navigator.clipboard.writeText('4242424242424242').catch(() => {});
+			copiedToast = true;
+			setTimeout(() => {
+				copiedToast = false;
+			}, 3000);
 		}
 	}
 </script>
@@ -552,9 +558,17 @@
 										Stripe Secure Encrypted Checkout
 									</div>
 									{#if isTestMode}
-										<span style="font-size: 0.75rem; color: #facc15; font-weight: 600; background: rgba(234, 179, 8, 0.15); padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(234, 179, 8, 0.3);">
-											Test Mode
-										</span>
+										<button
+											type="button"
+											class="btn btn-secondary btn-small"
+											style="padding: 0.25rem 0.65rem; font-size: 0.75rem; background: rgba(0, 210, 255, 0.15); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.4); display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; border-radius: 6px;"
+											onclick={fillTestCardData}
+										>
+											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 14px; height: 14px;">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.375a9.006 9.006 0 01-1.25 1.125" />
+											</svg>
+											<span>{copiedToast ? 'Copied 4242... to Clipboard!' : '⚡ Copy 4242... Test Card Number'}</span>
+										</button>
 									{/if}
 								</div>
 
