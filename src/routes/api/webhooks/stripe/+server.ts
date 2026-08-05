@@ -4,13 +4,17 @@ import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { sendNotification } from '$lib/notifications';
+import { verifyStripeWebhook } from '$lib/server/stripe';
 
 export const POST: RequestHandler = async ({ request }) => {
 	let event: any;
 	try {
-		event = await request.json();
-	} catch (e) {
-		return json({ error: 'Invalid JSON payload' }, { status: 400 });
+		const rawBody = await request.text();
+		const signature = request.headers.get('stripe-signature') || '';
+		event = verifyStripeWebhook(rawBody, signature);
+	} catch (e: any) {
+		console.error('Stripe webhook verification error:', e);
+		return json({ error: `Webhook error: ${e.message}` }, { status: 400 });
 	}
 
 	const { type, data } = event;

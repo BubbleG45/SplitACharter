@@ -4,6 +4,7 @@ import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { inngest } from '$lib/inngest/client';
 import { sendNotification } from '$lib/notifications';
+import { refundStripePaymentIntent } from '$lib/server/stripe';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { safeGetSession, supabase } }) => {
@@ -219,14 +220,23 @@ export const actions: Actions = {
 				.maybeSingle();
 
 			if (payRecord) {
-				await supabaseAdmin
-					.from('payment_records')
-					.insert({
-						booking_id: bookingId,
-						stripe_payment_intent_id: `ref_${payRecord.stripe_payment_intent_id}_${Math.random().toString(36).substring(2, 8)}`,
-						amount: payRecord.amount,
-						status: 'refunded'
+				try {
+					const refundRes = await refundStripePaymentIntent({
+						paymentIntentId: payRecord.stripe_payment_intent_id,
+						reason: 'requested_by_customer'
 					});
+
+					await supabaseAdmin
+						.from('payment_records')
+						.insert({
+							booking_id: bookingId,
+							stripe_payment_intent_id: refundRes.refundId,
+							amount: payRecord.amount,
+							status: 'refunded'
+						});
+				} catch (refundErr) {
+					console.error('Error processing Stripe refund during booking cancellation:', refundErr);
+				}
 			}
 		}
 

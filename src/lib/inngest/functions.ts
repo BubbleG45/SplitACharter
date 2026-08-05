@@ -5,6 +5,7 @@ import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { calculateReconfirmSchedule, calculateCaptainPriorityHours } from '../reconfirmation';
 import { sendSMS } from '../sms';
 import { sendNotification } from '../notifications';
+import { refundStripePaymentIntent } from '../server/stripe';
 import { env } from '$env/dynamic/private';
 
 const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -355,13 +356,31 @@ export const captainMatchingWorkflow = inngest.createFunction(
 						.update({ status: 'canceled' })
 						.eq('id', b.id);
 
-					const stripeRefundId = `re_mock_${Math.random().toString(36).substring(2, 15)}`;
+					const { data: originalPay } = await supabaseAdmin
+						.from('payment_records')
+						.select('stripe_payment_intent_id, amount')
+						.eq('booking_id', b.id)
+						.eq('status', 'succeeded')
+						.maybeSingle();
+
+					let stripeRefundId = `re_mock_${Math.random().toString(36).substring(2, 15)}`;
+					if (originalPay) {
+						try {
+							const stripeRefund = await refundStripePaymentIntent({
+								paymentIntentId: originalPay.stripe_payment_intent_id
+							});
+							stripeRefundId = stripeRefund.refundId;
+						} catch (err: any) {
+							console.error('Error executing Stripe refund in Inngest reconfirmation timeout:', err);
+						}
+					}
+
 					await supabaseAdmin
 						.from('payment_records')
 						.insert({
 							booking_id: b.id,
 							stripe_payment_intent_id: stripeRefundId,
-							amount: 50.00,
+							amount: originalPay?.amount || 50.00,
 							status: 'refunded'
 						});
 
@@ -546,13 +565,31 @@ export const unmatchedTripTimeoutWorkflow = inngest.createFunction(
 				.eq('id', tripInstanceId);
 
 			// Record refund
-			const stripeRefundId = `re_mock_unmatched_${Math.random().toString(36).substring(2, 15)}`;
+			const { data: originalPay } = await supabaseAdmin
+				.from('payment_records')
+				.select('stripe_payment_intent_id, amount')
+				.eq('booking_id', bookingId)
+				.eq('status', 'succeeded')
+				.maybeSingle();
+
+			let stripeRefundId = `re_mock_unmatched_${Math.random().toString(36).substring(2, 15)}`;
+			if (originalPay) {
+				try {
+					const stripeRefund = await refundStripePaymentIntent({
+						paymentIntentId: originalPay.stripe_payment_intent_id
+					});
+					stripeRefundId = stripeRefund.refundId;
+				} catch (err: any) {
+					console.error('Error executing Stripe refund in unmatched trip timeout:', err);
+				}
+			}
+
 			await supabaseAdmin
 				.from('payment_records')
 				.insert({
 					booking_id: bookingId,
 					stripe_payment_intent_id: stripeRefundId,
-					amount: 50.00, // Positive amount to satisfy DB constraints
+					amount: originalPay?.amount || 50.00, // Positive amount to satisfy DB constraints
 					status: 'refunded'
 				});
 

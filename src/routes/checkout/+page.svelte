@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
+	import { loadStripe, type Stripe, type StripeElements } from '@stripe/stripe-js';
 
 	let { data, form } = $props();
 
@@ -31,7 +33,17 @@
 	let commitment = $state(false);
 	let liability = $state(false);
 	
-	// Mock card inputs
+	// Stripe Elements state
+	let stripe = $state<Stripe | null>(null);
+	let elements = $state<StripeElements | null>(null);
+	let clientSecret = $state('');
+	let paymentIntentId = $state('');
+	let paymentElementMounted = $state(false);
+	let stripeLoading = $state(false);
+	let paymentErrorMessage = $state('');
+	let mode = $state<'stripe' | 'sandbox'>('stripe');
+
+	// Fallback mock card inputs for sandbox testing
 	let cardNumber = $state('');
 	let expiry = $state('');
 	let cvc = $state('');
@@ -45,6 +57,137 @@
 	const isFreediveTrip = $derived(
 		data.listing.trip_type.toLowerCase().includes('freedive')
 	);
+
+	onMount(async () => {
+		if (data.publishableKey && !data.publishableKey.includes('placeholder')) {
+			try {
+				stripe = await loadStripe(data.publishableKey);
+			} catch (err) {
+				console.warn('Failed to initialize Stripe JS SDK:', err);
+			}
+		}
+	});
+
+	async function prepareStripePayment() {
+		paymentErrorMessage = '';
+		if (!name || !phone || !email || !howHeard) {
+			paymentErrorMessage = 'Please complete your contact details first.';
+			return false;
+		}
+		if (!commitment || !liability) {
+			paymentErrorMessage = 'Please accept the commitment and release agreements.';
+			return false;
+		}
+
+		if (!stripe || !data.publishableKey || data.publishableKey.includes('placeholder')) {
+			// Using sandbox mock payment mode
+			mode = 'sandbox';
+			return true;
+		}
+
+		stripeLoading = true;
+		try {
+			const bodyData = new FormData();
+			bodyData.append('templateId', data.listing.id);
+			bodyData.append('date', data.date);
+			bodyData.append('name', name);
+			bodyData.append('phone', phone);
+			bodyData.append('email', email);
+			bodyData.append('group_size', String(groupSize));
+			bodyData.append('commitment', String(commitment));
+			bodyData.append('liability', String(liability));
+
+			const res = await fetch('?/createIntent', {
+				method: 'POST',
+				body: bodyData
+			});
+
+			const resJson = await res.json();
+			const result = resJson.data ? JSON.parse(resJson.data) : resJson;
+
+			if (result.clientSecret) {
+				clientSecret = result.clientSecret;
+				paymentIntentId = result.paymentIntentId;
+
+				elements = stripe.elements({
+					clientSecret,
+					appearance: {
+						theme: 'night',
+						variables: {
+							colorPrimary: '#00d2ff',
+							colorBackground: '#0e1626',
+							colorText: '#e2e8f0',
+							colorDanger: '#ff4b4b'
+						}
+					}
+				});
+
+				const paymentElement = elements.create('payment');
+				const container = document.getElementById('payment-element');
+				if (container) {
+					container.innerHTML = '';
+					paymentElement.mount('#payment-element');
+					paymentElementMounted = true;
+				}
+			} else if (result.message) {
+				paymentErrorMessage = result.message;
+			}
+		} catch (err: any) {
+			console.error('Error in prepareStripePayment:', err);
+			paymentErrorMessage = 'Failed to load Stripe payment form. Using sandbox mode fallback.';
+			mode = 'sandbox';
+		} finally {
+			stripeLoading = false;
+		}
+		return true;
+	}
+
+	async function handleSubmit(event: SubmitEvent) {
+		paymentErrorMessage = '';
+
+		if (mode === 'stripe' && stripe && elements) {
+			event.preventDefault();
+			submitting = true;
+
+			try {
+				const { error: stripeErr, paymentIntent } = await stripe.confirmPayment({
+					elements,
+					confirmParams: {
+						return_url: `${window.location.origin}/dashboard`
+					},
+					redirect: 'if_required'
+				});
+
+				if (stripeErr) {
+					paymentErrorMessage = stripeErr.message || 'Payment processing failed.';
+					submitting = false;
+					return;
+				}
+
+				if (paymentIntent && paymentIntent.status === 'succeeded') {
+					// Post confirmation form
+					const formEl = event.target as HTMLFormElement;
+					formEl.submit();
+				} else {
+					submitting = false;
+				}
+			} catch (err: any) {
+				console.error('Stripe submit error:', err);
+				paymentErrorMessage = err.message || 'An unexpected payment error occurred.';
+				submitting = false;
+			}
+		}
+	}
+
+	function fillTestCardData() {
+		cardNumber = '4242 4242 4242 4242';
+		expiry = '12/28';
+		cvc = '123';
+		paymentOutcome = 'success';
+		if (navigator.clipboard) {
+			navigator.clipboard.writeText('4242424242424242').catch(() => {});
+		}
+	}
 </script>
 
 <svelte:head>
@@ -363,68 +506,111 @@
 					<section class="form-section">
 						<div class="section-title">
 							<span class="step-badge">3</span>
-							<h2>Reservation Fee</h2>
+							<h2>Reservation Fee ($50.00)</h2>
 						</div>
-						<p class="section-desc">A $50.00 non-refundable reservation deposit is collected via Stripe to secure your slot.</p>
+						<p class="section-desc">A $50.00 non-refundable reservation deposit is collected securely via Stripe to confirm your slot.</p>
+
+						{#if paymentErrorMessage}
+							<div class="alert alert-danger glass" style="margin-bottom: 1rem;">
+								<span>{paymentErrorMessage}</span>
+							</div>
+						{/if}
 
 						<div class="mock-card-panel glass">
-							<div class="sandbox-badge">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-								</svg>
-								Stripe Sandbox Mode
-							</div>
+							{#if data.publishableKey && !data.publishableKey.includes('placeholder')}
+								<div class="sandbox-badge" style="background: rgba(0, 210, 255, 0.15); color: #00d2ff; border-color: rgba(0, 210, 255, 0.3);">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+									</svg>
+									Stripe Secure Encrypted Checkout
+								</div>
 
-							<div class="form-group">
-								<label for="card-number">Card Number</label>
-								<input
-									type="text"
-									id="card-number"
-									name="cc-number"
-									autocomplete="cc-number"
-									inputmode="numeric"
-									bind:value={cardNumber}
-									placeholder="4242 4242 4242 4242"
-									class="card-input"
-								/>
-							</div>
+								{#if !paymentElementMounted}
+									<button
+										type="button"
+										class="btn btn-secondary w-full"
+										style="margin-bottom: 1rem;"
+										onclick={prepareStripePayment}
+										disabled={stripeLoading}
+									>
+										{#if stripeLoading}
+											Loading Secure Card Form...
+										{:else}
+											Load Embedded Card Payment Form
+										{/if}
+									</button>
+								{/if}
 
-							<div class="card-extra-row">
+								<div id="payment-element" style="min-height: 120px; margin-top: 0.5rem;"></div>
+							{:else}
+								<div class="sandbox-badge" style="display: flex; align-items: center; justify-content: space-between;">
+									<div style="display: flex; align-items: center; gap: 0.5rem;">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+										</svg>
+										Stripe Test Mode (Sandbox)
+									</div>
+									<button
+										type="button"
+										class="btn btn-secondary btn-small"
+										style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: rgba(0, 210, 255, 0.2); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.4);"
+										onclick={fillTestCardData}
+									>
+										⚡ Fill Test Card Data
+									</button>
+								</div>
+
 								<div class="form-group">
-									<label for="card-expiry">Expiration</label>
+									<label for="card-number">Test Card Number</label>
 									<input
 										type="text"
-										id="card-expiry"
-										name="cc-exp"
-										autocomplete="cc-exp"
+										id="card-number"
+										name="cc-number"
+										autocomplete="cc-number"
 										inputmode="numeric"
-										bind:value={expiry}
-										placeholder="MM/YY (e.g. 12/28)"
+										bind:value={cardNumber}
+										placeholder="4242 4242 4242 4242"
 										class="card-input"
 									/>
 								</div>
-								<div class="form-group">
-									<label for="card-cvc">CVC</label>
-									<input
-										type="text"
-										id="card-cvc"
-										name="cc-csc"
-										autocomplete="cc-csc"
-										inputmode="numeric"
-										bind:value={cvc}
-										placeholder="123"
-										class="card-input"
-									/>
-								</div>
-							</div>
 
-							<div class="form-group" style="margin-top: 1rem; text-align: left;">
-								<label for="payment-outcome" style="display: block; margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Sandbox Payment Outcome</label>
-								<select id="payment-outcome" bind:value={paymentOutcome} class="card-input" style="cursor: pointer; background: var(--input-bg); border: 1px solid var(--border-light); border-radius: 4px; padding: 0.6rem; color: var(--text-primary); width: 100%;">
-									<option value="success" style="background: var(--bg-surface); color: var(--success); font-weight: bold;">✔ Success (Approved)</option>
-									<option value="fail" style="background: var(--bg-surface); color: var(--danger); font-weight: bold;">❌ Failure (Card Declined)</option>
-								</select>
-							</div>
+								<div class="card-extra-row">
+									<div class="form-group">
+										<label for="card-expiry">Expiration</label>
+										<input
+											type="text"
+											id="card-expiry"
+											name="cc-exp"
+											autocomplete="cc-exp"
+											inputmode="numeric"
+											bind:value={expiry}
+											placeholder="MM/YY (e.g. 12/28)"
+											class="card-input"
+										/>
+									</div>
+									<div class="form-group">
+										<label for="card-cvc">CVC</label>
+										<input
+											type="text"
+											id="card-cvc"
+											name="cc-csc"
+											autocomplete="cc-csc"
+											inputmode="numeric"
+											bind:value={cvc}
+											placeholder="123"
+											class="card-input"
+										/>
+									</div>
+								</div>
+
+								<div class="form-group" style="margin-top: 1rem; text-align: left;">
+									<label for="payment-outcome" style="display: block; margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Sandbox Payment Outcome</label>
+									<select id="payment-outcome" name="payment_outcome" bind:value={paymentOutcome} class="card-input" style="cursor: pointer; background: var(--input-bg); border: 1px solid var(--border-light); border-radius: 4px; padding: 0.6rem; color: var(--text-primary); width: 100%;">
+										<option value="success" style="background: var(--bg-surface); color: var(--success); font-weight: bold;">✔ Success (Approved)</option>
+										<option value="fail" style="background: var(--bg-surface); color: var(--danger); font-weight: bold;">❌ Failure (Card Declined)</option>
+									</select>
+								</div>
+							{/if}
 						</div>
 					</section>
 
@@ -439,9 +625,9 @@
 									<circle class="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 									<path class="spinner-head" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 								</svg>
-								<span>Processing Deposit & Booking...</span>
+								<span>Processing Reservation Deposit...</span>
 							{:else}
-								Simulate Deposit & Book Slot
+								Pay $50.00 & Reserve Slot
 							{/if}
 						</button>
 					</div>

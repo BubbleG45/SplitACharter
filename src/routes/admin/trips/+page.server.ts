@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { sendNotification, getSiteUrl } from '$lib/notifications';
 import { generateCaptainToken } from '$lib/security';
+import { refundStripePaymentIntent } from '$lib/server/stripe';
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	const [tripsRes, listingsRes] = await Promise.all([
@@ -227,13 +228,31 @@ export const actions: Actions = {
 					.eq('id', b.id);
 
 				if (withRefund) {
-					const refundId = `ref_admin_${Math.random().toString(36).substring(2, 10)}`;
+					const { data: originalPay } = await supabase
+						.from('payment_records')
+						.select('stripe_payment_intent_id, amount')
+						.eq('booking_id', b.id)
+						.eq('status', 'succeeded')
+						.maybeSingle();
+
+					let refundId = `ref_admin_${Math.random().toString(36).substring(2, 10)}`;
+					if (originalPay) {
+						try {
+							const stripeRefund = await refundStripePaymentIntent({
+								paymentIntentId: originalPay.stripe_payment_intent_id
+							});
+							refundId = stripeRefund.refundId;
+						} catch (err: any) {
+							console.error('Error executing Stripe refund in admin trip cancellation:', err);
+						}
+					}
+
 					await supabase
 						.from('payment_records')
 						.insert({
 							booking_id: b.id,
 							stripe_payment_intent_id: refundId,
-							amount: 50.00,
+							amount: originalPay?.amount || 50.00,
 							status: 'refunded'
 						});
 				}

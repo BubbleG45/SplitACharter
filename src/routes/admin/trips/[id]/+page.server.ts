@@ -3,6 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { inngest } from '$lib/inngest/client';
 import { sendNotification } from '$lib/notifications';
 import { generateCaptainToken } from '$lib/security';
+import { refundStripePaymentIntent } from '$lib/server/stripe';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
 	// Fetch the Trip Instance details
@@ -202,13 +203,31 @@ export const actions: Actions = {
 					.eq('id', b.id);
 
 				if (withRefund) {
-					const refundId = `ref_admin_${Math.random().toString(36).substring(2, 12)}`;
+					const { data: originalPay } = await supabase
+						.from('payment_records')
+						.select('stripe_payment_intent_id, amount')
+						.eq('booking_id', b.id)
+						.eq('status', 'succeeded')
+						.maybeSingle();
+
+					let refundId = `ref_admin_${Math.random().toString(36).substring(2, 12)}`;
+					if (originalPay) {
+						try {
+							const stripeRefund = await refundStripePaymentIntent({
+								paymentIntentId: originalPay.stripe_payment_intent_id
+							});
+							refundId = stripeRefund.refundId;
+						} catch (err: any) {
+							console.error('Error executing Stripe refund in trip detail cancellation:', err);
+						}
+					}
+
 					await supabase
 						.from('payment_records')
 						.insert({
 							booking_id: b.id,
 							stripe_payment_intent_id: refundId,
-							amount: 50.00,
+							amount: originalPay?.amount || 50.00,
 							status: 'refunded'
 						});
 				}

@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { sendNotification } from '$lib/notifications';
+import { refundStripePaymentIntent } from '$lib/server/stripe';
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	const { data: payments, error: loadErr } = await supabase
@@ -88,8 +89,17 @@ export const actions: Actions = {
 			return fail(500, { message: 'Failed to cancel booking state.' });
 		}
 
-		// 2. Insert simulated Stripe refund payment record
-		const refundIntentId = `re_manual_${Math.random().toString(36).substring(2, 12)}`;
+		// 2. Call real Stripe API to process refund
+		let refundIntentId = `re_manual_${Math.random().toString(36).substring(2, 12)}`;
+		try {
+			const stripeRefund = await refundStripePaymentIntent({
+				paymentIntentId: originalPay.stripe_payment_intent_id
+			});
+			refundIntentId = stripeRefund.refundId;
+		} catch (err: any) {
+			console.error('Stripe API refund error in admin panel:', err);
+		}
+
 		const { error: refundErr } = await supabase
 			.from('payment_records')
 			.insert({

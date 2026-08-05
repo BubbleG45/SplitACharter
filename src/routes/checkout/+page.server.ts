@@ -1,10 +1,11 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { PUBLIC_SUPABASE_URL, PUBLIC_STRIPE_PUBLISHABLE_KEY } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { inngest } from '$lib/inngest/client';
 import { sendNotification } from '$lib/notifications';
 import { initiateAccountLinking } from '$lib/account_linking';
+import { createStripePaymentIntent, getStripeClient } from '$lib/server/stripe';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supabase } }) => {
@@ -88,11 +89,78 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		isJoiningExisting,
 		tripInstanceId: tripInstance?.id || null,
 		initialGroupSize,
-		userEmail: user.email || ''
+		userEmail: user.email || '',
+		publishableKey: PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
 	};
 };
 
 export const actions: Actions = {
+	createIntent: async ({ request, url, locals: { safeGetSession } }) => {
+		try {
+			const { session, user } = await safeGetSession();
+			if (!session || !user) {
+				return fail(401, { message: 'Unauthorized. Please sign in.' });
+			}
+
+			const formData = await request.formData();
+			const templateId = (formData.get('templateId') as string) || (url.searchParams.get('templateId') as string);
+			const date = (formData.get('date') as string) || (url.searchParams.get('date') as string);
+			const name = formData.get('name') as string;
+			const phone = formData.get('phone') as string;
+			const submittedEmail = (formData.get('email') as string)?.trim();
+			const emailToUse = submittedEmail || user.email || '';
+			const groupSize = parseInt(formData.get('group_size') as string, 10);
+			const commitment = formData.get('commitment') === 'true';
+			const liability = formData.get('liability') === 'true';
+
+			if (!name || !phone || !emailToUse) {
+				return fail(400, { message: 'Profile details (name, email, and phone) are required.' });
+			}
+			if (!commitment || !liability) {
+				return fail(400, { message: 'You must agree to the booking commitments and liability disclaimer.' });
+			}
+			if (isNaN(groupSize) || groupSize <= 0) {
+				return fail(400, { message: 'Invalid group size.' });
+			}
+
+			const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+			// Check for account suspension
+			const { data: flaggedMatch } = await supabaseAdmin
+				.from('customers')
+				.select('id')
+				.or(`id.eq.${user.id},email.eq.${emailToUse},phone.eq.${phone}`)
+				.or('flagged.eq.true,strike_count.gte.3')
+				.limit(1)
+				.maybeSingle();
+
+			if (flaggedMatch) {
+				return fail(400, { message: 'Booking blocked. Account suspended due to strikes or flagging.' });
+			}
+
+			// Create Stripe PaymentIntent for $50.00
+			const intentResult = await createStripePaymentIntent({
+				amountInCents: 5000,
+				customerEmail: emailToUse,
+				customerName: name,
+				metadata: {
+					user_id: user.id,
+					template_id: templateId,
+					date,
+					group_size: String(groupSize)
+				}
+			});
+
+			return {
+				success: true,
+				clientSecret: intentResult.clientSecret,
+				paymentIntentId: intentResult.paymentIntentId
+			};
+		} catch (err: any) {
+			console.error('Error creating Stripe payment intent:', err);
+			return fail(500, { message: err?.message || 'Failed to initialize Stripe PaymentIntent' });
+		}
+	},
 	checkout: async ({ request, url, locals: { safeGetSession } }) => {
 		try {
 			let accountLinkingTriggered = false;
