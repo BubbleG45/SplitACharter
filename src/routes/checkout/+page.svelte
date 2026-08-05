@@ -88,23 +88,20 @@
 
 		stripeLoading = true;
 		try {
-			const bodyData = new FormData();
-			bodyData.append('templateId', data.listing.id);
-			bodyData.append('date', data.date);
-			bodyData.append('name', name || data.profile?.name || 'Customer');
-			bodyData.append('phone', phone || data.profile?.phone || '555-000-0000');
-			bodyData.append('email', email || data.userEmail || 'customer@splitacharter.com');
-			bodyData.append('group_size', String(groupSize));
-			bodyData.append('commitment', 'true');
-			bodyData.append('liability', 'true');
-
-			const res = await fetch('?/createIntent', {
+			const res = await fetch('/api/payments/create-intent', {
 				method: 'POST',
-				body: bodyData
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					templateId: data.listing.id,
+					date: data.date,
+					name: name || data.profile?.name || 'Customer',
+					phone: phone || data.profile?.phone || '555-000-0000',
+					email: email || data.userEmail || 'customer@splitacharter.com',
+					groupSize
+				})
 			});
 
-			const resJson = await res.json();
-			const result = resJson.data ? JSON.parse(resJson.data) : resJson;
+			const result = await res.json();
 
 			if (result.clientSecret) {
 				clientSecret = result.clientSecret;
@@ -124,14 +121,21 @@
 				});
 
 				const paymentElement = elements.create('payment');
-				const container = document.getElementById('payment-element');
-				if (container) {
-					container.innerHTML = '';
-					paymentElement.mount('#payment-element');
-					paymentElementMounted = true;
-				}
-			} else if (result.message) {
-				paymentErrorMessage = result.message;
+
+				// Wait brief tick for DOM element availability
+				setTimeout(() => {
+					const container = document.getElementById('payment-element');
+					if (container) {
+						container.innerHTML = '';
+						paymentElement.mount('#payment-element');
+						paymentElementMounted = true;
+					} else {
+						console.error('Payment element container container not found in DOM');
+					}
+				}, 50);
+			} else if (result.error || result.message) {
+				paymentErrorMessage = result.error || result.message;
+				console.warn('Payment intent API response error:', result);
 			}
 		} catch (err: any) {
 			console.error('Error in prepareStripePayment:', err);
