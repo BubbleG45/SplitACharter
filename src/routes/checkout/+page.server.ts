@@ -174,6 +174,10 @@ export const actions: Actions = {
 			const templateId = (formData.get('templateId') as string) || (url.searchParams.get('templateId') as string);
 			const date = (formData.get('date') as string) || (url.searchParams.get('date') as string);
 
+			if (!templateId || !date) {
+				return fail(400, { message: 'Invalid or missing charter listing or date.' });
+			}
+
 			// Customer Profile Details
 			const name = formData.get('name') as string;
 			const phone = formData.get('phone') as string;
@@ -364,7 +368,7 @@ export const actions: Actions = {
 
 					if (tripCreateError) {
 						console.error('Error creating trip instance:', tripCreateError);
-						return fail(500, { message: 'Failed to initialize trip instance.' });
+						return fail(500, { message: `Failed to initialize trip instance: ${tripCreateError.message || tripCreateError.details || 'Database insert error'}` });
 					}
 					tripInstanceId = newTrip.id;
 				}

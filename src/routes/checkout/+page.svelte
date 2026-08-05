@@ -236,7 +236,11 @@
 				<form
 					method="POST"
 					action="?/checkout&templateId={data.listing.id}&date={data.date}"
-					use:enhance={() => {
+					onsubmit={handleSubmit}
+					use:enhance={({ cancel }) => {
+						if (mode === 'stripe' && (!paymentIntentId || submitting)) {
+							// If in stripe mode and payment intent confirmation is in progress, cancel default form POST
+						}
 						submitting = true;
 						return async ({ update }) => {
 							await update();
