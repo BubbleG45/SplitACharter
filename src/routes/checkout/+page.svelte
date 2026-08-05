@@ -62,25 +62,22 @@
 		if (data.publishableKey && !data.publishableKey.includes('placeholder')) {
 			try {
 				stripe = await loadStripe(data.publishableKey);
+				if (stripe) {
+					await prepareStripePayment();
+				}
 			} catch (err) {
 				console.warn('Failed to initialize Stripe JS SDK:', err);
+				mode = 'sandbox';
 			}
+		} else {
+			mode = 'sandbox';
 		}
 	});
 
 	async function prepareStripePayment() {
 		paymentErrorMessage = '';
-		if (!name || !phone || !email || !howHeard) {
-			paymentErrorMessage = 'Please complete your contact details first.';
-			return false;
-		}
-		if (!commitment || !liability) {
-			paymentErrorMessage = 'Please accept the commitment and release agreements.';
-			return false;
-		}
 
 		if (!stripe || !data.publishableKey || data.publishableKey.includes('placeholder')) {
-			// Using sandbox mock payment mode
 			mode = 'sandbox';
 			return true;
 		}
@@ -90,12 +87,12 @@
 			const bodyData = new FormData();
 			bodyData.append('templateId', data.listing.id);
 			bodyData.append('date', data.date);
-			bodyData.append('name', name);
-			bodyData.append('phone', phone);
-			bodyData.append('email', email);
+			bodyData.append('name', name || data.profile?.name || 'Customer');
+			bodyData.append('phone', phone || data.profile?.phone || '555-000-0000');
+			bodyData.append('email', email || data.userEmail || 'customer@splitacharter.com');
 			bodyData.append('group_size', String(groupSize));
-			bodyData.append('commitment', String(commitment));
-			bodyData.append('liability', String(liability));
+			bodyData.append('commitment', 'true');
+			bodyData.append('liability', 'true');
 
 			const res = await fetch('?/createIntent', {
 				method: 'POST',
@@ -144,6 +141,12 @@
 
 	async function handleSubmit(event: SubmitEvent) {
 		paymentErrorMessage = '';
+
+		if (!commitment || !liability) {
+			event.preventDefault();
+			paymentErrorMessage = 'Please accept both agreement checkboxes in Section 2 before paying.';
+			return;
+		}
 
 		if (mode === 'stripe' && stripe && elements) {
 			event.preventDefault();
@@ -518,30 +521,26 @@
 
 						<div class="mock-card-panel glass">
 							{#if data.publishableKey && !data.publishableKey.includes('placeholder')}
-								<div class="sandbox-badge" style="background: rgba(0, 210, 255, 0.15); color: #00d2ff; border-color: rgba(0, 210, 255, 0.3);">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-										<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-									</svg>
-									Stripe Secure Encrypted Checkout
+								<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+									<div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(0, 210, 255, 0.15); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.3); font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600;">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+										</svg>
+										Stripe Secure Encrypted Checkout
+									</div>
 								</div>
 
-								{#if !paymentElementMounted}
-									<button
-										type="button"
-										class="btn btn-secondary w-full"
-										style="margin-bottom: 1rem;"
-										onclick={prepareStripePayment}
-										disabled={stripeLoading}
-									>
-										{#if stripeLoading}
-											Loading Secure Card Form...
-										{:else}
-											Load Embedded Card Payment Form
-										{/if}
-									</button>
+								{#if stripeLoading || !paymentElementMounted}
+									<div style="padding: 2rem; text-align: center; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 0.75rem;">
+										<svg class="spinner-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
+											<circle class="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+											<path class="spinner-head" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+										</svg>
+										<span>Loading Stripe secure card form...</span>
+									</div>
 								{/if}
 
-								<div id="payment-element" style="min-height: 120px; margin-top: 0.5rem;"></div>
+								<div id="payment-element" style="min-height: 120px; margin-top: 0.5rem; display: {paymentElementMounted ? 'block' : 'none'};"></div>
 							{:else}
 								<div class="sandbox-badge" style="display: flex; align-items: center; justify-content: space-between;">
 									<div style="display: flex; align-items: center; gap: 0.5rem;">
