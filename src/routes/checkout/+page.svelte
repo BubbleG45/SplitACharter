@@ -58,6 +58,10 @@
 		data.listing.trip_type.toLowerCase().includes('freedive')
 	);
 
+	const isTestMode = $derived(
+		!data.publishableKey || data.publishableKey.startsWith('pk_test_') || data.publishableKey.includes('placeholder')
+	);
+
 	onMount(async () => {
 		if (data.publishableKey && !data.publishableKey.includes('placeholder')) {
 			try {
@@ -519,6 +523,17 @@
 							</div>
 						{/if}
 
+						{#if isTestMode}
+							<div class="test-mode-banner" style="background: rgba(234, 179, 8, 0.12); border: 1px solid rgba(234, 179, 8, 0.3); color: #facc15; margin-bottom: 1.25rem; padding: 0.85rem 1.1rem; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 0.85rem;">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 22px; height: 22px; flex-shrink: 0;">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+								</svg>
+								<div>
+									<strong>🧪 STRIPE TEST MODE ACTIVE:</strong> No real funds will be charged to your credit card. Payments are simulated using Stripe developer test mode.
+								</div>
+							</div>
+						{/if}
+
 						<div class="mock-card-panel glass">
 							{#if data.publishableKey && !data.publishableKey.includes('placeholder')}
 								<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
@@ -528,6 +543,11 @@
 										</svg>
 										Stripe Secure Encrypted Checkout
 									</div>
+									{#if isTestMode}
+										<span style="font-size: 0.75rem; color: #facc15; font-weight: 600; background: rgba(234, 179, 8, 0.15); padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(234, 179, 8, 0.3);">
+											Test Mode
+										</span>
+									{/if}
 								</div>
 
 								{#if stripeLoading || !paymentElementMounted}
@@ -626,7 +646,7 @@
 								</svg>
 								<span>Processing Reservation Deposit...</span>
 							{:else}
-								Pay $50.00 & Reserve Slot
+								{isTestMode ? 'Simulate $50.00 Test Deposit & Reserve Slot' : 'Pay $50.00 & Reserve Slot'}
 							{/if}
 						</button>
 					</div>
