@@ -543,7 +543,7 @@
 						{/if}
 
 						<div class="mock-card-panel glass">
-							{#if data.publishableKey && !data.publishableKey.includes('placeholder')}
+							{#if data.publishableKey && !data.publishableKey.includes('placeholder') && mode === 'stripe'}
 								<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
 									<div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(0, 210, 255, 0.15); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.3); font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600;">
 										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
@@ -585,14 +585,26 @@
 										</svg>
 										Stripe Test Mode (Sandbox)
 									</div>
-									<button
-										type="button"
-										class="btn btn-secondary btn-small"
-										style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: rgba(0, 210, 255, 0.2); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.4);"
-										onclick={fillTestCardData}
-									>
-										⚡ Fill Test Card Data
-									</button>
+									<div style="display: flex; align-items: center; gap: 0.5rem;">
+										<button
+											type="button"
+											class="btn btn-secondary btn-small"
+											style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: rgba(0, 210, 255, 0.2); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.4);"
+											onclick={fillTestCardData}
+										>
+											⚡ Auto-Fill Test Card
+										</button>
+										{#if data.publishableKey && !data.publishableKey.includes('placeholder')}
+											<button
+												type="button"
+												class="btn btn-secondary btn-small"
+												style="padding: 0.25rem 0.6rem; font-size: 0.75rem;"
+												onclick={() => { mode = 'stripe'; }}
+											>
+												Use Stripe Encrypted Form
+											</button>
+										{/if}
+									</div>
 								</div>
 
 								<div class="form-group">

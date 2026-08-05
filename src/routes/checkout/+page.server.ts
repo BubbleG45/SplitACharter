@@ -340,7 +340,7 @@ export const actions: Actions = {
 			if (!tripInstanceId) {
 				const { data: existingTrip } = await supabaseAdmin
 					.from('trip_instances')
-					.select('id, referring_captain_id')
+					.select('id')
 					.eq('listing_template_id', templateId)
 					.eq('date', date)
 					.in('status', ['open', 'half-booked'])
@@ -348,21 +348,19 @@ export const actions: Actions = {
 
 				if (existingTrip) {
 					tripInstanceId = existingTrip.id;
-					if (referringCaptainId && !existingTrip.referring_captain_id) {
-						await supabaseAdmin
-							.from('trip_instances')
-							.update({ referring_captain_id: referringCaptainId })
-							.eq('id', tripInstanceId);
-					}
 				} else {
+					const insertTrip: any = {
+						listing_template_id: templateId,
+						date,
+						status: 'open'
+					};
+					if (referringCaptainId) {
+						insertTrip.referring_captain_id = referringCaptainId;
+					}
+
 					const { data: newTrip, error: tripCreateError } = await supabaseAdmin
 						.from('trip_instances')
-						.insert({
-							listing_template_id: templateId,
-							date,
-							status: 'open',
-							referring_captain_id: referringCaptainId
-						})
+						.insert(insertTrip)
 						.select('id')
 						.single();
 
