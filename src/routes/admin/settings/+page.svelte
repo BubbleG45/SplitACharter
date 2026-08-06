@@ -21,6 +21,49 @@
 	let activeNavSection = $state('sec-notifications');
 	let highlightedSection = $state<string | null>(null);
 
+	let activeEmailTemplate = $state('');
+	let previewIframeSrc = $derived(
+		activeEmailTemplate ? `/api/preview-emails?template=${activeEmailTemplate}` : '/api/preview-emails'
+	);
+
+	let isRunningTests = $state(false);
+	let testResults = $state<any | null>(null);
+	let testError = $state<string | null>(null);
+
+	let isFetchingStripe = $state(false);
+	let stripeStatusResults = $state<any | null>(null);
+	let stripeStatusError = $state<string | null>(null);
+
+	async function runNotificationTests() {
+		isRunningTests = true;
+		testResults = null;
+		testError = null;
+		try {
+			const res = await fetch('/api/test-notifications');
+			const json = await res.json();
+			testResults = json;
+		} catch (err: any) {
+			testError = err.message || 'Failed to run notification tests';
+		} finally {
+			isRunningTests = false;
+		}
+	}
+
+	async function fetchStripeStatus() {
+		isFetchingStripe = true;
+		stripeStatusResults = null;
+		stripeStatusError = null;
+		try {
+			const res = await fetch('/api/debug/stripe');
+			const json = await res.json();
+			stripeStatusResults = json;
+		} catch (err: any) {
+			stripeStatusError = err.message || 'Failed to fetch Stripe status';
+		} finally {
+			isFetchingStripe = false;
+		}
+	}
+
 	function navigateToSection(secId: string) {
 		activeNavSection = secId;
 	}
@@ -102,6 +145,30 @@
 			onclick={() => navigateToSection('sec-timings')}
 		>
 			⏱️ System Timings & Rules
+		</button>
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-preview-emails'} 
+			onclick={() => navigateToSection('sec-preview-emails')}
+		>
+			✉️ Email Previews
+		</button>
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-test-notifications'} 
+			onclick={() => navigateToSection('sec-test-notifications')}
+		>
+			🧪 Test Notifications
+		</button>
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-stripe-status'} 
+			onclick={() => { navigateToSection('sec-stripe-status'); if (!stripeStatusResults && !isFetchingStripe) fetchStripeStatus(); }}
+		>
+			💳 Stripe Status
 		</button>
 	</div>
 </div>
@@ -777,9 +844,314 @@
 			</div>
 		</div>
 	</div>
+{:else if activeNavSection === 'sec-preview-emails'}
+	<div id="sec-preview-emails" class="admin-header section-header">
+		<div>
+			<span class="subtitle">Developer Tools</span>
+			<h2>Email Template Previews</h2>
+			<p class="section-desc">Live preview container for email templates rendered from <code>/api/preview-emails</code>.</p>
+		</div>
+		<div>
+			<a href="/api/preview-emails" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+				↗ Open /api/preview-emails in New Tab
+			</a>
+		</div>
+	</div>
+
+	<div class="api-preview-container glass">
+		<div class="api-preview-toolbar">
+			<span class="toolbar-label">Select Template to Preview:</span>
+			<div class="template-selector-pills">
+				<button 
+					type="button" 
+					class="selector-pill" 
+					class:active={activeEmailTemplate === ''} 
+					onclick={() => activeEmailTemplate = ''}
+				>
+					📋 Index / All Templates
+				</button>
+				<button 
+					type="button" 
+					class="selector-pill" 
+					class:active={activeEmailTemplate === 'auth_magic_link'} 
+					onclick={() => activeEmailTemplate = 'auth_magic_link'}
+				>
+					🔑 Auth Magic Link
+				</button>
+				{#each data.settings as setting}
+					{#if setting.email_template}
+						<button 
+							type="button" 
+							class="selector-pill" 
+							class:active={activeEmailTemplate === setting.trigger_name} 
+							onclick={() => activeEmailTemplate = setting.trigger_name}
+						>
+							✉️ {formatTriggerName(setting.trigger_name)}
+						</button>
+					{/if}
+				{/each}
+			</div>
+		</div>
+		<div class="iframe-preview-wrapper">
+			<iframe 
+				src={previewIframeSrc} 
+				title="Email Template Preview" 
+				class="preview-iframe"
+			></iframe>
+		</div>
+	</div>
+{:else if activeNavSection === 'sec-test-notifications'}
+	<div id="sec-test-notifications" class="admin-header section-header">
+		<div>
+			<span class="subtitle">System Diagnostics</span>
+			<h2>Notification Integration Tests</h2>
+			<p class="section-desc">Automated integration test runner executing endpoint <code>/api/test-notifications</code>.</p>
+		</div>
+		<div>
+			<a href="/api/test-notifications" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+				↗ Direct Endpoint (/api/test-notifications)
+			</a>
+		</div>
+	</div>
+
+	<div class="test-runner-container glass">
+		<div class="test-runner-header">
+			<div>
+				<h3>Notification System Test Suite</h3>
+				<p class="sub-text">Verifies template compilation, delivery status logging, channel toggles, and suppression logic.</p>
+			</div>
+			<button 
+				type="button" 
+				class="btn btn-primary"
+				disabled={isRunningTests}
+				onclick={runNotificationTests}
+			>
+				{isRunningTests ? '⏳ Running Integration Tests...' : '▶ Run Integration Tests'}
+			</button>
+		</div>
+
+		{#if isRunningTests}
+			<div class="test-status-box loading glass">
+				<p>Running integration tests against Supabase notification logs and settings...</p>
+			</div>
+		{:else if testError}
+			<div class="test-status-box error glass">
+				<span class="status-icon">❌</span>
+				<div>
+					<h4>Test Run Failed</h4>
+					<p>{testError}</p>
+				</div>
+			</div>
+		{:else if testResults}
+			<div class="test-status-box glass" class:success={testResults.success} class:error={!testResults.success}>
+				<span class="status-icon">{testResults.success ? '✅' : '❌'}</span>
+				<div>
+					<h4>{testResults.success ? 'All Integration Tests Passed!' : 'Test Suite Failed'}</h4>
+					<p>{testResults.message || testResults.error}</p>
+				</div>
+			</div>
+			<div class="test-results-output">
+				<span class="output-label">Response Data:</span>
+				<pre class="json-code"><code>{JSON.stringify(testResults, null, 2)}</code></pre>
+			</div>
+		{/if}
+
+		<div class="iframe-preview-wrapper" style="margin-top: 1.5rem;">
+			<div class="iframe-title">Live Endpoint Output View: <code>/api/test-notifications</code></div>
+			<iframe 
+				src="/api/test-notifications" 
+				title="Notification Integration Tests Direct View" 
+				class="preview-iframe"
+				style="height: 350px;"
+			></iframe>
+		</div>
+	</div>
+{:else if activeNavSection === 'sec-stripe-status'}
+	<div id="sec-stripe-status" class="admin-header section-header">
+		<div>
+			<span class="subtitle">System Diagnostics</span>
+			<h2>Stripe API & Account Status</h2>
+			<p class="section-desc">Diagnostic verification for Stripe API credentials, publishable keys, and account status from <code>/api/debug/stripe</code>.</p>
+		</div>
+		<div>
+			<a href="/api/debug/stripe" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+				↗ Direct Endpoint (/api/debug/stripe)
+			</a>
+		</div>
+	</div>
+
+	<div class="test-runner-container glass">
+		<div class="test-runner-header">
+			<div>
+				<h3>Stripe Account & Key Verification</h3>
+				<p class="sub-text">Inspect publishable key prefix, configuration state, and live account connection.</p>
+			</div>
+			<button 
+				type="button" 
+				class="btn btn-primary"
+				disabled={isFetchingStripe}
+				onclick={fetchStripeStatus}
+			>
+				{isFetchingStripe ? '⏳ Fetching Stripe Status...' : '🔄 Refresh Stripe Status'}
+			</button>
+		</div>
+
+		{#if isFetchingStripe}
+			<div class="test-status-box loading glass">
+				<p>Connecting to Stripe API and checking account configuration...</p>
+			</div>
+		{:else if stripeStatusError}
+			<div class="test-status-box error glass">
+				<span class="status-icon">❌</span>
+				<div>
+					<h4>Failed to Fetch Stripe Status</h4>
+					<p>{stripeStatusError}</p>
+				</div>
+			</div>
+		{:else if stripeStatusResults}
+			<div class="test-status-box glass" class:success={stripeStatusResults.status === 'ok'} class:error={stripeStatusResults.status !== 'ok'}>
+				<span class="status-icon">{stripeStatusResults.status === 'ok' ? '💳' : '❌'}</span>
+				<div>
+					<h4>Stripe Status: {stripeStatusResults.status?.toUpperCase() || 'UNKNOWN'}</h4>
+					<p>Timestamp: {stripeStatusResults.timestamp}</p>
+				</div>
+			</div>
+			<div class="test-results-output">
+				<span class="output-label">Diagnostic Response Data:</span>
+				<pre class="json-code"><code>{JSON.stringify(stripeStatusResults, null, 2)}</code></pre>
+			</div>
+		{/if}
+
+		<div class="iframe-preview-wrapper" style="margin-top: 1.5rem;">
+			<div class="iframe-title">Live Endpoint Output View: <code>/api/debug/stripe</code></div>
+			<iframe 
+				src="/api/debug/stripe" 
+				title="Stripe Status Direct View" 
+				class="preview-iframe"
+				style="height: 350px;"
+			></iframe>
+		</div>
+	</div>
 {/if}
 
 <style>
+
+	.api-preview-container, .test-runner-container {
+		border: 1px solid var(--border-light);
+		padding: 1.5rem;
+		border-radius: 12px;
+		background: var(--input-bg);
+		margin-bottom: 4rem;
+	}
+	.api-preview-toolbar {
+		margin-bottom: 1.25rem;
+	}
+	.toolbar-label {
+		display: block;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		margin-bottom: 0.5rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.template-selector-pills {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.selector-pill {
+		background: var(--bg-surface);
+		color: var(--text-secondary);
+		border: 1px solid var(--border-light);
+		font-size: 0.82rem;
+		padding: 6px 14px;
+		border-radius: 20px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.selector-pill:hover {
+		color: var(--text-primary);
+		border-color: var(--primary);
+	}
+	.selector-pill.active {
+		background: var(--input-focus-bg);
+		color: var(--primary);
+		border-color: var(--border-glow);
+		font-weight: 600;
+	}
+	.iframe-preview-wrapper {
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		overflow: hidden;
+		background: var(--bg-base);
+	}
+	.iframe-title {
+		padding: 0.5rem 1rem;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		border-bottom: 1px solid var(--border-light);
+		background: var(--bg-surface);
+	}
+	.preview-iframe {
+		width: 100%;
+		height: 650px;
+		border: none;
+		background: var(--bg-base);
+	}
+	.test-runner-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1.5rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	.test-status-box {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem 1.25rem;
+		border-radius: 8px;
+		border: 1px solid var(--border-light);
+		margin-bottom: 1.25rem;
+	}
+	.test-status-box.success {
+		border-color: rgba(34, 197, 94, 0.4);
+		background: rgba(34, 197, 94, 0.08);
+	}
+	.test-status-box.error {
+		border-color: rgba(239, 68, 68, 0.4);
+		background: rgba(239, 68, 68, 0.08);
+	}
+	.test-status-box.loading {
+		border-color: rgba(56, 189, 248, 0.4);
+		background: rgba(56, 189, 248, 0.08);
+	}
+	.status-icon {
+		font-size: 1.5rem;
+	}
+	.test-results-output {
+		background: var(--bg-base);
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		padding: 1rem;
+		margin-bottom: 1.5rem;
+	}
+	.output-label {
+		display: block;
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		margin-bottom: 0.5rem;
+		font-family: monospace;
+	}
+	.json-code {
+		margin: 0;
+		color: var(--text-primary);
+		font-size: 0.88rem;
+		white-space: pre-wrap;
+		word-break: break-word;
+	}
 
 	.reviews-mgmt-container {
 		border: 1px solid var(--border-light);
