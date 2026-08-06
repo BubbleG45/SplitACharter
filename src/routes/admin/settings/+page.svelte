@@ -157,14 +157,6 @@
 		<button 
 			type="button" 
 			class="nav-pill-btn" 
-			class:active={activeNavSection === 'sec-test-notifications'} 
-			onclick={() => navigateToSection('sec-test-notifications')}
-		>
-			🧪 Test Notifications
-		</button>
-		<button 
-			type="button" 
-			class="nav-pill-btn" 
 			class:active={activeNavSection === 'sec-stripe-status'} 
 			onclick={() => { navigateToSection('sec-stripe-status'); if (!stripeStatusResults && !isFetchingStripe) fetchStripeStatus(); }}
 		>
@@ -900,78 +892,12 @@
 			></iframe>
 		</div>
 	</div>
-{:else if activeNavSection === 'sec-test-notifications'}
-	<div id="sec-test-notifications" class="admin-header section-header">
-		<div>
-			<span class="subtitle">System Diagnostics</span>
-			<h2>Notification Integration Tests</h2>
-			<p class="section-desc">Automated integration test runner executing endpoint <code>/api/test-notifications</code>.</p>
-		</div>
-		<div>
-			<a href="/api/test-notifications" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
-				↗ Direct Endpoint (/api/test-notifications)
-			</a>
-		</div>
-	</div>
-
-	<div class="test-runner-container glass">
-		<div class="test-runner-header">
-			<div>
-				<h3>Notification System Test Suite</h3>
-				<p class="sub-text">Verifies template compilation, delivery status logging, channel toggles, and suppression logic.</p>
-			</div>
-			<button 
-				type="button" 
-				class="btn btn-primary"
-				disabled={isRunningTests}
-				onclick={runNotificationTests}
-			>
-				{isRunningTests ? '⏳ Running Integration Tests...' : '▶ Run Integration Tests'}
-			</button>
-		</div>
-
-		{#if isRunningTests}
-			<div class="test-status-box loading glass">
-				<p>Running integration tests against Supabase notification logs and settings...</p>
-			</div>
-		{:else if testError}
-			<div class="test-status-box error glass">
-				<span class="status-icon">❌</span>
-				<div>
-					<h4>Test Run Failed</h4>
-					<p>{testError}</p>
-				</div>
-			</div>
-		{:else if testResults}
-			<div class="test-status-box glass" class:success={testResults.success} class:error={!testResults.success}>
-				<span class="status-icon">{testResults.success ? '✅' : '❌'}</span>
-				<div>
-					<h4>{testResults.success ? 'All Integration Tests Passed!' : 'Test Suite Failed'}</h4>
-					<p>{testResults.message || testResults.error}</p>
-				</div>
-			</div>
-			<div class="test-results-output">
-				<span class="output-label">Response Data:</span>
-				<pre class="json-code"><code>{JSON.stringify(testResults, null, 2)}</code></pre>
-			</div>
-		{/if}
-
-		<div class="iframe-preview-wrapper" style="margin-top: 1.5rem;">
-			<div class="iframe-title">Live Endpoint Output View: <code>/api/test-notifications</code></div>
-			<iframe 
-				src="/api/test-notifications" 
-				title="Notification Integration Tests Direct View" 
-				class="preview-iframe"
-				style="height: 350px;"
-			></iframe>
-		</div>
-	</div>
 {:else if activeNavSection === 'sec-stripe-status'}
 	<div id="sec-stripe-status" class="admin-header section-header">
 		<div>
 			<span class="subtitle">System Diagnostics</span>
 			<h2>Stripe API & Account Status</h2>
-			<p class="section-desc">Diagnostic verification for Stripe API credentials, publishable keys, and account status from <code>/api/debug/stripe</code>.</p>
+			<p class="section-desc">Live status, environment mode (Live vs Test/Sandbox), and account ownership details from <code>/api/debug/stripe</code>.</p>
 		</div>
 		<div>
 			<a href="/api/debug/stripe" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
@@ -983,8 +909,8 @@
 	<div class="test-runner-container glass">
 		<div class="test-runner-header">
 			<div>
-				<h3>Stripe Account & Key Verification</h3>
-				<p class="sub-text">Inspect publishable key prefix, configuration state, and live account connection.</p>
+				<h3>Stripe Connection & Account Summary</h3>
+				<p class="sub-text">Overview of Stripe environment mode, account owner, and key setup.</p>
 			</div>
 			<button 
 				type="button" 
@@ -992,43 +918,102 @@
 				disabled={isFetchingStripe}
 				onclick={fetchStripeStatus}
 			>
-				{isFetchingStripe ? '⏳ Fetching Stripe Status...' : '🔄 Refresh Stripe Status'}
+				{isFetchingStripe ? '⏳ Refreshing...' : '🔄 Refresh Status'}
 			</button>
 		</div>
 
 		{#if isFetchingStripe}
 			<div class="test-status-box loading glass">
-				<p>Connecting to Stripe API and checking account configuration...</p>
+				<p>Connecting to Stripe API and retrieving account details...</p>
 			</div>
 		{:else if stripeStatusError}
 			<div class="test-status-box error glass">
 				<span class="status-icon">❌</span>
 				<div>
-					<h4>Failed to Fetch Stripe Status</h4>
+					<h4>Failed to Connect to Stripe API</h4>
 					<p>{stripeStatusError}</p>
 				</div>
 			</div>
 		{:else if stripeStatusResults}
-			<div class="test-status-box glass" class:success={stripeStatusResults.status === 'ok'} class:error={stripeStatusResults.status !== 'ok'}>
-				<span class="status-icon">{stripeStatusResults.status === 'ok' ? '💳' : '❌'}</span>
-				<div>
-					<h4>Stripe Status: {stripeStatusResults.status?.toUpperCase() || 'UNKNOWN'}</h4>
-					<p>Timestamp: {stripeStatusResults.timestamp}</p>
+			<!-- Summary Cards Grid -->
+			<div class="stripe-summary-grid">
+				<div class="stripe-summary-card glass">
+					<span class="card-meta-label">ENVIRONMENT MODE</span>
+					<div class="card-main-val">
+						{#if stripeStatusResults.stripe?.account?.isLive}
+							<span class="mode-badge mode-live">🔴 Live / Production Mode</span>
+						{:else if stripeStatusResults.stripe?.account?.isMock}
+							<span class="mode-badge mode-mock">🛠️ Mock / Unconfigured</span>
+						{:else}
+							<span class="mode-badge mode-test">🧪 Test / Sandbox Mode</span>
+						{/if}
+					</div>
+					<p class="card-desc">
+						{#if stripeStatusResults.stripe?.account?.isLive}
+							Real payments and charges are active on this account.
+						{:else if stripeStatusResults.stripe?.account?.isMock}
+							Using development fallback mock keys.
+						{:else}
+							Test credit cards allowed. No real money will be charged.
+						{/if}
+					</p>
+				</div>
+
+				<div class="stripe-summary-card glass">
+					<span class="card-meta-label">ACCOUNT OWNER / BUSINESS</span>
+					<div class="card-main-val owner-name">
+						{stripeStatusResults.stripe?.account?.accountOwner || stripeStatusResults.stripe?.account?.businessName || 'N/A'}
+					</div>
+					<p class="card-desc">
+						Account ID: <code>{stripeStatusResults.stripe?.account?.accountId || 'Not Connected'}</code>
+						{#if stripeStatusResults.stripe?.account?.email}
+							<br />Email: <code>{stripeStatusResults.stripe?.account?.email}</code>
+						{/if}
+					</p>
+				</div>
+
+				<div class="stripe-summary-card glass">
+					<span class="card-meta-label">CHARGES & PAYOUTS</span>
+					<div class="card-main-val">
+						{#if stripeStatusResults.stripe?.account?.chargesEnabled}
+							<span class="status-pill status-active">✅ Charges Enabled</span>
+						{:else}
+							<span class="status-pill status-disabled">⚠️ Charges Disabled</span>
+						{/if}
+					</div>
+					<p class="card-desc">
+						Payouts: {stripeStatusResults.stripe?.account?.payoutsEnabled ? 'Enabled ✅' : 'Disabled / Restricted ⚠️'}
+						<br />
+						Country: {stripeStatusResults.stripe?.account?.country?.toUpperCase() || 'US'}
+					</p>
+				</div>
+
+				<div class="stripe-summary-card glass">
+					<span class="card-meta-label">PUBLISHABLE KEY CONFIG</span>
+					<div class="card-main-val">
+						{#if stripeStatusResults.stripe?.publishableKeyConfigured}
+							<span class="status-pill status-active">Configured ({stripeStatusResults.stripe?.publishableKeyPrefix})</span>
+						{:else}
+							<span class="status-pill status-disabled">Missing / Placeholder</span>
+						{/if}
+					</div>
+					<p class="card-desc">Prefix matches loaded environment credentials.</p>
 				</div>
 			</div>
-			<div class="test-results-output">
-				<span class="output-label">Diagnostic Response Data:</span>
+
+			<div class="test-results-output" style="margin-top: 1.5rem;">
+				<span class="output-label">Raw Diagnostic Response:</span>
 				<pre class="json-code"><code>{JSON.stringify(stripeStatusResults, null, 2)}</code></pre>
 			</div>
 		{/if}
 
 		<div class="iframe-preview-wrapper" style="margin-top: 1.5rem;">
-			<div class="iframe-title">Live Endpoint Output View: <code>/api/debug/stripe</code></div>
+			<div class="iframe-title">Live Endpoint View: <code>/api/debug/stripe</code></div>
 			<iframe 
 				src="/api/debug/stripe" 
 				title="Stripe Status Direct View" 
 				class="preview-iframe"
-				style="height: 350px;"
+				style="height: 300px;"
 			></iframe>
 		</div>
 	</div>
@@ -1137,6 +1122,73 @@
 		border-radius: 8px;
 		padding: 1rem;
 		margin-bottom: 1.5rem;
+	}
+	.stripe-summary-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1rem;
+		margin-bottom: 1.5rem;
+	}
+	.stripe-summary-card {
+		padding: 1.25rem;
+		border-radius: 10px;
+		border: 1px solid var(--border-light);
+		background: var(--bg-surface);
+	}
+	.card-meta-label {
+		display: block;
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: var(--text-secondary);
+		letter-spacing: 0.05em;
+		margin-bottom: 0.5rem;
+	}
+	.card-main-val {
+		font-size: 1.1rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin-bottom: 0.4rem;
+	}
+	.owner-name {
+		word-break: break-word;
+	}
+	.card-desc {
+		font-size: 0.82rem;
+		color: var(--text-secondary);
+		margin: 0;
+		line-height: 1.4;
+	}
+	.mode-badge {
+		display: inline-block;
+		padding: 4px 12px;
+		border-radius: 20px;
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+	.mode-live {
+		background: rgba(239, 68, 68, 0.15);
+		color: #ef4444;
+		border: 1px solid rgba(239, 68, 68, 0.3);
+	}
+	.mode-test {
+		background: rgba(56, 189, 248, 0.15);
+		color: var(--primary);
+		border: 1px solid var(--border-glow);
+	}
+	.mode-mock {
+		background: rgba(245, 158, 11, 0.15);
+		color: #f59e0b;
+		border: 1px solid rgba(245, 158, 11, 0.3);
+	}
+	.status-pill {
+		font-size: 0.88rem;
+		font-weight: 600;
+	}
+	.status-pill.status-active {
+		color: #22c55e;
+	}
+	.status-pill.status-disabled {
+		color: #ef4444;
 	}
 	.output-label {
 		display: block;

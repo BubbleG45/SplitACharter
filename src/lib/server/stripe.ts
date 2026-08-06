@@ -135,26 +135,44 @@ export async function getStripeAccountDetails() {
 		return {
 			connected: false,
 			isMock: true,
+			isLive: false,
+			environment: 'Test / Sandbox (Mock)',
+			accountOwner: 'Mock Developer Account',
 			message: 'STRIPE_SECRET_KEY is using placeholder. Using mock fallback.'
 		};
 	}
 
+	const isLive = key.startsWith('sk_live_') || key.startsWith('rk_live_');
+	const environment = isLive ? 'Live / Production' : 'Test / Sandbox';
+
 	try {
 		const account = await (stripe.accounts.retrieve as any)();
+		const owner =
+			account.business_profile?.name ||
+			account.settings?.dashboard?.display_name ||
+			account.email ||
+			account.id;
+
 		return {
 			connected: true,
 			isMock: false,
+			isLive,
+			environment,
 			accountId: account.id,
-			businessName: account.business_profile?.name || account.settings?.dashboard?.display_name || 'Connected Account',
+			accountOwner: owner,
+			email: account.email || null,
+			businessName: account.business_profile?.name || account.settings?.dashboard?.display_name || 'N/A',
 			country: account.country,
 			chargesEnabled: account.charges_enabled,
-			payoutsEnabled: account.payouts_enabled,
-			isLive: key.startsWith('sk_live_')
+			payoutsEnabled: account.payouts_enabled
 		};
 	} catch (err: any) {
 		return {
 			connected: false,
 			isMock: false,
+			isLive,
+			environment,
+			accountOwner: 'Unknown (API Key Error)',
 			error: err.message || 'Failed to connect to Stripe API'
 		};
 	}
