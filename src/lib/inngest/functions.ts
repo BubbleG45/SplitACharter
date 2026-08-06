@@ -61,17 +61,19 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 			await step.run(`send-reminder-${i + 1}`, async () => {
 				const { data: booking } = await supabaseAdmin
 					.from('bookings')
-					.select('id, customer_id, customers(name, phone, email)')
+					.select('id, customer_id, customers(name, phone, email), trip_instances(date, listing_templates(trip_type))')
 					.eq('id', bookingId)
 					.single();
 
 				const customer = (booking as any)?.customers;
+				const tripType = (booking as any)?.trip_instances?.listing_templates?.trip_type || '';
 				if (customer) {
 					await sendNotification(
 						'reconfirm_reminder',
 						{ email: customer.email, phone: customer.phone, name: customer.name },
 						{
 							trip_date: tripDateTime.split('T')[0],
+							trip_type: tripType,
 							deadline_time: new Date(schedule.deadlineDate).toLocaleString()
 						}
 					);
@@ -86,13 +88,15 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 		const result = await step.run('enforce-forfeiture', async () => {
 			const { data: booking, error: bookingErr } = await supabaseAdmin
 				.from('bookings')
-				.select('id, customer_id, trip_instance_id, status, customers(name, phone, email)')
+				.select('id, customer_id, trip_instance_id, status, customers(name, phone, email), trip_instances(date, listing_templates(trip_type))')
 				.eq('id', bookingId)
 				.single();
 
 			if (bookingErr || !booking) {
 				return { status: 'skipped', reason: 'Booking not found' };
 			}
+
+			const tripType = (booking as any)?.trip_instances?.listing_templates?.trip_type || '';
 
 			// If the booking is already reconfirmed or canceled, we don't enforce forfeiture
 			if (booking.status === 'reconfirmed' || booking.status === 'canceled' || booking.status === 'forfeited') {
@@ -111,7 +115,7 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 				await sendNotification(
 					'reconfirm_forfeited',
 					{ email: customerProfile.email, phone: customerProfile.phone, name: customerProfile.name },
-					{ trip_date: tripDateTime.split('T')[0] }
+					{ trip_date: tripDateTime.split('T')[0], trip_type: tripType }
 				);
 			}
 
@@ -151,7 +155,7 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 							await sendNotification(
 								'counterpart_forfeited',
 								{ email: otherCustomer.email, phone: otherCustomer.phone, name: otherCustomer.name },
-								{ trip_date: tripDateTime.split('T')[0] }
+								{ trip_date: tripDateTime.split('T')[0], trip_type: tripType }
 							);
 						}
 					}

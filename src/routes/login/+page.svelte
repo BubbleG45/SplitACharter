@@ -297,13 +297,13 @@
 	}
 	.alert-danger {
 		background: rgba(239, 68, 68, 0.12);
-		border: 1px solid rgba(239, 68, 68, 0.2);
-		color: #fca5a5;
+		border: 1px solid rgba(239, 68, 68, 0.25);
+		color: var(--danger);
 	}
 	.alert-success {
 		background: rgba(16, 185, 129, 0.12);
-		border: 1px solid rgba(16, 185, 129, 0.2);
-		color: #a7f3d0;
+		border: 1px solid rgba(16, 185, 129, 0.25);
+		color: var(--success);
 	}
 	.alert-icon {
 		width: 20px;
