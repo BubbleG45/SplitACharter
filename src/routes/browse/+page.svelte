@@ -449,7 +449,7 @@
 			</div>
 		{:else}
 			<div class="cards-grid">
-				{#each filteredListings as listing (listing.id)}
+				{#each filteredListings as listing (listing.matchedInstance ? listing.matchedInstance.id : listing.id)}
 					{@const locParts = parseLocation(listing.location)}
 					{@const seatsLeft = getRemainingSeats(listing, listing.matchedInstance)}
 					{@const reqGroupSize = parseInt(filterGroupSize, 10) || 1}
