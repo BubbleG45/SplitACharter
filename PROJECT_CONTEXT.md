@@ -327,3 +327,10 @@ The application supports both Dark Mode and Light Mode with seamless theme toggl
 - **Mandatory Semantic CSS Variables:** All components and pages must use the semantic CSS variables defined in `src/app.css` (`var(--bg-base)`, `var(--bg-surface)`, `var(--text-primary)`, `var(--text-secondary)`, `var(--border-light)`, `var(--glass-bg)`, `var(--input-bg)`, etc.).
 - **Prohibited Patterns:** Never hardcode static hex values (e.g. `#0a0f1d`, `#12182b`, `#ffffff`) or fixed dark/light RGBA strings directly in component CSS or inline styles for layout elements. New components must rely on global semantic CSS custom properties to ensure consistent rendering across both light and dark themes.
 
+---
+
+## 12. Change Log Maintenance Rules
+
+- **Automated Update Workflow:** Every feature, bug fix, architectural change, or UI enhancement MUST be documented in `CHANGELOG.md` under the active month section in plain, non-technical English.
+- **Commit & Release Synchronization:** Because `CHANGELOG.md` is loaded directly via Vite raw import (`CHANGELOG.md?raw`), updating `CHANGELOG.md` before git push guarantees that the Admin Settings Change Log view (`/admin/settings?tab=sec-changelog`) stays 100% up to date on every deployment automatically.
+
