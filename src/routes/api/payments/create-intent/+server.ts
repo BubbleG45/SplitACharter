@@ -38,6 +38,18 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
 			return json({ error: 'Booking blocked. Account suspended due to strikes or flagging.' }, { status: 400 });
 		}
 
+		// Fetch listing template to validate max passengers
+		const { data: listing } = await supabaseAdmin
+			.from('listing_templates')
+			.select('max_passengers')
+			.eq('id', templateId)
+			.maybeSingle();
+
+		const maxAllowed = listing ? Math.min(4, listing.max_passengers) : 4;
+		if (size < 1 || size > maxAllowed) {
+			return json({ error: `Group size (${size}) exceeds maximum allowed passengers (${maxAllowed}) for this charter.` }, { status: 400 });
+		}
+
 		// Create PaymentIntent
 		const intentResult = await createStripePaymentIntent({
 			amountInCents: 5000,

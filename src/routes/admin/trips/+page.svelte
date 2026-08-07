@@ -54,7 +54,7 @@
 	// Admin Trip Cancel modal state
 	let cancelingTrip = $state<any>(null);
 	let cancelWithRefund = $state(true);
-	let cancelReason = $state('');
+	let cancelReason = $state('Operations cancellation');
 	let cancelingInProgress = $state(false);
 	let cancelError = $state<string | null>(null);
 
@@ -550,7 +550,7 @@
 										onclick={() => {
 											cancelingTrip = trip;
 											cancelWithRefund = true;
-											cancelReason = '';
+											cancelReason = 'Operations cancellation';
 											cancelError = null;
 										}}
 									>
@@ -1024,7 +1024,7 @@
 				<button type="button" class="btn btn-secondary" onclick={() => (cancelingTrip = null)} disabled={cancelingInProgress}>
 					Keep Trip Active
 				</button>
-				<button type="submit" class="btn btn-danger" disabled={cancelingInProgress || !cancelReason.trim()}>
+				<button type="submit" class="btn btn-danger" disabled={cancelingInProgress}>
 					{cancelingInProgress ? 'Processing Cancellation...' : 'Confirm & Cancel Trip'}
 				</button>
 			</div>

@@ -9,6 +9,70 @@ import { createStripePaymentIntent, getStripeClient } from '$lib/server/stripe';
 import { confirmTripAndTriggerCaptainBlast } from '$lib/server/trips';
 import type { PageServerLoad, Actions } from './$types';
 
+async function findOrCreateTripInstanceForGroup(
+	templateId: string,
+	date: string,
+	groupSize: number,
+	maxPassengers: number,
+	referringCaptainId?: string | null
+): Promise<string> {
+	const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+	// Fetch all open/half-booked trip instances for this date
+	const { data: candidateTrips } = await supabaseAdmin
+		.from('trip_instances')
+		.select('id, status')
+		.eq('listing_template_id', templateId)
+		.eq('date', date)
+		.in('status', ['open', 'half-booked']);
+
+	if (candidateTrips && candidateTrips.length > 0) {
+		for (const trip of candidateTrips) {
+			const { data: bookings } = await supabaseAdmin
+				.from('bookings')
+				.select('group_size')
+				.eq('trip_instance_id', trip.id)
+				.in('status', ['paid', 'reconfirmed']);
+
+			const currentlyBooked = bookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
+			const remainingSeats = maxPassengers - currentlyBooked;
+
+			if (remainingSeats >= groupSize) {
+				if (referringCaptainId) {
+					await supabaseAdmin
+						.from('trip_instances')
+						.update({ referring_captain_id: referringCaptainId })
+						.eq('id', trip.id)
+						.is('referring_captain_id', null);
+				}
+				return trip.id;
+			}
+		}
+	}
+
+	// If no existing instance has enough open seats for this group, spawn a fresh open trip instance
+	const insertTrip: any = {
+		listing_template_id: templateId,
+		date,
+		status: 'open'
+	};
+	if (referringCaptainId) {
+		insertTrip.referring_captain_id = referringCaptainId;
+	}
+
+	const { data: newTrip, error: tripCreateError } = await supabaseAdmin
+		.from('trip_instances')
+		.insert(insertTrip)
+		.select('id')
+		.single();
+
+	if (tripCreateError || !newTrip) {
+		throw new Error(tripCreateError?.message || 'Database insert error');
+	}
+
+	return newTrip.id;
+}
+
 export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supabase } }) => {
 	const { session, user } = await safeGetSession();
 
@@ -45,34 +109,28 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 	const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 	// Check if there is an existing TripInstance on this date
-	const { data: tripInstance } = await supabaseAdmin
+	const { data: tripInstances } = await supabaseAdmin
 		.from('trip_instances')
 		.select('id, status')
 		.eq('listing_template_id', templateId)
 		.eq('date', date)
-		.in('status', ['open', 'half-booked'])
-		.maybeSingle();
+		.in('status', ['open', 'half-booked']);
 
-	// Calculate maximum group size for this booking
-	let maxAvailablePassengers = listing.max_passengers;
 	let isJoiningExisting = false;
+	let selectedTripInstanceId: string | null = null;
 
-	if (tripInstance && tripInstance.status === 'half-booked') {
-		isJoiningExisting = true;
-		
-		// Sum up group size of existing bookings on this trip instance
-		const { data: existingBookings } = await supabaseAdmin
-			.from('bookings')
-			.select('group_size')
-			.eq('trip_instance_id', tripInstance.id)
-			.not('status', 'in', '("canceled","forfeited")');
-
-		const currentlyBooked = existingBookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
-		maxAvailablePassengers = Math.min(4, Math.max(0, listing.max_passengers - currentlyBooked));
-	} else {
-		// Group signups are capped at 4 passengers to encourage group matching
-		maxAvailablePassengers = Math.min(4, listing.max_passengers);
+	if (tripInstances && tripInstances.length > 0) {
+		const halfBooked = tripInstances.find(t => t.status === 'half-booked');
+		if (halfBooked) {
+			selectedTripInstanceId = halfBooked.id;
+			isJoiningExisting = true;
+		} else {
+			selectedTripInstanceId = tripInstances[0].id;
+		}
 	}
+
+	// Maximum group size per single booking is capped at 4 passengers (or boat capacity)
+	const maxAvailablePassengers = Math.min(4, listing.max_passengers);
 
 	// Calculate initial group size from URL parameter if available
 	const initialGroupSizeRaw = url.searchParams.get('groupSize');
@@ -88,7 +146,7 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		date,
 		maxAvailablePassengers,
 		isJoiningExisting,
-		tripInstanceId: tripInstance?.id || null,
+		tripInstanceId: selectedTripInstanceId,
 		initialGroupSize,
 		userEmail: user.email || '',
 		publishableKey: PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
@@ -334,74 +392,29 @@ export const actions: Actions = {
 				return fail(500, { message: 'Failed to update profile.' });
 			}
 
-			// 2. Resolve TripInstance
-			let tripInstanceId = formData.get('tripInstanceId') as string;
-			
-			// Double check or create TripInstance
-			if (!tripInstanceId) {
-				const { data: existingTrip } = await supabaseAdmin
-					.from('trip_instances')
-					.select('id')
-					.eq('listing_template_id', templateId)
-					.eq('date', date)
-					.in('status', ['open', 'half-booked'])
-					.maybeSingle();
+			// Validate group size does not exceed max allowed group size (capped at 4 per group signup)
+			const maxAllowedGroupSize = Math.min(4, listing.max_passengers);
 
-				if (existingTrip) {
-					tripInstanceId = existingTrip.id;
-				} else {
-					const insertTrip: any = {
-						listing_template_id: templateId,
-						date,
-						status: 'open'
-					};
-					if (referringCaptainId) {
-						insertTrip.referring_captain_id = referringCaptainId;
-					}
-
-					const { data: newTrip, error: tripCreateError } = await supabaseAdmin
-						.from('trip_instances')
-						.insert(insertTrip)
-						.select('id')
-						.single();
-
-					if (tripCreateError) {
-						console.error('Error creating trip instance:', tripCreateError);
-						return fail(500, { message: `Failed to initialize trip instance: ${tripCreateError.message || tripCreateError.details || 'Database insert error'}` });
-					}
-					tripInstanceId = newTrip.id;
-				}
-			} else if (referringCaptainId) {
-				await supabaseAdmin
-					.from('trip_instances')
-					.update({ referring_captain_id: referringCaptainId })
-					.eq('id', tripInstanceId)
-					.is('referring_captain_id', null);
-			}
-
-
-			// Validate group size does not exceed remaining open seats for this trip instance
-			const { data: existingBookings, error: capacityErr } = await supabaseAdmin
-				.from('bookings')
-				.select('group_size')
-				.eq('trip_instance_id', tripInstanceId)
-				.not('status', 'in', '("canceled","forfeited")');
-
-			if (capacityErr) {
-				console.error('Error fetching existing bookings for capacity check:', capacityErr);
-			}
-
-			const currentlyBooked = existingBookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
-			const remainingSeats = Math.max(0, listing.max_passengers - currentlyBooked);
-			const maxAllowed = Math.min(4, remainingSeats);
-
-			if (groupSize > maxAllowed || groupSize > 4) {
+			if (groupSize < 1 || groupSize > maxAllowedGroupSize) {
 				const errorMsg = groupSize > 4
 					? 'Group signups are capped at 4 passengers to encourage group matching and split charter costs evenly.'
-					: (maxAllowed > 0
-						? `Your passenger group size (${groupSize} ${groupSize === 1 ? 'passenger' : 'passengers'}) exceeds the remaining open seats (${maxAllowed} ${maxAllowed === 1 ? 'seat' : 'seats'}) for this charter.`
-						: 'This charter trip is already at full passenger capacity.');
+					: `Your passenger group size (${groupSize}) exceeds the maximum capacity (${maxAllowedGroupSize} passengers) for this charter.`;
 				return fail(400, { message: errorMsg });
+			}
+
+			// Resolve or create a TripInstance that has enough open capacity for this group
+			let tripInstanceId: string;
+			try {
+				tripInstanceId = await findOrCreateTripInstanceForGroup(
+					templateId,
+					date,
+					groupSize,
+					listing.max_passengers,
+					referringCaptainId
+				);
+			} catch (err: any) {
+				console.error('Error resolving trip instance:', err);
+				return fail(500, { message: `Failed to initialize trip instance: ${err.message || 'Database error'}` });
 			}
 
 			// 3. Create Booking in 'pending-payment' status

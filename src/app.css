@@ -232,6 +232,14 @@ button, .btn {
   box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
 }
 
+.btn:disabled,
+button:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+}
+
 /* Global SVG dimension helpers (Tailwind fallback compatibility) */
 svg.w-4, .w-4 { width: 16px !important; }
 svg.h-4, .h-4 { height: 16px !important; }
