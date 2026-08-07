@@ -40,13 +40,30 @@ async function findOrCreateTripInstanceForGroup(
 			if (remainingSeats >= groupSize) {
 				if (referringCaptainId) {
 					try {
+						// Set primary referring_captain_id if null
 						await supabaseAdmin
 							.from('trip_instances')
 							.update({ referring_captain_id: referringCaptainId })
 							.eq('id', trip.id)
 							.is('referring_captain_id', null);
+
+						// Append referringCaptainId to referring_captain_ids array if not present
+						const { data: currentTripData } = await supabaseAdmin
+							.from('trip_instances')
+							.select('referring_captain_ids')
+							.eq('id', trip.id)
+							.maybeSingle();
+
+						const existingIds: string[] = currentTripData?.referring_captain_ids || [];
+						if (!existingIds.includes(referringCaptainId)) {
+							const updatedIds = [...existingIds, referringCaptainId];
+							await supabaseAdmin
+								.from('trip_instances')
+								.update({ referring_captain_ids: updatedIds })
+								.eq('id', trip.id);
+						}
 					} catch (err: any) {
-						console.warn('Non-fatal error updating referring_captain_id on trip_instances:', err?.message || err);
+						console.warn('Non-fatal error updating referring captain IDs on trip_instances:', err?.message || err);
 					}
 				}
 				return trip.id;
@@ -62,6 +79,7 @@ async function findOrCreateTripInstanceForGroup(
 	};
 	if (referringCaptainId) {
 		insertTrip.referring_captain_id = referringCaptainId;
+		insertTrip.referring_captain_ids = [referringCaptainId];
 	}
 
 	let newTrip: any = null;
@@ -76,17 +94,29 @@ async function findOrCreateTripInstanceForGroup(
 	newTrip = initialTrip;
 	tripCreateError = initialErr;
 
-	// Defensive fallback: If DB schema cache lacks referring_captain_id column, try inserting without it
-	if (tripCreateError && referringCaptainId && tripCreateError.message?.includes('referring_captain_id')) {
-		console.warn('Fallback insert trip_instances without referring_captain_id column:', tripCreateError.message);
-		delete insertTrip.referring_captain_id;
-		const fallback = await supabaseAdmin
+	// Defensive fallback: If DB schema cache lacks referring_captain_ids or referring_captain_id columns, try fallback inserts
+	if (tripCreateError && referringCaptainId && tripCreateError.message?.includes('referring_captain')) {
+		console.warn('Fallback insert trip_instances without referring captain columns:', tripCreateError.message);
+		delete insertTrip.referring_captain_ids;
+		const fallback1 = await supabaseAdmin
 			.from('trip_instances')
 			.insert(insertTrip)
 			.select('id')
 			.single();
-		newTrip = fallback.data;
-		tripCreateError = fallback.error;
+
+		if (fallback1.error && fallback1.error.message?.includes('referring_captain_id')) {
+			delete insertTrip.referring_captain_id;
+			const fallback2 = await supabaseAdmin
+				.from('trip_instances')
+				.insert(insertTrip)
+				.select('id')
+				.single();
+			newTrip = fallback2.data;
+			tripCreateError = fallback2.error;
+		} else {
+			newTrip = fallback1.data;
+			tripCreateError = fallback1.error;
+		}
 	}
 
 	if (tripCreateError || !newTrip) {

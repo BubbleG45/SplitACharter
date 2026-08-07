@@ -208,16 +208,16 @@ export const captainMatchingWorkflow = inngest.createFunction(
 	async ({ event, step }) => {
 		const { tripInstanceId } = event.data;
 
-		// 1. Fetch Trip details including referring captain and eligible captains
+		// 1. Fetch Trip details including referring captains and eligible captains
 		const matchData = await step.run('find-eligible-captains', async () => {
 			const { data: trip } = await supabaseAdmin
 				.from('trip_instances')
-				.select('id, date, referring_captain_id, listing_templates(trip_type, location, meeting_area)')
+				.select('id, date, referring_captain_id, referring_captain_ids, listing_templates(trip_type, location, meeting_area)')
 				.eq('id', tripInstanceId)
 				.single();
 
 			if (!trip) {
-				return { trip: null, referringCaptain: null, captains: [] };
+				return { trip: null, referringCaptains: [], captains: [] };
 			}
 
 			const tripDetails = (trip as any).listing_templates;
@@ -231,7 +231,7 @@ export const captainMatchingWorkflow = inngest.createFunction(
 				.eq('active', true);
 
 			if (!captains) {
-				return { trip, referringCaptain: null, captains: [] };
+				return { trip, referringCaptains: [], captains: [] };
 			}
 
 			// Filter eligible captains
@@ -240,12 +240,18 @@ export const captainMatchingWorkflow = inngest.createFunction(
 				c.locations?.includes(location)
 			);
 
-			let referringCaptain = null;
-			if (trip.referring_captain_id) {
-				referringCaptain = captains.find((c) => c.id === trip.referring_captain_id) || null;
+			// Collect all referring captain IDs (combining single referring_captain_id and referring_captain_ids array)
+			const refIds = new Set<string>();
+			if (trip.referring_captain_id) refIds.add(trip.referring_captain_id);
+			if (Array.isArray((trip as any).referring_captain_ids)) {
+				for (const id of (trip as any).referring_captain_ids) {
+					if (id) refIds.add(id);
+				}
 			}
 
-			return { trip, referringCaptain, captains: eligible };
+			const referringCaptains = captains.filter((c) => refIds.has(c.id));
+
+			return { trip, referringCaptains, captains: eligible };
 		});
 
 		if (!matchData.trip) {
@@ -257,25 +263,28 @@ export const captainMatchingWorkflow = inngest.createFunction(
 		const baseUrl = env.PUBLIC_SITE_URL || 'http://localhost:5173';
 
 		// 2. Handle Referring Captain Priority Head-Start Window
-		if (matchData.referringCaptain && matchData.referringCaptain.phone) {
+		if (matchData.referringCaptains && matchData.referringCaptains.length > 0) {
 			const priorityHours = calculateCaptainPriorityHours(
 				`${trip.date}T08:00:00.000Z`
 			);
 
 			await step.run('dispatch-referring-captain-priority-sms', async () => {
-				const c = matchData.referringCaptain!;
-				const acceptUrl = `${baseUrl}/api/captain-match/accept?tripId=${trip.id}&captainId=${c.id}`;
-				await sendNotification(
-					'captain_blast',
-					{ phone: c.phone, name: c.name },
-					{
-						trip_type: tripDetails?.trip_type || '',
-						trip_date: trip.date,
-						location: tripDetails?.location || '',
-						accept_url: acceptUrl
+				for (const c of matchData.referringCaptains) {
+					if (c.phone) {
+						const acceptUrl = `${baseUrl}/api/captain-match/accept?tripId=${trip.id}&captainId=${c.id}`;
+						await sendNotification(
+							'captain_blast',
+							{ phone: c.phone, name: c.name },
+							{
+								trip_type: tripDetails?.trip_type || '',
+								trip_date: trip.date,
+								location: tripDetails?.location || '',
+								accept_url: acceptUrl
+							}
+						);
 					}
-				);
-				return { status: 'priority_sms_sent', captainId: c.id, priorityHours };
+				}
+				return { status: 'priority_sms_sent', count: matchData.referringCaptains.length, priorityHours };
 			});
 
 			// Sleep for the priority duration before opening blast to all remaining captains

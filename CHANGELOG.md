@@ -22,7 +22,7 @@ This change log keeps the site owner up to date on all updates, new features, de
 ### 🚤 Captains & Dispatch System
 - **Automated Captain SMS Blasts**: Configured instant text notifications dispatched to all eligible captains the moment a trip reaches two confirmed groups.
 - **Captain's Log Admin Tools**: Added quick actions in the Admin dashboard to generate and copy direct trip claim links for captains, view claim status, and inspect passenger rosters.
-- **Captain Referral Codes & Priority Windows**: Introduced captain referral code support and priority head-start notification timing.
+- **Captain Referral Codes & Priority Windows**: Introduced captain referral code support with priority head-start notification timing, updated so that if two groups on the same trip enter different captain codes, **both captains receive simultaneous priority head-start SMS alerts**.
 - **Interactive Captain Code Validation & Checkout Safeguard**: Added live real-time promo code validation on the checkout page (verifying active captain status and matching trip location/type), and implemented defensive database fallbacks so mistyped codes or database schema cache issues never block customer checkout.
 
 ### 🛠️ Admin Dashboard & Site Owner Tools
