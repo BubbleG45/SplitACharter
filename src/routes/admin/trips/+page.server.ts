@@ -363,7 +363,7 @@ export const actions: Actions = {
 
 		// 4. Identify winning acceptance notification log (if any) or updated_at
 		const winningLog = (logs || []).find((l: any) => l.template === 'captain_details_link');
-		const acceptedTime = winningLog ? winningLog.timestamp : (trip.captain_id ? trip.updated_at : null);
+		const acceptedTime = winningLog ? (winningLog.timestamp || winningLog.created_at) : (trip.captain_id ? trip.updated_at : null);
 		const defaultBaseUrl = getSiteUrl();
 
 		// Structure winning captain message & details link
@@ -377,7 +377,7 @@ export const actions: Actions = {
 		if (winningLog) {
 			const urlMatch = winningLog.content ? winningLog.content.match(/(https?:\/\/[^\s]+)/) : null;
 			winningMessageDetails = {
-				sentAt: winningLog.timestamp,
+				sentAt: winningLog.timestamp || winningLog.created_at,
 				recipient: winningLog.recipient,
 				content: winningLog.content,
 				detailsUrl: urlMatch ? urlMatch[1] : null
@@ -415,7 +415,7 @@ export const actions: Actions = {
 				captainName: matchedCaptain?.name || 'Registered Captain',
 				recipient: l.recipient,
 				channel: l.channel,
-				sentAt: l.timestamp,
+				sentAt: l.timestamp || l.created_at,
 				status: l.status,
 				isWinner,
 				claimUrl

@@ -61,9 +61,13 @@ export const reconfirmBookingWorkflow = inngest.createFunction(
 			await step.run(`send-reminder-${i + 1}`, async () => {
 				const { data: booking } = await supabaseAdmin
 					.from('bookings')
-					.select('id, customer_id, customers(name, phone, email), trip_instances(date, listing_templates(trip_type))')
+					.select('id, status, customer_id, customers(name, phone, email), trip_instances(date, listing_templates(trip_type))')
 					.eq('id', bookingId)
 					.single();
+
+				if (!booking || booking.status === 'reconfirmed' || booking.status === 'canceled' || booking.status === 'forfeited') {
+					return { status: 'skipped', reason: `Booking ${booking?.id || bookingId} status is ${booking?.status || 'not found'}` };
+				}
 
 				const customer = (booking as any)?.customers;
 				const tripType = (booking as any)?.trip_instances?.listing_templates?.trip_type || '';

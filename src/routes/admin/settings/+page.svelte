@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 
 	let { data, form }: { data: any; form: any } = $props();
 
@@ -25,6 +26,20 @@
 	let previewIframeSrc = $derived(
 		activeEmailTemplate ? `/api/preview-emails?template=${activeEmailTemplate}` : '/api/preview-emails'
 	);
+
+	onMount(() => {
+		function handleMessage(event: MessageEvent) {
+			if (event.data && event.data.type === 'EMAIL_TEMPLATE_SELECTED') {
+				if (typeof event.data.template === 'string') {
+					activeEmailTemplate = event.data.template;
+				}
+			}
+		}
+		window.addEventListener('message', handleMessage);
+		return () => {
+			window.removeEventListener('message', handleMessage);
+		};
+	});
 
 	let isRunningTests = $state(false);
 	let testResults = $state<any | null>(null);

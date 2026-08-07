@@ -5,6 +5,7 @@ import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { inngest } from '$lib/inngest/client';
 import { sendNotification } from '$lib/notifications';
 import { refundStripePaymentIntent } from '$lib/server/stripe';
+import { confirmTripAndTriggerCaptainBlast } from '$lib/server/trips';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { safeGetSession, supabase } }) => {
@@ -125,39 +126,7 @@ export const actions: Actions = {
 		const allReconfirmed = siblingBookings?.every(b => b.status === 'reconfirmed') && siblingBookings?.length === 2;
 
 		if (allReconfirmed) {
-			// Update TripInstance status to 'confirmed'
-			await supabaseAdmin
-				.from('trip_instances')
-				.update({ status: 'confirmed' })
-				.eq('id', booking.trip_instance_id);
-
-			// Retrieve TripInstance details to duplicate it
-			const { data: currentTrip } = await supabaseAdmin
-				.from('trip_instances')
-				.select('listing_template_id, date')
-				.eq('id', booking.trip_instance_id)
-				.single();
-
-			if (currentTrip) {
-				// Spawn a fresh, duplicate 'open' TripInstance on the same date/type/location
-				await supabaseAdmin
-					.from('trip_instances')
-					.insert({
-						listing_template_id: currentTrip.listing_template_id,
-						date: currentTrip.date,
-						status: 'open'
-					});
-			}
-
-			// Send trip/confirmed event to Inngest to trigger captain matching sequence (Phase 4)
-			try {
-				await inngest.send({
-					name: 'trip/confirmed',
-					data: { tripInstanceId: booking.trip_instance_id }
-				});
-			} catch (inngestErr) {
-				console.error('Inngest trip/confirmed send failed (non-fatal):', inngestErr);
-			}
+			await confirmTripAndTriggerCaptainBlast(booking.trip_instance_id);
 		}
 
 		return { success: true };

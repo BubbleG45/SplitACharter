@@ -6,6 +6,7 @@ import { inngest } from '$lib/inngest/client';
 import { sendNotification } from '$lib/notifications';
 import { initiateAccountLinking } from '$lib/account_linking';
 import { createStripePaymentIntent, getStripeClient } from '$lib/server/stripe';
+import { confirmTripAndTriggerCaptainBlast } from '$lib/server/trips';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supabase } }) => {
@@ -603,6 +604,17 @@ export const actions: Actions = {
 					});
 				} catch (inngestErr) {
 					console.error('Inngest match.detected / reconfirmed event failed (non-fatal):', inngestErr);
+				}
+
+				// 6. Check if BOTH bookings on this trip instance are now reconfirmed
+				const { data: allTripBookings } = await supabaseAdmin
+					.from('bookings')
+					.select('id, status')
+					.eq('trip_instance_id', tripInstanceId)
+					.not('status', 'in', '("canceled","forfeited")');
+
+				if (allTripBookings && allTripBookings.every((b) => b.status === 'reconfirmed') && allTripBookings.length === 2) {
+					await confirmTripAndTriggerCaptainBlast(tripInstanceId);
 				}
 			}
 

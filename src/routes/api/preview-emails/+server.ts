@@ -68,18 +68,32 @@ export const GET: RequestHandler = async ({ url }) => {
 				<ul>
 					${links}
 				</ul>
+				<script>
+					if (window.parent && window.parent !== window) {
+						window.parent.postMessage({ type: 'EMAIL_TEMPLATE_SELECTED', template: '' }, '*');
+					}
+				</script>
 			</body>
 			</html>
 		`;
 		return new Response(htmlMenu, { headers: { 'Content-Type': 'text/html' } });
 	}
 
+	const injectIframeScript = (html: string, name: string) => {
+		const script = `<script>
+			if (window.parent && window.parent !== window) {
+				window.parent.postMessage({ type: 'EMAIL_TEMPLATE_SELECTED', template: '${name}' }, '*');
+			}
+		</script>`;
+		return html.includes('</body>') ? html.replace('</body>', `${script}\n</body>`) : html + script;
+	};
+
 	if (templateName === 'auth_magic_link') {
 		const rawBody = `Hello,\n\nPlease click the button below to sign in to your SplitACharter account. This link is only valid for 1 hour:\n\n${mockData.dashboard_url}/auth/callback?token=mock_magic_link_token`;
 		const subject = 'Sign In to SplitACharter';
 		const formattedInnerContent = formatEmailBody(rawBody);
 		const fullHtmlLayout = wrapInEmailLayout(formattedInnerContent, subject);
-		return new Response(fullHtmlLayout, { headers: { 'Content-Type': 'text/html' } });
+		return new Response(injectIframeScript(fullHtmlLayout, 'auth_magic_link'), { headers: { 'Content-Type': 'text/html' } });
 	}
 
 	const setting = settings.find((s) => s.trigger_name === templateName);
@@ -93,5 +107,5 @@ export const GET: RequestHandler = async ({ url }) => {
 	const formattedInnerContent = formatEmailBody(rawBody);
 	const fullHtmlLayout = wrapInEmailLayout(formattedInnerContent, subject);
 
-	return new Response(fullHtmlLayout, { headers: { 'Content-Type': 'text/html' } });
+	return new Response(injectIframeScript(fullHtmlLayout, templateName), { headers: { 'Content-Type': 'text/html' } });
 };

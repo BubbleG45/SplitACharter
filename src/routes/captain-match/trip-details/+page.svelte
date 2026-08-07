@@ -102,11 +102,17 @@
 										</span>
 									</div>
 									<div class="cert-details-grid">
-										{#if cert.type === 'scuba' || cert.level || cert.agency || cert.lastDive}
+										{#if cert.type === 'scuba' || cert.certified !== undefined || cert.scubaCertified !== undefined || cert.level || cert.agency || cert.lastDive}
+											{#if cert.certified !== undefined || cert.scubaCertified !== undefined}
+												<div class="cert-item">
+													<span class="cert-label">Certification:</span>
+													<span class="cert-val">{(cert.certified || cert.scubaCertified) ? (cert.level || 'Certified') : 'Not certified'}</span>
+												</div>
+											{/if}
 											{#if cert.level}
 												<div class="cert-item">
 													<span class="cert-label">Level:</span>
-													<span class="cert-val">{cert.level}</span>
+													<span class="cert-val">{cert.level === false || String(cert.level).toLowerCase() === 'false' ? 'Not certified' : cert.level}</span>
 												</div>
 											{/if}
 											{#if cert.agency}
@@ -125,7 +131,7 @@
 											{#if cert.freediveCertified !== undefined}
 												<div class="cert-item">
 													<span class="cert-label">Freedive Certified:</span>
-													<span class="cert-val">{cert.freediveCertified ? 'Yes' : 'No'}</span>
+													<span class="cert-val">{cert.freediveCertified && String(cert.freediveCertified) !== 'false' ? 'Yes' : 'Not certified'}</span>
 												</div>
 											{/if}
 											{#if cert.freediveAgency}
@@ -138,8 +144,8 @@
 											{#each Object.entries(cert) as [key, val]}
 												{#if key !== 'type' && val !== null && val !== undefined && String(val).trim() !== ''}
 													<div class="cert-item">
-														<span class="cert-label">{key}:</span>
-														<span class="cert-val">{String(val)}</span>
+														<span class="cert-label">{key.toLowerCase() === 'certified' ? 'Certification' : key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())}:</span>
+														<span class="cert-val">{val === false || String(val).toLowerCase() === 'false' ? 'Not certified' : String(val)}</span>
 													</div>
 												{/if}
 											{/each}

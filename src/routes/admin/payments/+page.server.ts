@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { sendNotification } from '$lib/notifications';
 import { refundStripePaymentIntent } from '$lib/server/stripe';
+import { confirmTripAndTriggerCaptainBlast } from '$lib/server/trips';
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	const { data: payments, error: loadErr } = await supabase
@@ -166,13 +167,20 @@ export const actions: Actions = {
 				}
 			} else if (activeCount === 2) {
 				const bothReconfirmed = remainingBookings?.every((b) => b.status === 'reconfirmed');
-				newTripStatus = bothReconfirmed ? 'confirmed' : 'pending-reconfirm';
+				if (bothReconfirmed) {
+					await confirmTripAndTriggerCaptainBlast(bookingDetails.trip_instance_id);
+				} else {
+					await supabase
+						.from('trip_instances')
+						.update({ status: 'pending-reconfirm' })
+						.eq('id', bookingDetails.trip_instance_id);
+				}
+			} else {
+				await supabase
+					.from('trip_instances')
+					.update({ status: newTripStatus })
+					.eq('id', bookingDetails.trip_instance_id);
 			}
-
-			await supabase
-				.from('trip_instances')
-				.update({ status: newTripStatus })
-				.eq('id', bookingDetails.trip_instance_id);
 		}
 
 		return { success: true };
