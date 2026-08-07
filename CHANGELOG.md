@@ -59,3 +59,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-07 22:15 UTC (6eaf083)
 - feat: support simultaneous priority dispatch for multiple referring captains on a trip
+
+### Push Update — 2026-08-07 22:24 UTC (6e6927f)
+- feat: add manual Refresh Data button and timestamp to admin trips page
