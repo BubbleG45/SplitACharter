@@ -81,3 +81,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-07 22:54 UTC (4bb2ab9)
 - fix: enforce max per-group passenger cap on browse and checkout routes
+
+### Push Update — 2026-08-07 23:08 UTC (1381b40)
+- style: wrap admin settings tab bar and place Email Previews right after Notifications
