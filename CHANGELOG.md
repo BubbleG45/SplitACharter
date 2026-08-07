@@ -68,3 +68,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-07 22:34 UTC (3a1ed58)
 - fix: render Change Log template block in admin settings page
+
+### Push Update — 2026-08-07 22:39 UTC (0985ec6)
+- fix: bundle CHANGELOG.md via Vite raw import and remove Change Log from main sidebar menu
