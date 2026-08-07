@@ -55,3 +55,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-07 22:03 UTC (959fcb1)
 - docs: update CHANGELOG.md with captain promo code validation changes
+
+### Push Update — 2026-08-07 22:15 UTC (6eaf083)
+- feat: support simultaneous priority dispatch for multiple referring captains on a trip
