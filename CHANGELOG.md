@@ -48,3 +48,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **Passwordless Security**: Established 100% passwordless authentication via Email Magic Links and Twilio SMS 6-digit verification codes.
 - **Automated 2-of-2 Group Matching**: Implemented reusable charter templates that automatically spawn dated trip instances when groups book a date.
 - **Automated Reconfirmation Logic**: Engineered reconfirmation deadline timers (24h, 12h, and 2h windows) using Inngest step functions to handle group reconfirmations and refunds fairly.
+
+### Push Update — 2026-08-07 21:59 UTC (b6bcb9f)
+- Fix checkout captain code validation and add defensive schema fallback
