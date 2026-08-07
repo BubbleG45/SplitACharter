@@ -67,8 +67,8 @@
 			const bookedPax = activeBookings.reduce((sum: number, b: any) => sum + (b.group_size || 0), 0);
 			return Math.min(4, Math.max(0, maxPax - bookedPax));
 		}
-		// Group signups are capped at 4 passengers to encourage group matching
-		return Math.min(4, maxPax);
+		// For a new charter instance, reserve at least 1 seat for Group 2 (max per group is maxPax - 1), capped at 4
+		return Math.min(4, Math.max(1, maxPax - 1));
 	}
 
 	function matchesLocationFilter(locString: string, filterVal: string) {

@@ -91,6 +91,13 @@
 	let ogImageUrl = $derived(
 		`${requestOrigin}/og-banner.png`
 	);
+	let effectiveGroupSizeParam = $derived.by(() => {
+		if (!groupSizeParam) return '';
+		const parsed = parseInt(groupSizeParam, 10);
+		if (isNaN(parsed) || parsed < 1) return '';
+		const capped = Math.min(parsed, data.maxAvailablePassengers);
+		return capped > 0 ? String(capped) : '';
+	});
 </script>
 
 <svelte:head>
@@ -283,7 +290,7 @@
 					</div>
 
 					<div class="action-row">
-						<a href="/checkout?templateId={data.listing.id}&date={selectedDate}{groupSizeParam ? `&groupSize=${groupSizeParam}` : ''}" class="btn btn-primary w-full btn-large">
+						<a href="/checkout?templateId={data.listing.id}&date={selectedDate}{effectiveGroupSizeParam ? `&groupSize=${effectiveGroupSizeParam}` : ''}" class="btn btn-primary w-full btn-large">
 							Proceed to Checkout
 						</a>
 					</div>

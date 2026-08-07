@@ -45,7 +45,27 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
 			.eq('id', templateId)
 			.maybeSingle();
 
-		const maxAllowed = listing ? Math.min(4, listing.max_passengers) : 4;
+		let maxAllowed = listing ? Math.min(4, Math.max(1, listing.max_passengers - 1)) : 4;
+		if (listing) {
+			const { data: candidateTrips } = await supabaseAdmin
+				.from('trip_instances')
+				.select('id')
+				.eq('listing_template_id', templateId)
+				.eq('date', date)
+				.eq('status', 'half-booked');
+
+			if (candidateTrips && candidateTrips.length > 0) {
+				const { data: bookings } = await supabaseAdmin
+					.from('bookings')
+					.select('group_size')
+					.eq('trip_instance_id', candidateTrips[0].id)
+					.in('status', ['paid', 'reconfirmed']);
+
+				const currentlyBooked = bookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
+				maxAllowed = Math.min(4, Math.max(0, listing.max_passengers - currentlyBooked));
+			}
+		}
+
 		if (size < 1 || size > maxAllowed) {
 			return json({ error: `Group size (${size}) exceeds maximum allowed passengers (${maxAllowed}) for this charter.` }, { status: 400 });
 		}

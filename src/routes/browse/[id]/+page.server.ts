@@ -32,10 +32,23 @@ export const load: PageServerLoad = async ({ params, url, locals: { supabase } }
 		console.error('Error fetching trip instances:', tripsError);
 	}
 
+	let maxAvailablePassengers = Math.min(4, Math.max(1, listing.max_passengers - 1));
+	if (preselectedDate && tripInstances) {
+		const matched = tripInstances.find((t) => t.date === preselectedDate);
+		if (matched) {
+			const activeBookings = (matched.bookings || []).filter(
+				(b: any) => b.status !== 'canceled' && b.status !== 'forfeited'
+			);
+			const bookedPax = activeBookings.reduce((sum: number, b: any) => sum + (b.group_size || 0), 0);
+			maxAvailablePassengers = Math.min(4, Math.max(0, listing.max_passengers - bookedPax));
+		}
+	}
+
 	return {
 		listing,
 		tripInstances: tripInstances || [],
 		preselectedDate,
+		maxAvailablePassengers,
 		origin: url.origin
 	};
 };

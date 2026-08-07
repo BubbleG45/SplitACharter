@@ -182,8 +182,19 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		}
 	}
 
-	// Maximum group size per single booking is capped at 4 passengers (or boat capacity)
-	const maxAvailablePassengers = Math.min(4, listing.max_passengers);
+	// Maximum group size per single booking is capped at 4 passengers (and leaves at least 1 seat for Group 2 on new trips)
+	let maxAvailablePassengers = Math.min(4, Math.max(1, listing.max_passengers - 1));
+
+	if (selectedTripInstanceId) {
+		const { data: activeBookings } = await supabaseAdmin
+			.from('bookings')
+			.select('group_size')
+			.eq('trip_instance_id', selectedTripInstanceId)
+			.in('status', ['paid', 'reconfirmed', 'awaiting-reconfirm']);
+
+		const currentlyBooked = activeBookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
+		maxAvailablePassengers = Math.min(4, Math.max(0, listing.max_passengers - currentlyBooked));
+	}
 
 	// Calculate initial group size from URL parameter if available
 	const initialGroupSizeRaw = url.searchParams.get('groupSize');
@@ -475,12 +486,30 @@ export const actions: Actions = {
 			}
 
 			// Validate group size does not exceed max allowed group size (capped at 4 per group signup)
-			const maxAllowedGroupSize = Math.min(4, listing.max_passengers);
+			let maxAllowedGroupSize = Math.min(4, Math.max(1, listing.max_passengers - 1));
+
+			const { data: candidateTrips } = await supabaseAdmin
+				.from('trip_instances')
+				.select('id, status')
+				.eq('listing_template_id', templateId)
+				.eq('date', date)
+				.eq('status', 'half-booked');
+
+			if (candidateTrips && candidateTrips.length > 0) {
+				const { data: bookings } = await supabaseAdmin
+					.from('bookings')
+					.select('group_size')
+					.eq('trip_instance_id', candidateTrips[0].id)
+					.in('status', ['paid', 'reconfirmed']);
+
+				const currentlyBooked = bookings?.reduce((sum, b) => sum + b.group_size, 0) || 0;
+				maxAllowedGroupSize = Math.min(4, Math.max(0, listing.max_passengers - currentlyBooked));
+			}
 
 			if (groupSize < 1 || groupSize > maxAllowedGroupSize) {
 				const errorMsg = groupSize > 4
 					? 'Group signups are capped at 4 passengers to encourage group matching and split charter costs evenly.'
-					: `Your passenger group size (${groupSize}) exceeds the maximum capacity (${maxAllowedGroupSize} passengers) for this charter.`;
+					: `Your passenger group size (${groupSize}) exceeds the maximum allowed group capacity (${maxAllowedGroupSize} passenger${maxAllowedGroupSize === 1 ? '' : 's'}) for this charter.`;
 				return fail(400, { message: errorMsg });
 			}
 
