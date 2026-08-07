@@ -78,3 +78,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-07 22:45 UTC (39aebab)
 - fix: change settings nav pill bar to relative positioning to prevent floating over content
+
+### Push Update — 2026-08-07 22:54 UTC (4bb2ab9)
+- fix: enforce max per-group passenger cap on browse and checkout routes
