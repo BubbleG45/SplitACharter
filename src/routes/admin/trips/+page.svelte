@@ -1,7 +1,26 @@
 <script lang="ts">
 	import { deserialize, enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 
 	let { data } = $props();
+
+	// Refresh state
+	let isRefreshing = $state(false);
+	let lastRefreshedTime = $state<string | null>(null);
+
+	async function refreshData() {
+		if (isRefreshing) return;
+		isRefreshing = true;
+		try {
+			await invalidateAll();
+			const now = new Date();
+			lastRefreshedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+		} catch (err) {
+			console.error('Error refreshing trips data:', err);
+		} finally {
+			isRefreshing = false;
+		}
+	}
 
 	// Search & filtering state
 	let searchQuery = $state('');
@@ -302,6 +321,26 @@
 	<div>
 		<span class="subtitle">Operations Overview</span>
 		<h1>Trips & Bookings</h1>
+	</div>
+	<div class="header-actions">
+		{#if lastRefreshedTime}
+			<span class="last-refreshed-label">Updated {lastRefreshedTime}</span>
+		{/if}
+		<button
+			type="button"
+			class="btn-refresh"
+			onclick={refreshData}
+			disabled={isRefreshing}
+			title="Fetch latest trip and booking data from server"
+		>
+			<svg class:spinning={isRefreshing} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+				<path d="M3 3v5h5"/>
+				<path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+				<path d="M16 21h5v-5"/>
+			</svg>
+			<span>{isRefreshing ? 'Refreshing...' : 'Refresh Data'}</span>
+		</button>
 	</div>
 </div>
 
@@ -1195,7 +1234,52 @@
 	}
 
 	.admin-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
 		margin-bottom: 2rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+	.last-refreshed-label {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+	.btn-refresh {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.6rem 1.1rem;
+		font-weight: 600;
+		font-size: 0.875rem;
+		border-radius: 8px;
+		background: var(--bg-surface-hover, rgba(255, 255, 255, 0.08));
+		border: 1px solid var(--border-light);
+		color: var(--text-primary);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.btn-refresh:hover:not(:disabled) {
+		background: var(--primary);
+		color: #ffffff;
+		border-color: var(--primary);
+	}
+	.btn-refresh:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+	.spinning {
+		animation: spin 0.8s linear infinite;
+	}
+	@keyframes spin {
+		from { transform: rotate(0deg); }
+		to { transform: rotate(360deg); }
 	}
 	.subtitle {
 		font-size: 0.85rem;

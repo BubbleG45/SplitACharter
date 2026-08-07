@@ -26,6 +26,7 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **Interactive Captain Code Validation & Checkout Safeguard**: Added live real-time promo code validation on the checkout page (verifying active captain status and matching trip location/type), and implemented defensive database fallbacks so mistyped codes or database schema cache issues never block customer checkout.
 
 ### 🛠️ Admin Dashboard & Site Owner Tools
+- **In-App Trips Data Refresh Button**: Added a dedicated "Refresh Data" button with a spinning indicator and "Updated HH:MM:SS" timestamp to the `/admin/trips` header action bar, allowing site admins to fetch the latest trip instances, bookings, and roster updates instantly without reloading the page or losing active search filters.
 - **API Tool Diagnostics Tabs**: Created an interactive API & Services tab in Admin Settings featuring live Stripe status verification (Test/Live mode detector), interactive email template previews, and test notification tools.
 - **Reviews Management**: Built an admin review manager on the Settings page to auto-seed, edit, and curate testimonials displayed on the landing page carousel.
 - **Trip & Listing Management**: Added quick duplicate, copy, and double-confirmed deletion tools for charter listing templates and dated trip instances.
