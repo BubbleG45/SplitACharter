@@ -23,6 +23,7 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **Automated Captain SMS Blasts**: Configured instant text notifications dispatched to all eligible captains the moment a trip reaches two confirmed groups.
 - **Captain's Log Admin Tools**: Added quick actions in the Admin dashboard to generate and copy direct trip claim links for captains, view claim status, and inspect passenger rosters.
 - **Captain Referral Codes & Priority Windows**: Introduced captain referral code support and priority head-start notification timing.
+- **Interactive Captain Code Validation & Checkout Safeguard**: Added live real-time promo code validation on the checkout page (verifying active captain status and matching trip location/type), and implemented defensive database fallbacks so mistyped codes or database schema cache issues never block customer checkout.
 
 ### 🛠️ Admin Dashboard & Site Owner Tools
 - **API Tool Diagnostics Tabs**: Created an interactive API & Services tab in Admin Settings featuring live Stripe status verification (Test/Live mode detector), interactive email template previews, and test notification tools.
