@@ -71,3 +71,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-07 22:39 UTC (0985ec6)
 - fix: bundle CHANGELOG.md via Vite raw import and remove Change Log from main sidebar menu
+
+### Push Update — 2026-08-07 22:42 UTC (45d182b)
+- docs: add mandatory CHANGELOG.md maintenance rules to AGENTS.md and PROJECT_CONTEXT.md
