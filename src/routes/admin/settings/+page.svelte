@@ -2089,15 +2089,20 @@
 	}
 	.settings-nav-pills {
 		display: flex;
-		gap: 0.75rem;
+		gap: 0.5rem;
 		padding: 0.4rem 0.6rem;
 		border: 1px solid var(--border-light);
 		border-radius: 30px;
 		background: var(--bg-surface);
 		width: max-content;
 		max-width: 100%;
-		flex-wrap: wrap;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
 		box-shadow: var(--glass-shadow);
+	}
+	.settings-nav-pills::-webkit-scrollbar {
+		display: none;
 	}
 	.nav-pill-btn {
 		background: transparent;
@@ -2278,25 +2283,6 @@
 		}
 	}
 
-	/* Responsive Sticky Nav Pill Bar for Mobile */
-	.sticky-nav-bar-wrapper {
-		position: sticky;
-		top: 0;
-		z-index: 20;
-		margin-bottom: 2rem;
-	}
-	.settings-nav-pills {
-		display: flex;
-		gap: 0.5rem;
-		padding: 0.5rem;
-		overflow-x: auto;
-		-webkit-overflow-scrolling: touch;
-		scrollbar-width: none;
-		border-radius: 12px;
-	}
-	.settings-nav-pills::-webkit-scrollbar {
-		display: none;
-	}
 	.nav-pill-btn {
 		white-space: nowrap;
 		flex-shrink: 0;
