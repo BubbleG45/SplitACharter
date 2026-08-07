@@ -39,11 +39,15 @@ async function findOrCreateTripInstanceForGroup(
 
 			if (remainingSeats >= groupSize) {
 				if (referringCaptainId) {
-					await supabaseAdmin
-						.from('trip_instances')
-						.update({ referring_captain_id: referringCaptainId })
-						.eq('id', trip.id)
-						.is('referring_captain_id', null);
+					try {
+						await supabaseAdmin
+							.from('trip_instances')
+							.update({ referring_captain_id: referringCaptainId })
+							.eq('id', trip.id)
+							.is('referring_captain_id', null);
+					} catch (err: any) {
+						console.warn('Non-fatal error updating referring_captain_id on trip_instances:', err?.message || err);
+					}
 				}
 				return trip.id;
 			}
@@ -60,11 +64,30 @@ async function findOrCreateTripInstanceForGroup(
 		insertTrip.referring_captain_id = referringCaptainId;
 	}
 
-	const { data: newTrip, error: tripCreateError } = await supabaseAdmin
+	let newTrip: any = null;
+	let tripCreateError: any = null;
+
+	const { data: initialTrip, error: initialErr } = await supabaseAdmin
 		.from('trip_instances')
 		.insert(insertTrip)
 		.select('id')
 		.single();
+
+	newTrip = initialTrip;
+	tripCreateError = initialErr;
+
+	// Defensive fallback: If DB schema cache lacks referring_captain_id column, try inserting without it
+	if (tripCreateError && referringCaptainId && tripCreateError.message?.includes('referring_captain_id')) {
+		console.warn('Fallback insert trip_instances without referring_captain_id column:', tripCreateError.message);
+		delete insertTrip.referring_captain_id;
+		const fallback = await supabaseAdmin
+			.from('trip_instances')
+			.insert(insertTrip)
+			.select('id')
+			.single();
+		newTrip = fallback.data;
+		tripCreateError = fallback.error;
+	}
 
 	if (tripCreateError || !newTrip) {
 		throw new Error(tripCreateError?.message || 'Database insert error');
@@ -278,15 +301,44 @@ export const actions: Actions = {
 			// Look up referring captain if referral promo code was provided
 			let referringCaptainId: string | null = null;
 			if (referralPromoCode) {
-				const { data: captainMatch } = await supabaseAdmin
-					.from('captains')
-					.select('id')
-					.ilike('referral_promo_code', referralPromoCode)
-					.eq('active', true)
-					.maybeSingle();
+				try {
+					const { data: captainMatch } = await supabaseAdmin
+						.from('captains')
+						.select('id, locations, trip_types')
+						.ilike('referral_promo_code', referralPromoCode)
+						.eq('active', true)
+						.maybeSingle();
 
-				if (captainMatch) {
-					referringCaptainId = captainMatch.id;
+					if (captainMatch) {
+						// Fetch listing details to verify captain covers location and trip type
+						const { data: listingMatch } = await supabaseAdmin
+							.from('listing_templates')
+							.select('location, trip_type')
+							.eq('id', templateId)
+							.maybeSingle();
+
+						if (listingMatch) {
+							const captainLocations = (captainMatch.locations || []).map((l: string) => l.toLowerCase().trim());
+							const captainTripTypes = (captainMatch.trip_types || []).map((t: string) => t.toLowerCase().trim());
+							const listingLoc = listingMatch.location.toLowerCase().trim();
+							const listingType = listingMatch.trip_type.toLowerCase().trim();
+
+							const matchesLocation = captainLocations.some((loc: string) => loc.includes(listingLoc) || listingLoc.includes(loc));
+							const matchesTripType = captainTripTypes.some((tt: string) => tt.includes(listingType) || listingType.includes(tt));
+
+							if (matchesLocation && matchesTripType) {
+								referringCaptainId = captainMatch.id;
+							} else {
+								console.info(`Captain promo code '${referralPromoCode}' ignored: does not cover location (${listingMatch.location}) or trip type (${listingMatch.trip_type}).`);
+							}
+						} else {
+							referringCaptainId = captainMatch.id;
+						}
+					} else {
+						console.info(`Captain promo code '${referralPromoCode}' ignored: code invalid or captain inactive.`);
+					}
+				} catch (promoErr) {
+					console.warn('Non-fatal error resolving captain promo code:', promoErr);
 				}
 			}
 

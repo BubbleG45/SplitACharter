@@ -50,6 +50,54 @@
 	let paymentOutcome = $state('success');
 	let submitting = $state(false);
 
+	// Captain Promo Code interactive validation state
+	let validatingPromoCode = $state(false);
+	let promoCodeValidation = $state<{
+		valid: boolean;
+		status: 'none' | 'valid' | 'invalid' | 'mismatch' | 'inactive';
+		message: string;
+		captainName?: string;
+	}>({
+		valid: false,
+		status: 'none',
+		message: ''
+	});
+
+	async function validateCaptainPromoCode() {
+		const code = referralPromoCode.trim().toUpperCase();
+		if (!code) {
+			promoCodeValidation = { valid: false, status: 'none', message: '' };
+			return;
+		}
+
+		validatingPromoCode = true;
+		try {
+			const res = await fetch(`/api/validate-promo-code?code=${encodeURIComponent(code)}&templateId=${encodeURIComponent(data.listing.id)}`);
+			const result = await res.json();
+			promoCodeValidation = {
+				valid: result.valid,
+				status: result.status,
+				message: result.message,
+				captainName: result.captainName
+			};
+		} catch (err) {
+			console.error('Error validating promo code:', err);
+			promoCodeValidation = {
+				valid: false,
+				status: 'invalid',
+				message: 'Could not verify promo code. Please try again.'
+			};
+		} finally {
+			validatingPromoCode = false;
+		}
+	}
+
+	function handlePromoCodeInput() {
+		if (promoCodeValidation.status !== 'none') {
+			promoCodeValidation = { valid: false, status: 'none', message: '' };
+		}
+	}
+
 	const isScubaTrip = $derived(
 		data.listing.trip_type.toLowerCase().includes('scuba')
 	);
@@ -335,16 +383,51 @@
 							</div>
 
 							<div class="form-group full-width">
-								<label for="referral_promo_code">Captain Referral / Promo Code <span class="optional-tag">(Optional)</span></label>
-								<input
-									type="text"
-									id="referral_promo_code"
-									name="referral_promo_code"
-									bind:value={referralPromoCode}
-									placeholder="e.g. CAPT-SMITH-10"
-									style="text-transform: uppercase;"
-								/>
-								<span class="input-helper">Have a promo code from a captain? Enter it here to grant them booking priority!</span>
+								<label for="referral_promo_code">
+									Captain Referral / Promo Code <span class="optional-tag">(Optional)</span>
+								</label>
+								<div class="promo-code-input-wrapper">
+									<input
+										type="text"
+										id="referral_promo_code"
+										name="referral_promo_code"
+										bind:value={referralPromoCode}
+										oninput={handlePromoCodeInput}
+										placeholder="e.g. CAPT-SMITH-10"
+										style="text-transform: uppercase;"
+										class:is-valid={promoCodeValidation.status === 'valid'}
+										class:is-invalid={promoCodeValidation.status === 'invalid' || promoCodeValidation.status === 'inactive'}
+										class:is-mismatch={promoCodeValidation.status === 'mismatch'}
+									/>
+									<button
+										type="button"
+										class="btn-validate-promo"
+										onclick={validateCaptainPromoCode}
+										disabled={validatingPromoCode || !referralPromoCode.trim()}
+									>
+										{validatingPromoCode ? 'Checking...' : 'Apply Code'}
+									</button>
+								</div>
+
+								{#if promoCodeValidation.status !== 'none'}
+									<div
+										class="promo-feedback-badge"
+										class:badge-valid={promoCodeValidation.status === 'valid'}
+										class:badge-invalid={promoCodeValidation.status === 'invalid' || promoCodeValidation.status === 'inactive'}
+										class:badge-mismatch={promoCodeValidation.status === 'mismatch'}
+									>
+										{#if promoCodeValidation.status === 'valid'}
+											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+										{:else if promoCodeValidation.status === 'mismatch'}
+											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+										{:else}
+											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+										{/if}
+										<span>{promoCodeValidation.message}</span>
+									</div>
+								{:else}
+									<span class="input-helper">Have a promo code from a captain? Enter it here to grant them booking priority!</span>
+								{/if}
 							</div>
 
 
@@ -1191,6 +1274,91 @@
 	}
 	.waiver-box p:last-child {
 		margin-bottom: 0;
+	}
+
+	/* Interactive Promo Code Input & Badges */
+	.promo-code-input-wrapper {
+		display: flex;
+		gap: 0.5rem;
+		width: 100%;
+	}
+
+	.promo-code-input-wrapper input {
+		flex: 1;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.promo-code-input-wrapper input.is-valid {
+		border-color: #10b981;
+		box-shadow: 0 0 0 1px #10b981;
+	}
+
+	.promo-code-input-wrapper input.is-invalid {
+		border-color: #ef4444;
+		box-shadow: 0 0 0 1px #ef4444;
+	}
+
+	.promo-code-input-wrapper input.is-mismatch {
+		border-color: #f59e0b;
+		box-shadow: 0 0 0 1px #f59e0b;
+	}
+
+	.btn-validate-promo {
+		padding: 0.6rem 1rem;
+		background: var(--bg-surface-hover, rgba(255, 255, 255, 0.08));
+		border: 1px solid var(--border-light);
+		color: var(--text-primary);
+		font-weight: 600;
+		border-radius: 6px;
+		font-size: 0.85rem;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: all 0.2s ease;
+	}
+
+	.btn-validate-promo:hover:not(:disabled) {
+		background: var(--primary);
+		color: #ffffff;
+		border-color: var(--primary);
+	}
+
+	.btn-validate-promo:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.promo-feedback-badge {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		border-radius: 6px;
+		font-size: 0.825rem;
+		font-weight: 500;
+		line-height: 1.4;
+	}
+
+	.promo-feedback-badge svg {
+		flex-shrink: 0;
+	}
+
+	.promo-feedback-badge.badge-valid {
+		background: rgba(16, 185, 129, 0.1);
+		color: #10b981;
+		border: 1px solid rgba(16, 185, 129, 0.2);
+	}
+
+	.promo-feedback-badge.badge-invalid {
+		background: rgba(239, 68, 68, 0.1);
+		color: #f87171;
+		border: 1px solid rgba(239, 68, 68, 0.2);
+	}
+
+	.promo-feedback-badge.badge-mismatch {
+		background: rgba(245, 158, 11, 0.1);
+		color: #fbbf24;
+		border: 1px solid rgba(245, 158, 11, 0.2);
 	}
 
 	@media (max-width: 992px) {

@@ -1,0 +1,36 @@
+name: Update Change Log
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Append Latest Commit Note to CHANGELOG.md
+        run: |
+          LAST_COMMIT_MSG=$(git log -1 --pretty=format:"- %s")
+          LAST_COMMIT_HASH=$(git log -1 --pretty=format:"%h")
+          DATE_STR=$(date -u +'%Y-%m-%d %H:%M UTC')
+
+          # Append entry under Auto-Generated Push Updates section
+          echo "" >> CHANGELOG.md
+          echo "### Push Update — $DATE_STR ($LAST_COMMIT_HASH)" >> CHANGELOG.md
+          echo "$LAST_COMMIT_MSG" >> CHANGELOG.md
+
+      - name: Commit and Push Updated Changelog
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: auto-update CHANGELOG.md [skip ci]"
+          file_pattern: "CHANGELOG.md"
