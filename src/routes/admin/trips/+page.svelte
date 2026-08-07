@@ -56,6 +56,7 @@
 	let cancelWithRefund = $state(true);
 	let cancelReason = $state('');
 	let cancelingInProgress = $state(false);
+	let cancelError = $state<string | null>(null);
 
 	// Status Explanation modal state
 	let showStatusHelpModal = $state(false);
@@ -550,6 +551,7 @@
 											cancelingTrip = trip;
 											cancelWithRefund = true;
 											cancelReason = '';
+											cancelError = null;
 										}}
 									>
 										Cancel Trip
@@ -928,10 +930,16 @@
 			action="?/cancelTrip"
 			use:enhance={() => {
 				cancelingInProgress = true;
-				return async ({ update }) => {
-					await update();
-					cancelingInProgress = false;
-					cancelingTrip = null;
+				cancelError = null;
+				return async ({ result, update }) => {
+					if (result.type === 'failure') {
+						cancelError = (result.data as any)?.message || 'Failed to cancel trip instance.';
+						cancelingInProgress = false;
+					} else {
+						await update();
+						cancelingInProgress = false;
+						cancelingTrip = null;
+					}
 				};
 			}}
 			class="modal-form"
@@ -940,6 +948,14 @@
 			<input type="hidden" name="withRefund" value={cancelWithRefund ? 'true' : 'false'} />
 
 			<div class="modal-body">
+				{#if cancelError}
+					<div class="modal-alert-box glow-danger" style="margin-bottom: 1rem; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.1); color: #fca5a5;">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5" style="color: var(--danger); flex-shrink: 0;">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+						</svg>
+						<span>{cancelError}</span>
+					</div>
+				{/if}
 				<div class="affected-summary-card glass">
 					<p class="affected-title"><strong>Affected Customer Bookings ({modalBookings.length}):</strong></p>
 					{#if modalBookings.length === 0}

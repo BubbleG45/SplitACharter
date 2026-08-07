@@ -1,8 +1,13 @@
 import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
+import { createClient } from '@supabase/supabase-js';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { sendNotification, getSiteUrl } from '$lib/notifications';
 import { generateCaptainToken } from '$lib/security';
 import { refundStripePaymentIntent } from '$lib/server/stripe';
+
+const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	const [tripsRes, listingsRes] = await Promise.all([
@@ -192,99 +197,104 @@ export const actions: Actions = {
 		return { logs: tripLogs };
 	},
 
-	cancelTrip: async ({ request, locals: { supabase } }) => {
-		const formData = await request.formData();
-		const tripId = formData.get('tripId') as string;
-		const withRefund = formData.get('withRefund') === 'true';
-		const reason = (formData.get('reason') as string)?.trim() || 'Operations cancellation';
+	cancelTrip: async ({ request }) => {
+		try {
+			const formData = await request.formData();
+			const tripId = formData.get('tripId') as string;
+			const withRefund = formData.get('withRefund') === 'true';
+			const reason = (formData.get('reason') as string)?.trim() || 'Operations cancellation';
 
-		if (!tripId) {
-			return fail(400, { message: 'Trip ID is required.' });
-		}
+			if (!tripId) {
+				return fail(400, { message: 'Trip ID is required.' });
+			}
 
-		// Update trip instance status to canceled
-		const { error: cancelErr } = await supabase
-			.from('trip_instances')
-			.update({ status: 'canceled' })
-			.eq('id', tripId);
+			// Update trip instance status to canceled using supabaseAdmin
+			const { error: cancelErr } = await supabaseAdmin
+				.from('trip_instances')
+				.update({ status: 'canceled' })
+				.eq('id', tripId);
 
-		if (cancelErr) {
-			console.error('Error canceling trip:', cancelErr);
-			return fail(500, { message: cancelErr.message || 'Failed to cancel trip instance.' });
-		}
+			if (cancelErr) {
+				console.error('Error canceling trip:', cancelErr);
+				return fail(500, { message: cancelErr.message || 'Failed to cancel trip instance.' });
+			}
 
-		// Retrieve active bookings on this trip to cancel, optionally refund, and notify customers
-		const { data: bookings } = await supabase
-			.from('bookings')
-			.select('id, customers(name, phone, email), trip_instances(date, listing_templates(trip_type))')
-			.eq('trip_instance_id', tripId)
-			.not('status', 'in', '("canceled","forfeited")');
+			// Retrieve active bookings on this trip to cancel, optionally refund, and notify customers
+			const { data: bookings } = await supabaseAdmin
+				.from('bookings')
+				.select('id, customers(name, phone, email), trip_instances(date, listing_templates(trip_type))')
+				.eq('trip_instance_id', tripId)
+				.not('status', 'in', '("canceled","forfeited")');
 
-		if (bookings && bookings.length > 0) {
-			for (const b of bookings) {
-				await supabase
-					.from('bookings')
-					.update({ status: 'canceled' })
-					.eq('id', b.id);
+			if (bookings && bookings.length > 0) {
+				for (const b of bookings) {
+					await supabaseAdmin
+						.from('bookings')
+						.update({ status: 'canceled' })
+						.eq('id', b.id);
 
-				if (withRefund) {
-					const { data: originalPay } = await supabase
-						.from('payment_records')
-						.select('stripe_payment_intent_id, amount')
-						.eq('booking_id', b.id)
-						.eq('status', 'succeeded')
-						.maybeSingle();
+					if (withRefund) {
+						const { data: originalPay } = await supabaseAdmin
+							.from('payment_records')
+							.select('stripe_payment_intent_id, amount')
+							.eq('booking_id', b.id)
+							.eq('status', 'succeeded')
+							.maybeSingle();
 
-					let refundId = `ref_admin_${Math.random().toString(36).substring(2, 10)}`;
-					if (originalPay) {
-						try {
-							const stripeRefund = await refundStripePaymentIntent({
-								paymentIntentId: originalPay.stripe_payment_intent_id
-							});
-							refundId = stripeRefund.refundId;
-						} catch (err: any) {
-							console.error('Error executing Stripe refund in admin trip cancellation:', err);
+						let refundId = `ref_admin_${Math.random().toString(36).substring(2, 10)}`;
+						if (originalPay?.stripe_payment_intent_id && originalPay.stripe_payment_intent_id.startsWith('pi_')) {
+							try {
+								const stripeRefund = await refundStripePaymentIntent({
+									paymentIntentId: originalPay.stripe_payment_intent_id
+								});
+								refundId = stripeRefund.refundId;
+							} catch (err: any) {
+								console.error('Error executing Stripe refund in admin trip cancellation:', err);
+							}
 						}
+
+						await supabaseAdmin
+							.from('payment_records')
+							.insert({
+								booking_id: b.id,
+								stripe_payment_intent_id: refundId,
+								amount: originalPay?.amount || 50.00,
+								status: 'refunded'
+							});
 					}
 
-					await supabase
-						.from('payment_records')
-						.insert({
-							booking_id: b.id,
-							stripe_payment_intent_id: refundId,
-							amount: originalPay?.amount || 50.00,
-							status: 'refunded'
-						});
-				}
+					const customer = (b as any).customers;
+					const trip = (b as any).trip_instances;
+					const tripDetails = trip?.listing_templates;
 
-				const customer = (b as any).customers;
-				const trip = (b as any).trip_instances;
-				const tripDetails = trip?.listing_templates;
+					if (customer) {
+						const refundText = withRefund
+							? 'Your $50.00 reservation fee has been fully refunded to your original payment method.'
+							: 'Per platform policy, this cancellation is non-refundable.';
 
-				if (customer) {
-					const refundText = withRefund
-						? 'Your $50.00 reservation fee has been fully refunded to your original payment method.'
-						: 'Per platform policy, this cancellation is non-refundable.';
-
-					try {
-						await sendNotification(
-							'admin_trip_cancellation',
-							{ email: customer.email, phone: customer.phone, name: customer.name },
-							{
-								trip_date: trip?.date || '',
-								trip_type: tripDetails?.trip_type || '',
-								cancellation_reason: reason,
-								refund_status_text: refundText
-							}
-						);
-					} catch (notifErr) {
-						console.error('Error sending admin_trip_cancellation notification:', notifErr);
+						try {
+							await sendNotification(
+								'admin_trip_cancellation',
+								{ email: customer.email, phone: customer.phone, name: customer.name },
+								{
+									trip_date: trip?.date || '',
+									trip_type: tripDetails?.trip_type || '',
+									cancellation_reason: reason,
+									refund_status_text: refundText
+								}
+							);
+						} catch (notifErr) {
+							console.error('Error sending admin_trip_cancellation notification:', notifErr);
+						}
 					}
 				}
 			}
-		}
 
-		return { success: true };
+			return { success: true };
+		} catch (err: any) {
+			console.error('Unhandled error in cancelTrip:', err);
+			return fail(500, { message: err.message || 'An unexpected error occurred while canceling the trip.' });
+		}
 	},
 
 	getCaptainsLog: async ({ request, locals: { supabase } }) => {
