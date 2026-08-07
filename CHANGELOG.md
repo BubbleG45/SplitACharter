@@ -62,3 +62,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-07 22:24 UTC (6e6927f)
 - feat: add manual Refresh Data button and timestamp to admin trips page
+
+### Push Update — 2026-08-07 22:31 UTC (f59b81d)
+- feat: add Change Log tab to Admin Settings and optimize mobile responsiveness across admin dashboard
