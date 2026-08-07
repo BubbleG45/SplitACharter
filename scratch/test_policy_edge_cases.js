@@ -34,7 +34,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function getActiveUrl() {
     for (const port of [5173, 5174, 5175]) {
         try {
-            const res = await fetch(`http://localhost:${port}/api/debug/mock-sms-logs`);
+            const res = await fetch(`http://localhost:${port}/`);
             if (res.ok) return `http://localhost:${port}`;
         } catch (e) {}
     }
