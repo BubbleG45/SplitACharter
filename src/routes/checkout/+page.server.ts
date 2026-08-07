@@ -513,6 +513,20 @@ export const actions: Actions = {
 				return fail(400, { message: errorMsg });
 			}
 
+			// Check if user already has an active booking on this charter listing and date
+			const { data: existingUserBooking } = await supabaseAdmin
+				.from('bookings')
+				.select('id, trip_instance_id, trip_instances!inner(listing_template_id, date)')
+				.eq('customer_id', user.id)
+				.not('status', 'in', '("canceled","forfeited")')
+				.eq('trip_instances.listing_template_id', templateId)
+				.eq('trip_instances.date', date)
+				.maybeSingle();
+
+			if (existingUserBooking) {
+				return fail(400, { message: 'You already have an active booking reservation for this charter date.' });
+			}
+
 			// Resolve or create a TripInstance that has enough open capacity for this group
 			let tripInstanceId: string;
 			try {
@@ -687,7 +701,7 @@ export const actions: Actions = {
 				if (firstGroupBookings) {
 					for (const cb of firstGroupBookings) {
 						const customer = (cb as any).customers;
-						if (customer) {
+						if (customer && customer.email !== emailToUse) {
 							try {
 								await sendNotification(
 									'match_detected',

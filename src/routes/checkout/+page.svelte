@@ -195,8 +195,15 @@
 		return true;
 	}
 
+	let stripeConfirmed = $state(false);
+
 	async function handleSubmit(event: SubmitEvent) {
 		paymentErrorMessage = '';
+
+		if (submitting && !stripeConfirmed) {
+			event.preventDefault();
+			return;
+		}
 
 		if (!commitment || !liability) {
 			event.preventDefault();
@@ -204,7 +211,7 @@
 			return;
 		}
 
-		if (mode === 'stripe' && stripe && elements) {
+		if (mode === 'stripe' && stripe && elements && !stripeConfirmed) {
 			event.preventDefault();
 			submitting = true;
 
@@ -224,9 +231,9 @@
 				}
 
 				if (paymentIntent && paymentIntent.status === 'succeeded') {
-					// Post confirmation form
+					stripeConfirmed = true;
 					const formEl = event.target as HTMLFormElement;
-					formEl.submit();
+					formEl.requestSubmit();
 				} else {
 					submitting = false;
 				}
@@ -286,13 +293,15 @@
 					action="?/checkout&templateId={data.listing.id}&date={data.date}"
 					onsubmit={handleSubmit}
 					use:enhance={({ cancel }) => {
-						if (mode === 'stripe' && (!paymentIntentId || submitting)) {
-							// If in stripe mode and payment intent confirmation is in progress, cancel default form POST
+						if (submitting && mode === 'stripe' && !stripeConfirmed) {
+							cancel();
+							return;
 						}
 						submitting = true;
 						return async ({ update }) => {
 							await update();
 							submitting = false;
+							stripeConfirmed = false;
 						};
 					}}
 					class="checkout-form"

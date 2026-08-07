@@ -38,6 +38,7 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **Legal & Footer Pages**: Added dedicated Terms & Conditions and Privacy Policy pages accessible from the site footer.
 
 ### 🔧 Fixes & Performance Improvements
+- **Checkout Double-Submission & Duplicate Trip Instance Fix**: Resolved a frontend submission race condition where clicking checkout could send duplicate concurrent requests to the server, preventing duplicate charter instances from being created and ensuring customers only receive single, relevant confirmation notifications.
 - **Per-Group Max Passenger Cap Enforcement**: Enforced single-group passenger caps across browse, trip details, and checkout endpoints so group sizes for brand new charter instances leave at least 1 open seat for the matching group (e.g. Flyfishing charters with total capacity 2 are strictly capped at 1 passenger per group signup).
 - **Capacity Check RLS Safeguards**: Fixed booking capacity counts to ignore abandoned or pending-payment checkouts, preventing false "sold out" errors.
 - **Database RLS Admin Bypass**: Switched background admin operations to secure admin client execution, eliminating permission errors during trip cancellations and listings updates.
