@@ -74,3 +74,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-07 22:42 UTC (45d182b)
 - docs: add mandatory CHANGELOG.md maintenance rules to AGENTS.md and PROJECT_CONTEXT.md
+
+### Push Update — 2026-08-07 22:45 UTC (39aebab)
+- fix: change settings nav pill bar to relative positioning to prevent floating over content
