@@ -60,29 +60,54 @@
 		const lines = raw.split('\n');
 		for (let line of lines) {
 			line = line.trim();
+			if (!line || line === '---' || line.startsWith('# ')) continue;
+
 			if (line.startsWith('## ')) {
-				const title = line.replace(/^##\s+/, '');
-				if (!title.includes('Project Inception')) {
-					currentSection = { title, categories: [] };
+				const title = line.replace(/^##\s+/, '').trim();
+				currentSection = { title, categories: [] };
+				sections.push(currentSection);
+				currentCategory = null;
+			} else if (line.startsWith('### ')) {
+				const catName = line.replace(/^###\s+/, '').trim();
+				if (!currentSection) {
+					currentSection = { title: '🚀 Platform Updates', categories: [] };
 					sections.push(currentSection);
-					currentCategory = null;
 				}
-			} else if (line.startsWith('### ') && currentSection) {
-				const catName = line.replace(/^###\s+/, '');
 				currentCategory = { name: catName, items: [] };
 				currentSection.categories.push(currentCategory);
-			} else if (line.startsWith('- **') && currentCategory) {
-				const match = line.match(/^-\s+\*\*([^*]+)\*\*:\s+(.*)$/);
-				if (match) {
+			} else if (line.startsWith('- ')) {
+				if (!currentSection) {
+					currentSection = { title: '🚀 Platform Updates', categories: [] };
+					sections.push(currentSection);
+				}
+				if (!currentCategory) {
+					currentCategory = { name: '📌 Feature Updates', categories: [] } as any;
+					currentCategory = { name: '📌 Feature Updates', items: [] };
+					currentSection.categories.push(currentCategory);
+				}
+
+				const boldMatch = line.match(/^-\s+\*\*([^*]+)\*\*:\s*(.*)$/);
+				if (boldMatch) {
 					currentCategory.items.push({
-						title: match[1],
-						description: match[2]
+						title: boldMatch[1].trim(),
+						description: boldMatch[2].trim()
+					});
+				} else {
+					const plainText = line.replace(/^-\s+/, '').trim();
+					currentCategory.items.push({
+						title: 'General Update',
+						description: plainText
 					});
 				}
 			}
 		}
 
-		return sections;
+		return sections
+			.map(sec => ({
+				...sec,
+				categories: sec.categories.filter(cat => cat.items.length > 0)
+			}))
+			.filter(sec => sec.categories.length > 0);
 	});
 
 	let activeEmailTemplate = $state('');
@@ -1102,6 +1127,73 @@
 				style="height: 300px;"
 			></iframe>
 		</div>
+	</div>
+{/if}
+
+<!-- Section 7: Site Updates & Plain English Change Log -->
+{#if activeNavSection === 'sec-changelog'}
+	<div id="sec-changelog" class="changelog-container">
+		<div class="changelog-header-card glass">
+			<div class="changelog-header-info">
+				<span class="changelog-badge">Plain English Update History</span>
+				<h2>Platform Improvements & Site Activity Log</h2>
+				<p>Review all features, design enhancements, bug fixes, and system tools added to SplitACharter in clear, plain language.</p>
+			</div>
+			<div class="changelog-search-box">
+				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
+					<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+				</svg>
+				<input
+					type="text"
+					placeholder="Search features (e.g. Stripe, Captain, SMS, Refund)..."
+					bind:value={changelogSearch}
+					class="changelog-search-input"
+				/>
+				{#if changelogSearch}
+					<button type="button" class="btn-clear-search" onclick={() => changelogSearch = ''}>✕</button>
+				{/if}
+			</div>
+		</div>
+
+		{#if parsedChangelog.length === 0}
+			<div class="glass no-updates-card">
+				<p>No change log data currently available.</p>
+			</div>
+		{:else}
+			{#each parsedChangelog as section}
+				<div class="changelog-section-block">
+					<h3 class="changelog-month-title">{section.title}</h3>
+					<div class="changelog-categories-grid">
+						{#each section.categories as category}
+							{@const matchingItems = category.items.filter(item => 
+								!changelogSearch.trim() || 
+								item.title.toLowerCase().includes(changelogSearch.toLowerCase()) || 
+								item.description.toLowerCase().includes(changelogSearch.toLowerCase())
+							)}
+							{#if matchingItems.length > 0}
+								<div class="changelog-category-card glass">
+									<div class="category-card-header">
+										<h3>{category.name}</h3>
+										<span class="category-count">{matchingItems.length} update{matchingItems.length === 1 ? '' : 's'}</span>
+									</div>
+									<div class="category-items-list">
+										{#each matchingItems as item}
+											<div class="changelog-item-row">
+												<div class="item-icon-dot"></div>
+												<div class="item-content">
+													<h4 class="item-title">{item.title}</h4>
+													<p class="item-desc">{item.description}</p>
+												</div>
+											</div>
+										{/each}
+									</div>
+								</div>
+							{/if}
+						{/each}
+					</div>
+				</div>
+			{/each}
+		{/if}
 	</div>
 {/if}
 
