@@ -65,3 +65,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-07 22:31 UTC (f59b81d)
 - feat: add Change Log tab to Admin Settings and optimize mobile responsiveness across admin dashboard
+
+### Push Update — 2026-08-07 22:34 UTC (3a1ed58)
+- fix: render Change Log template block in admin settings page
