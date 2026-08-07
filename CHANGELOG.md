@@ -85,3 +85,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-07 23:08 UTC (1381b40)
 - style: wrap admin settings tab bar and place Email Previews right after Notifications
+
+### Push Update — 2026-08-07 23:46 UTC (ec27cba)
+- fix: prevent checkout double-submission and duplicate trip instance creation
