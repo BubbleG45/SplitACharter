@@ -30,7 +30,7 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **API Tool Diagnostics Tabs**: Created an interactive API & Services tab in Admin Settings featuring live Stripe status verification (Test/Live mode detector), interactive email template previews, and test notification tools.
 - **Reviews Management**: Built an admin review manager on the Settings page to auto-seed, edit, and curate testimonials displayed on the landing page carousel.
 - **Trip & Listing Management**: Added quick duplicate, copy, and double-confirmed deletion tools for charter listing templates and dated trip instances.
-- **Navigation Enhancements**: Upgraded Admin Settings navigation with a sticky glassmorphic pill menu for easy section jumps.
+- **Admin Settings Tab Bar Layout & Reordering**: Upgraded the `/admin/settings` navigation pill bar to wrap cleanly as part of the page container so all tabs are visible on all screen sizes, and moved the **Email Previews** tab directly after **Notifications**.
 
 ### 🔐 User Accounts & Profiles
 - **SMS & Email Account Consolidation**: Implemented an automated account linking flow to merge guest bookings created via phone number (SMS OTP) and email magic link.

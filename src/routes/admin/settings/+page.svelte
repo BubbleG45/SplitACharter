@@ -228,6 +228,14 @@
 		<button 
 			type="button" 
 			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-preview-emails'} 
+			onclick={() => navigateToSection('sec-preview-emails')}
+		>
+			✉️ Email Previews
+		</button>
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
 			class:active={activeNavSection === 'sec-trip-types'} 
 			onclick={() => navigateToSection('sec-trip-types')}
 		>
@@ -248,14 +256,6 @@
 			onclick={() => navigateToSection('sec-timings')}
 		>
 			⏱️ System Timings & Rules
-		</button>
-		<button 
-			type="button" 
-			class="nav-pill-btn" 
-			class:active={activeNavSection === 'sec-preview-emails'} 
-			onclick={() => navigateToSection('sec-preview-emails')}
-		>
-			✉️ Email Previews
 		</button>
 		<button 
 			type="button" 
@@ -2083,22 +2083,18 @@
 	}
 	.sticky-nav-bar-wrapper {
 		position: relative;
-		padding: 0.75rem 0;
+		padding: 0.5rem 0;
 		margin-bottom: 2rem;
-		border-bottom: 1px solid var(--border-light);
 	}
 	.settings-nav-pills {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 0.5rem;
-		padding: 0.4rem 0.6rem;
+		padding: 0.6rem 0.75rem;
 		border: 1px solid var(--border-light);
-		border-radius: 30px;
+		border-radius: 16px;
 		background: var(--bg-surface);
-		width: max-content;
-		max-width: 100%;
-		overflow-x: auto;
-		-webkit-overflow-scrolling: touch;
-		scrollbar-width: none;
+		width: 100%;
 		box-shadow: var(--glass-shadow);
 	}
 	.settings-nav-pills::-webkit-scrollbar {
@@ -2110,10 +2106,13 @@
 		border: 1px solid transparent;
 		font-size: 0.88rem;
 		font-weight: 600;
-		padding: 8px 18px;
+		padding: 8px 16px;
 		border-radius: 20px;
 		cursor: pointer;
 		transition: all 0.2s ease;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 	}
 	.nav-pill-btn:hover {
 		color: var(--text-primary);
