@@ -46,6 +46,7 @@
 		{ name: 'Customers', path: '/admin/customers', icon: 'M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z' },
 		{ name: 'Payments Ledger', path: '/admin/payments', icon: 'M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
 		{ name: 'Settings', path: '/admin/settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+		{ name: 'Change Log', path: '/admin/settings?tab=sec-changelog', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
 		{ name: 'My Booked Trips', path: '/dashboard', icon: 'M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12v.75m0 3v.75m0 3v.75m0 3V18M3 7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v9a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 16.5v-9z' }
 	];
 </script>
@@ -98,7 +99,10 @@
 
 		<nav class="sidebar-nav">
 			{#each navItems as item}
-				{@const isActive = $page.url.pathname === item.path || ($page.url.pathname.startsWith(item.path) && item.path !== '/admin')}
+				{@const currentPathWithSearch = $page.url.pathname + $page.url.search}
+				{@const isActive = item.path.includes('?') 
+					? currentPathWithSearch === item.path
+					: (currentPathWithSearch === item.path || ($page.url.pathname === item.path) || ($page.url.pathname.startsWith(item.path) && item.path !== '/admin' && !item.path.includes('?')))}
 				<a href={item.path} class="nav-link {isActive ? 'active' : ''}" title={isCondensed ? item.name : ''} onclick={() => sidebarOpen = false}>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
 						<path stroke-linecap="round" stroke-linejoin="round" d={item.icon} />
@@ -453,10 +457,17 @@
 			display: block;
 		}
 		.admin-main {
-			margin-left: 0;
-			padding: 5.5rem 1.5rem 2rem 1.5rem;
-			height: calc(100vh - 60px);
+			margin-left: 0 !important;
+			width: 100% !important;
+			padding: 4.75rem 1rem 2rem 1rem;
+			height: auto;
+			min-height: calc(100vh - 60px);
 			margin-top: 60px;
+		}
+	}
+	@media (max-width: 600px) {
+		.admin-main {
+			padding: 4.5rem 0.75rem 1.5rem 0.75rem;
 		}
 	}
 </style>

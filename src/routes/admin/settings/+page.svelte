@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 
 	let { data, form }: { data: any; form: any } = $props();
 
@@ -21,6 +22,68 @@
 
 	let activeNavSection = $state('sec-notifications');
 	let highlightedSection = $state<string | null>(null);
+
+	// Parse tab query parameter on route load/change
+	$effect(() => {
+		const tab = $page.url.searchParams.get('tab');
+		if (tab) {
+			activeNavSection = tab;
+		}
+	});
+
+	// Change Log search state and derived parser for non-technical display
+	let changelogSearch = $state('');
+
+	interface ChangelogItem {
+		title: string;
+		description: string;
+	}
+
+	interface ChangelogCategory {
+		name: string;
+		items: ChangelogItem[];
+	}
+
+	interface ChangelogSection {
+		title: string;
+		categories: ChangelogCategory[];
+	}
+
+	const parsedChangelog = $derived.by(() => {
+		const raw = data.changelogRaw || '';
+		if (!raw) return [];
+
+		const sections: ChangelogSection[] = [];
+		let currentSection: ChangelogSection | null = null;
+		let currentCategory: ChangelogCategory | null = null;
+
+		const lines = raw.split('\n');
+		for (let line of lines) {
+			line = line.trim();
+			if (line.startsWith('## ')) {
+				const title = line.replace(/^##\s+/, '');
+				if (!title.includes('Project Inception')) {
+					currentSection = { title, categories: [] };
+					sections.push(currentSection);
+					currentCategory = null;
+				}
+			} else if (line.startsWith('### ') && currentSection) {
+				const catName = line.replace(/^###\s+/, '');
+				currentCategory = { name: catName, items: [] };
+				currentSection.categories.push(currentCategory);
+			} else if (line.startsWith('- **') && currentCategory) {
+				const match = line.match(/^-\s+\*\*([^*]+)\*\*:\s+(.*)$/);
+				if (match) {
+					currentCategory.items.push({
+						title: match[1],
+						description: match[2]
+					});
+				}
+			}
+		}
+
+		return sections;
+	});
 
 	let activeEmailTemplate = $state('');
 	let previewIframeSrc = $derived(
@@ -176,6 +239,14 @@
 			onclick={() => { navigateToSection('sec-stripe-status'); if (!stripeStatusResults && !isFetchingStripe) fetchStripeStatus(); }}
 		>
 			💳 Stripe Status
+		</button>
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-changelog'} 
+			onclick={() => navigateToSection('sec-changelog')}
+		>
+			🚀 Site Updates & Change Log
 		</button>
 	</div>
 </div>
@@ -2111,6 +2182,210 @@
 			grid-template-columns: 1fr;
 		}
 		.timings-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	/* Responsive Sticky Nav Pill Bar for Mobile */
+	.sticky-nav-bar-wrapper {
+		position: sticky;
+		top: 0;
+		z-index: 20;
+		margin-bottom: 2rem;
+	}
+	.settings-nav-pills {
+		display: flex;
+		gap: 0.5rem;
+		padding: 0.5rem;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		border-radius: 12px;
+	}
+	.settings-nav-pills::-webkit-scrollbar {
+		display: none;
+	}
+	.nav-pill-btn {
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	/* Site Updates & Change Log Section Styling */
+	.changelog-container {
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+	}
+	.changelog-header-card {
+		padding: 1.75rem;
+		border-radius: 16px;
+		border: 1px solid var(--border-light);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 1.5rem;
+		background: var(--glass-bg);
+	}
+	.changelog-badge {
+		display: inline-block;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 1.2px;
+		color: var(--primary);
+		font-weight: 700;
+		margin-bottom: 0.4rem;
+	}
+	.changelog-header-info h2 {
+		margin: 0 0 0.4rem 0;
+		font-size: 1.65rem;
+		font-weight: 800;
+	}
+	.changelog-header-info p {
+		margin: 0;
+		font-size: 0.925rem;
+		color: var(--text-secondary);
+	}
+	.changelog-search-box {
+		position: relative;
+		display: flex;
+		align-items: center;
+		min-width: 280px;
+		flex: 1;
+		max-width: 400px;
+	}
+	.changelog-search-box .search-icon {
+		position: absolute;
+		left: 14px;
+		color: var(--text-secondary);
+		pointer-events: none;
+	}
+	.changelog-search-input {
+		width: 100%;
+		padding: 10px 38px 10px 42px;
+		border-radius: 10px;
+		background: var(--input-bg);
+		border: 1px solid var(--border-light);
+		color: var(--text-primary);
+		font-size: 0.9rem;
+		transition: all 0.2s ease;
+	}
+	.changelog-search-input:focus {
+		border-color: var(--primary);
+		box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+	}
+	.btn-clear-search {
+		position: absolute;
+		right: 12px;
+		background: transparent;
+		border: none;
+		color: var(--text-secondary);
+		cursor: pointer;
+		font-size: 0.9rem;
+		padding: 2px 6px;
+	}
+	.changelog-section-block {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+	.changelog-month-title {
+		font-size: 1.35rem;
+		font-weight: 800;
+		margin: 0;
+		color: var(--text-primary);
+		letter-spacing: -0.3px;
+	}
+	.changelog-categories-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		gap: 1.25rem;
+	}
+	.changelog-category-card {
+		padding: 1.5rem;
+		border-radius: 14px;
+		border: 1px solid var(--border-light);
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		background: var(--bg-surface);
+	}
+	.category-card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--border-light);
+	}
+	.category-card-header h3 {
+		margin: 0;
+		font-size: 1.1rem;
+		font-weight: 700;
+		color: var(--text-primary);
+	}
+	.category-count {
+		font-size: 0.75rem;
+		font-weight: 700;
+		padding: 0.2rem 0.6rem;
+		border-radius: 20px;
+		background: rgba(56, 189, 248, 0.12);
+		color: var(--primary);
+		border: 1px solid rgba(56, 189, 248, 0.25);
+	}
+	.category-items-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.changelog-item-row {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+	}
+	.item-icon-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--primary);
+		margin-top: 6px;
+		flex-shrink: 0;
+		box-shadow: 0 0 8px var(--primary);
+	}
+	.item-content {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+	.item-title {
+		margin: 0;
+		font-size: 0.95rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		line-height: 1.35;
+	}
+	.item-desc {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+	}
+	.no-updates-card {
+		padding: 2.5rem;
+		text-align: center;
+		border-radius: 12px;
+		color: var(--text-secondary);
+	}
+	@media (max-width: 768px) {
+		.changelog-header-card {
+			padding: 1.25rem;
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.changelog-search-box {
+			min-width: 100%;
+			max-width: 100%;
+		}
+		.changelog-categories-grid {
 			grid-template-columns: 1fr;
 		}
 	}

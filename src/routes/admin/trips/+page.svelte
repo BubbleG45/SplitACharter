@@ -2314,5 +2314,27 @@
 		font-size: 0.85rem;
 		color: var(--text-secondary);
 	}
+
+	@media (max-width: 768px) {
+		.control-row {
+			padding: 1rem;
+		}
+		.filters-grid {
+			grid-template-columns: 1fr !important;
+			gap: 0.75rem;
+		}
+		.captains-log-modal-card {
+			width: 95vw !important;
+			max-height: 90vh !important;
+		}
+		.log-summary-grid {
+			grid-template-columns: 1fr !important;
+			gap: 0.75rem;
+		}
+		.header-actions {
+			width: 100%;
+			justify-content: space-between;
+		}
+	}
 </style>
 

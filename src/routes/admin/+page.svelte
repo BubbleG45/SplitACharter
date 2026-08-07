@@ -443,11 +443,29 @@
 	}
 
 	@media (max-width: 768px) {
+		.dashboard-header {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
+		.stats-grid {
+			grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+			gap: 0.75rem;
+		}
+		.stat-card {
+			padding: 1rem;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.75rem;
+		}
+		.stat-val {
+			font-size: 1.5rem;
+		}
 		.operations-grid {
 			grid-template-columns: 1fr;
 		}
 		.welcome-panel {
-			padding: 2rem;
+			padding: 1.25rem;
 			flex-direction: column;
 		}
 		.welcome-content {

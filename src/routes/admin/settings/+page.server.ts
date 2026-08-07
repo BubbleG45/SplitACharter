@@ -1,4 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
+import fs from 'fs';
+import path from 'path';
 import type { PageServerLoad, Actions } from './$types';
 
 const defaultSeedReviews = [
@@ -151,10 +153,21 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		reviews = defaultSeedReviews.map((r, i) => ({ id: `default-${i+1}`, ...r }));
 	}
 
+	let changelogRaw = '';
+	try {
+		const changelogPath = path.resolve(process.cwd(), 'CHANGELOG.md');
+		if (fs.existsSync(changelogPath)) {
+			changelogRaw = fs.readFileSync(changelogPath, 'utf-8');
+		}
+	} catch (err) {
+		console.warn('Could not read CHANGELOG.md file:', err);
+	}
+
 	return {
 		settings: settingsRes.data || [],
 		tripTypes: tripTypesRes.data || [],
-		reviews
+		reviews,
+		changelogRaw
 	};
 };
 
