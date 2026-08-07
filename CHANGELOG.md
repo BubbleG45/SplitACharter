@@ -52,3 +52,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-07 21:59 UTC (b6bcb9f)
 - Fix checkout captain code validation and add defensive schema fallback
+
+### Push Update — 2026-08-07 22:03 UTC (959fcb1)
+- docs: update CHANGELOG.md with captain promo code validation changes
