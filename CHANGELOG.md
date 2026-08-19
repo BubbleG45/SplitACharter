@@ -93,3 +93,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 ### Push Update — 2026-08-19 15:21 UTC
 - fix: update Refresh Data button icon to classic curved semicircles with chevron arrowheads on admin trips page
 - feat: add account locked page and redirect 3-strike customers from checkout
+
+### Push Update — 2026-08-19 16:03 UTC (1406ccc)
+- feat: add account locked page and redirect 3-strike customers from checkout
