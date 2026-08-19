@@ -101,3 +101,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 - feat: add charter business name and auto-generated memorable referral codes to captains
 - feat: support captain referral link pre-filling (?ref=CODE) across browse and checkout
 - fix: update admin trips Refresh Data button icon to curved semicircle double arrows
+
+### Push Update — 2026-08-19 16:32 UTC (c46c79c)
+- feat: add captain charter business name, memorable referral codes, and ref URL auto-linking
