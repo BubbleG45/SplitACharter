@@ -33,6 +33,7 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **Admin Settings Tab Bar Layout & Reordering**: Upgraded the `/admin/settings` navigation pill bar to wrap cleanly as part of the page container so all tabs are visible on all screen sizes, and moved the **Email Previews** tab directly after **Notifications**.
 
 ### 🔐 User Accounts & Profiles
+- **Dedicated Account Locked Page & Checkout Strike Protection**: Created a dedicated, user-friendly `/account-locked` notification page informing customers if their account has been suspended due to reaching the 3-strike limit. If a customer with 3 or more strikes attempts to open the checkout page, the system immediately redirects them to this informative locked screen with clear explanation of the policy, account status details, support contact links (`support@splitacharter.boats`), and appeal instructions instead of presenting a failing payment form.
 - **SMS & Email Account Consolidation**: Implemented an automated account linking flow to merge guest bookings created via phone number (SMS OTP) and email magic link.
 - **Customer Profile Edits**: Allowed customers to update their profile name directly from their customer dashboard.
 - **Legal & Footer Pages**: Added dedicated Terms & Conditions and Privacy Policy pages accessible from the site footer.
@@ -89,8 +90,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 ### Push Update — 2026-08-07 23:46 UTC (ec27cba)
 - fix: prevent checkout double-submission and duplicate trip instance creation
 
-### Push Update — 2026-08-19 15:15 UTC
-- fix: update Refresh Data button icon to true circular double arrow on admin trips page
-
-### Push Update — 2026-08-19 15:16 UTC (10c7c52)
-- fix: update Refresh Data button icon to true circular double arrow on admin trips page
+### Push Update — 2026-08-19 15:21 UTC
+- fix: update Refresh Data button icon to classic curved semicircles with chevron arrowheads on admin trips page
+- feat: add account locked page and redirect 3-strike customers from checkout

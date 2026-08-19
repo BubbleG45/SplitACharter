@@ -101,6 +101,23 @@
 			</div>
 		{/if}
 
+		{#if (data.profile?.strike_count && data.profile.strike_count >= 3) || data.profile?.flagged}
+			<div class="alert alert-danger glass mb-6" style="border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.12); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+				<div style="display: flex; align-items: center; gap: 0.75rem;">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 alert-icon" style="color: var(--danger); flex-shrink: 0;">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+					</svg>
+					<div class="alert-content">
+						<strong style="color: var(--danger);">Account Access Restricted ({data.profile.strike_count || 3}/3 Strikes)</strong>
+						<p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Your account is currently locked from making new charter reservations due to strike limits.</p>
+					</div>
+				</div>
+				<a href="/account-locked" class="btn btn-secondary btn-xs" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4); text-decoration: none;">
+					Learn More & Appeal →
+				</a>
+			</div>
+		{/if}
+
 		{#if nameSuccessMsg}
 			<div class="alert alert-success glass mb-6">
 				<div class="alert-content">

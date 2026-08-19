@@ -153,13 +153,32 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 	}
 
 	// Fetch Customer Profile
-	const { data: profile } = await supabase
+	const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+	const { data: profile } = await supabaseAdmin
 		.from('customers')
 		.select('*')
 		.eq('id', user.id)
 		.maybeSingle();
 
-	const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+	// If customer has 3 or more strikes or is flagged, redirect to account-locked page
+	if (profile && ((profile.strike_count && profile.strike_count >= 3) || profile.flagged)) {
+		throw redirect(303, '/account-locked');
+	}
+
+	if (user.email) {
+		const { data: emailMatch } = await supabaseAdmin
+			.from('customers')
+			.select('id, strike_count, flagged')
+			.ilike('email', user.email)
+			.or('flagged.eq.true,strike_count.gte.3')
+			.limit(1)
+			.maybeSingle();
+
+		if (emailMatch) {
+			throw redirect(303, '/account-locked');
+		}
+	}
 
 	// Check if there is an existing TripInstance on this date
 	const { data: tripInstances } = await supabaseAdmin
