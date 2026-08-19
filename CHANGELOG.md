@@ -104,3 +104,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-19 16:32 UTC (c46c79c)
 - feat: add captain charter business name, memorable referral codes, and ref URL auto-linking
+
+### Push Update — 2026-08-19 21:17 UTC (620661d)
+- feat(sms): switch SMS engine to Twilio with API key support and update privacy policy
