@@ -91,3 +91,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-19 15:15 UTC
 - fix: update Refresh Data button icon to true circular double arrow on admin trips page
+
+### Push Update — 2026-08-19 15:16 UTC (10c7c52)
+- fix: update Refresh Data button icon to true circular double arrow on admin trips page
