@@ -15,8 +15,9 @@
 	/* svelte-ignore state_referenced_locally */
 	let smsOptIn = $state(data.profile?.sms_opt_in || false);
 	/* svelte-ignore state_referenced_locally */
-	let howHeard = $state(data.profile?.how_heard || '');
-	let referralPromoCode = $state('');
+	let howHeard = $state(data.profile?.how_heard || (data.initialPromoCode ? 'Captain Referral' : ''));
+	/* svelte-ignore state_referenced_locally */
+	let referralPromoCode = $state(data.initialPromoCode || '');
 	
 	/* svelte-ignore state_referenced_locally */
 	let groupSize = $state(data.initialGroupSize || 1);
@@ -111,6 +112,10 @@
 	);
 
 	onMount(async () => {
+		if (referralPromoCode.trim()) {
+			validateCaptainPromoCode();
+		}
+
 		if (data.publishableKey && !data.publishableKey.includes('placeholder')) {
 			try {
 				stripe = await loadStripe(data.publishableKey);

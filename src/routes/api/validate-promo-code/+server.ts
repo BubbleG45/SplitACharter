@@ -2,6 +2,7 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { formatPromoCode } from '$lib/promo_codes';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	const { session } = await locals.safeGetSession();
@@ -9,7 +10,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		return json({ valid: false, status: 'unauthorized', message: 'Authentication required' }, { status: 401 });
 	}
 
-	const code = url.searchParams.get('code')?.trim()?.toUpperCase();
+	const rawCode = url.searchParams.get('code');
+	const code = formatPromoCode(rawCode);
 	const templateId = url.searchParams.get('templateId');
 
 	if (!code) {
@@ -19,11 +21,13 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 	// 1. Fetch captain by referral promo code
-	const { data: captain, error: captainErr } = await supabaseAdmin
+	let captainQuery = supabaseAdmin
 		.from('captains')
-		.select('id, name, active, locations, trip_types')
+		.select('*')
 		.ilike('referral_promo_code', code)
 		.maybeSingle();
+
+	const { data: captain, error: captainErr } = await captainQuery;
 
 	if (captainErr || !captain) {
 		return json({
@@ -40,6 +44,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			message: `Promo code '${code}' belongs to an inactive captain.`
 		});
 	}
+
+	const captainDisplayName = captain.charter_name
+		? `Captain ${captain.name} (${captain.charter_name})`
+		: `Captain ${captain.name}`;
 
 	// 2. Verify captain covers the listing's location and trip_type if templateId is provided
 	if (templateId) {
@@ -72,7 +80,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 					valid: false,
 					status: 'mismatch',
 					captainName: captain.name,
-					message: `Captain ${captain.name}'s code is active, but they do not service this ${missingDetails.join(' and ')}.`
+					charterName: captain.charter_name || null,
+					message: `${captainDisplayName}'s promo code is active, but they do not service this ${missingDetails.join(' and ')}.`
 				});
 			}
 		}
@@ -83,6 +92,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		status: 'valid',
 		captainId: captain.id,
 		captainName: captain.name,
-		message: `Code applied! Booking referral priority granted for Captain ${captain.name}.`
+		charterName: captain.charter_name || null,
+		promoCode: captain.referral_promo_code,
+		message: `Code applied! Booking referral priority granted for ${captainDisplayName}.`
 	});
 };

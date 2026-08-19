@@ -20,6 +20,10 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **Capacity Guards**: Updated checkout and capacity rules to strictly limit groups to a maximum of 4 passengers and automatically manage open seats.
 
 ### 🚤 Captains & Dispatch System
+- **Charter Name & Custom Memorable Referral Codes**: Added a dedicated "Charter / Boat Business Name" field to captain creation and edit forms. The system automatically converts the charter name into a clean, memorable, URL-safe referral promo code in ALL CAPS (e.g. "Salty Dog Charters" $\rightarrow$ `SALTY-DOG-CHARTERS`), while still allowing site admins to manually customize or re-sync the code.
+- **Duplicate Code Safeguard**: Implemented case-insensitive uniqueness validation on captain forms and database records to prevent duplicate promo codes from being assigned to multiple captains.
+- **Referral Link Pre-Filling (`?ref=CODE`)**: Added support for captain referral links across browse, charter details, and checkout pages. When customers visit via a captain's link (e.g. `/browse?ref=SALTY-DOG-CHARTERS`), the referral code is automatically carried through and validated on checkout with an applied status badge, and the "How Did You Hear About Us?" field defaults to "Captain Referral".
+- **One-Click Share & Copy Tools in Admin**: Added quick-copy buttons for referral promo codes and direct customer booking links directly in the Registered Captains table (`/admin/captains`).
 - **Automated Captain SMS Blasts**: Configured instant text notifications dispatched to all eligible captains the moment a trip reaches two confirmed groups.
 - **Captain's Log Admin Tools**: Added quick actions in the Admin dashboard to generate and copy direct trip claim links for captains, view claim status, and inspect passenger rosters.
 - **Captain Referral Codes & Priority Windows**: Introduced captain referral code support with priority head-start notification timing, updated so that if two groups on the same trip enter different captain codes, **both captains receive simultaneous priority head-start SMS alerts**.
@@ -90,9 +94,10 @@ This change log keeps the site owner up to date on all updates, new features, de
 ### Push Update — 2026-08-07 23:46 UTC (ec27cba)
 - fix: prevent checkout double-submission and duplicate trip instance creation
 
-### Push Update — 2026-08-19 15:21 UTC
-- fix: update Refresh Data button icon to classic curved semicircles with chevron arrowheads on admin trips page
-- feat: add account locked page and redirect 3-strike customers from checkout
-
 ### Push Update — 2026-08-19 16:03 UTC (1406ccc)
 - feat: add account locked page and redirect 3-strike customers from checkout
+
+### Push Update — 2026-08-19 16:32 UTC
+- feat: add charter business name and auto-generated memorable referral codes to captains
+- feat: support captain referral link pre-filling (?ref=CODE) across browse and checkout
+- fix: update admin trips Refresh Data button icon to curved semicircle double arrows

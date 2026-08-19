@@ -2,28 +2,38 @@
 	let { data } = $props();
 
 	let searchQuery = $state('');
+	let copiedKey = $state('');
 
-	// Filter captains based on search query
+	// Filter captains based on search query (including charter name and promo code)
 	let filteredCaptains = $derived(
 		searchQuery.trim() === ''
 			? data.captains
 			: data.captains.filter(
 					(c) =>
 						c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+						(c.charter_name && c.charter_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
 						c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+						(c.referral_promo_code && c.referral_promo_code.toLowerCase().includes(searchQuery.toLowerCase())) ||
 						c.phone.includes(searchQuery)
 				)
 	);
 
 	function formatInterval(intervalStr: string) {
 		if (!intervalStr) return 'N/A';
-		// Simple cleaner for interval strings e.g. "24:00:00" -> "24h"
 		const parts = intervalStr.split(':');
 		if (parts.length >= 2) {
 			const hours = parseInt(parts[0], 10);
 			return `${hours}h`;
 		}
 		return intervalStr;
+	}
+
+	function copyToClipboard(text: string, key: string) {
+		navigator.clipboard.writeText(text);
+		copiedKey = key;
+		setTimeout(() => {
+			if (copiedKey === key) copiedKey = '';
+		}, 2000);
 	}
 </script>
 
@@ -47,7 +57,7 @@
 		<input
 			type="text"
 			id="captain-search"
-			placeholder="Search by name, email, or phone..."
+			placeholder="Search by captain, charter name, promo code, email, or phone..."
 			bind:value={searchQuery}
 			class="search-input"
 		/>
@@ -63,8 +73,8 @@
 		<table class="admin-table">
 			<thead>
 				<tr>
-					<th>Captain</th>
-					<th>Promo Code</th>
+					<th>Captain & Charter</th>
+					<th>Promo Code / Link</th>
 					<th>Trip Types</th>
 					<th>Locations</th>
 					<th>Notice Req.</th>
@@ -79,12 +89,46 @@
 						<td>
 							<div class="captain-info">
 								<span class="name">{captain.name}</span>
+								{#if captain.charter_name}
+									<span class="charter-badge">{captain.charter_name}</span>
+								{/if}
 								<span class="contact">{captain.email}</span>
 								<span class="contact">{captain.phone}</span>
 							</div>
 						</td>
 						<td>
-							<span class="promo-code">{captain.referral_promo_code}</span>
+							<div class="promo-cell">
+								<span class="promo-code">{captain.referral_promo_code}</span>
+								<div class="promo-actions">
+									<button
+										type="button"
+										class="btn-copy-mini"
+										title="Copy Promo Code"
+										onclick={() => copyToClipboard(captain.referral_promo_code, `code-${captain.id}`)}
+									>
+										{#if copiedKey === `code-${captain.id}`}
+											<span class="text-success">✔ Copied</span>
+										{:else}
+											<span>Copy Code</span>
+										{/if}
+									</button>
+									<button
+										type="button"
+										class="btn-copy-mini"
+										title="Copy Direct Referral Link"
+										onclick={() => {
+											const link = `${window.location.origin}/browse?ref=${encodeURIComponent(captain.referral_promo_code)}`;
+											copyToClipboard(link, `link-${captain.id}`);
+										}}
+									>
+										{#if copiedKey === `link-${captain.id}`}
+											<span class="text-success">✔ Link Copied</span>
+										{:else}
+											<span>Copy Link</span>
+										{/if}
+									</button>
+								</div>
+							</div>
 						</td>
 						<td>
 							<div class="chips-list">
@@ -168,9 +212,13 @@
 	}
 	.search-input {
 		width: 100%;
-		max-width: 400px;
+		max-width: 450px;
 		padding: 6px 12px;
 		font-size: 0.9rem;
+		border-radius: 6px;
+		border: 1px solid var(--border-light);
+		background: var(--input-bg);
+		color: var(--text-primary);
 	}
 
 	.table-container {
@@ -207,19 +255,61 @@
 		font-weight: 600;
 		color: var(--text-primary);
 	}
+	.charter-badge {
+		font-size: 0.78rem;
+		color: var(--primary);
+		font-weight: 600;
+		margin-top: 2px;
+	}
 	.captain-info .contact {
 		font-size: 0.8rem;
 		color: var(--text-muted);
 		margin-top: 2px;
 	}
 
+	.promo-cell {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		align-items: flex-start;
+	}
+
 	.promo-code {
 		font-family: monospace;
-		color: var(--text-muted);
-		background: rgba(255, 255, 255, 0.02);
+		font-weight: 600;
+		color: var(--text-primary);
+		background: var(--input-bg);
 		padding: 2px 6px;
 		border-radius: 4px;
 		border: 1px solid var(--border-light);
+		font-size: 0.85rem;
+	}
+
+	.promo-actions {
+		display: flex;
+		gap: 4px;
+	}
+
+	.btn-copy-mini {
+		background: none;
+		border: 1px solid var(--border-light);
+		padding: 2px 6px;
+		border-radius: 4px;
+		font-size: 0.72rem;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.btn-copy-mini:hover {
+		color: var(--primary);
+		border-color: var(--primary);
+		background: var(--input-focus-bg);
+	}
+
+	.text-success {
+		color: var(--success);
+		font-weight: 600;
 	}
 
 	.chips-list {
@@ -281,5 +371,25 @@
 		padding: 3rem 1.5rem;
 		text-align: center;
 		color: var(--text-muted);
+	}
+
+	.btn {
+		padding: 0.6rem 1.2rem;
+		border-radius: 6px;
+		font-weight: 600;
+		cursor: pointer;
+		text-decoration: none;
+		border: none;
+	}
+
+	.btn-primary {
+		background: var(--primary);
+		color: #ffffff;
+	}
+
+	.btn-secondary {
+		background: var(--bg-surface-elevated);
+		color: var(--text-primary);
+		border: 1px solid var(--border-light);
 	}
 </style>

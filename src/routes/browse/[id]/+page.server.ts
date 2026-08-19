@@ -6,6 +6,7 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, url, locals: { supabase } }) => {
 	const preselectedDate = url.searchParams.get('date') || '';
+	const refParam = url.searchParams.get('ref') || url.searchParams.get('promo') || url.searchParams.get('captain') || '';
 
 	const { data: listing, error: listingError } = await supabase
 		.from('listing_templates')
@@ -49,6 +50,7 @@ export const load: PageServerLoad = async ({ params, url, locals: { supabase } }
 		tripInstances: tripInstances || [],
 		preselectedDate,
 		maxAvailablePassengers,
+		referralCode: refParam.trim().toUpperCase(),
 		origin: url.origin
 	};
 };

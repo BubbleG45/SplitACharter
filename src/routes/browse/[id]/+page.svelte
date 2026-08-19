@@ -290,7 +290,7 @@
 					</div>
 
 					<div class="action-row">
-						<a href="/checkout?templateId={data.listing.id}&date={selectedDate}{effectiveGroupSizeParam ? `&groupSize=${effectiveGroupSizeParam}` : ''}" class="btn btn-primary w-full btn-large">
+						<a href="/checkout?templateId={data.listing.id}&date={selectedDate}{effectiveGroupSizeParam ? `&groupSize=${effectiveGroupSizeParam}` : ''}{data.referralCode ? `&ref=${data.referralCode}` : ''}" class="btn btn-primary w-full btn-large">
 							Proceed to Checkout
 						</a>
 					</div>

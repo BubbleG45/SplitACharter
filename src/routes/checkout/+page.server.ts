@@ -218,10 +218,14 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 	// Calculate initial group size from URL parameter if available
 	const initialGroupSizeRaw = url.searchParams.get('groupSize');
 	let initialGroupSize = initialGroupSizeRaw ? parseInt(initialGroupSizeRaw, 10) : 1;
-	if (isNaN(initialGroupSize) || initialGroupSize < 1) initialGroupSize = 1;
-	if (maxAvailablePassengers > 0 && initialGroupSize > maxAvailablePassengers) {
-		initialGroupSize = maxAvailablePassengers;
-	}
+	// Calculate initial promo code from URL parameter (e.g. ?ref=CAPT-JACK or ?referral_promo_code=CAPT-JACK)
+	const initialPromoCode = (
+		url.searchParams.get('ref') ||
+		url.searchParams.get('referral_promo_code') ||
+		url.searchParams.get('promo') ||
+		url.searchParams.get('captain') ||
+		''
+	).trim().toUpperCase();
 
 	return {
 		listing,
@@ -231,6 +235,7 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		isJoiningExisting,
 		tripInstanceId: selectedTripInstanceId,
 		initialGroupSize,
+		initialPromoCode,
 		userEmail: user.email || '',
 		publishableKey: PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
 	};

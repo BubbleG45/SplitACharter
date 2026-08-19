@@ -243,6 +243,9 @@
 		if (filterGroupSize && filterGroupSize !== '1') {
 			params.set('groupSize', filterGroupSize);
 		}
+		if (data.referralCode) {
+			params.set('ref', data.referralCode);
+		}
 		const qs = params.toString();
 		return `/browse/${listing.id}${qs ? `?${qs}` : ''}`;
 	}
@@ -254,6 +257,9 @@
 		}
 		if (filterGroupSize && filterGroupSize !== '1') {
 			params.set('groupSize', filterGroupSize);
+		}
+		if (data.referralCode) {
+			params.set('ref', data.referralCode);
 		}
 		const qs = params.toString();
 		return `/browse/${template.id}?${qs}`;
