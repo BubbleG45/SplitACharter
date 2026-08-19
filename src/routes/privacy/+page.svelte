@@ -52,24 +52,27 @@
 				<h2>4. Strict SMS Privacy & Consent Disclosure</h2>
 				<div class="highlight-box glass">
 					<p>
-						<strong>Mobile Phone & SMS Opt-In Privacy Guarantee:</strong>
+						<strong>Mobile Privacy & SMS Consent Guarantee:</strong>
 					</p>
 					<p>
-						No mobile phone numbers, SMS opt-in consent, or personal information collected via our platform will be shared, sold, rented, or leased to third parties or affiliates for marketing or promotional purposes.
+						<strong>Mobile information and SMS consent are not shared with third parties or affiliates for marketing or promotional purposes.</strong>
+					</p>
+					<p>
+						All data sharing categories exclude text messaging originator opt-in data and consent; this information will not be shared, sold, rented, or leased to any third parties or affiliates under any circumstances.
 					</p>
 				</div>
 				<p>
-					Transactional SMS messages sent via our provider (Twilio) are strictly limited to booking verifications, OTP login codes, reconfirmation notifications, and captain assignment updates. You may opt out of SMS communications at any time by replying <strong>STOP</strong> to any text message.
+					Transactional SMS messages sent via our messaging provider (Twilio) are strictly limited to account verification OTP codes, booking confirmations, reconfirmation reminder alerts, and captain matching updates. You may opt out of receiving SMS communications at any time by replying <strong>STOP</strong> to any message, or reply <strong>HELP</strong> for assistance.
 				</p>
 			</section>
 
 			<section class="legal-section">
 				<h2>5. Third-Party Service Providers</h2>
-				<p>We share data with trusted infrastructure providers solely as required to operate our service:</p>
+				<p>We share non-SMS operational data with trusted infrastructure providers solely as required to provide core platform services (excluding text messaging originator opt-in data and consent, which is never shared):</p>
 				<ul>
 					<li><strong>Supabase:</strong> Managed database hosting and secure authentication.</li>
 					<li><strong>Stripe:</strong> Payment intent processing and customer payment record management.</li>
-					<li><strong>Twilio:</strong> Delivery of transactional SMS notifications and OTP verification codes.</li>
+					<li><strong>Twilio:</strong> Direct transmission of transactional SMS notifications and OTP verification codes.</li>
 					<li><strong>Resend:</strong> Delivery of transactional email magic links and booking notifications.</li>
 					<li><strong>Inngest:</strong> Reliable background processing for reconfirmation timers and workflow scheduling.</li>
 				</ul>
