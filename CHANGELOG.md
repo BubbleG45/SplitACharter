@@ -108,3 +108,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-19 21:17 UTC (620661d)
 - feat(sms): switch SMS engine to Twilio with API key support and update privacy policy
+
+### Push Update — 2026-08-27 23:07 UTC (7ef9b11)
+- Add carrier-compliant A2P 10DLC SMS opt-in disclosures and align support domain to splitacharter.boats
