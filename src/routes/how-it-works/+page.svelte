@@ -217,7 +217,7 @@
 				<div class="cta-banner glass">
 					<h2>Want to join our captain network?</h2>
 					<p>If you're a licensed commercial captain looking to fill your empty dates, get in touch with us.</p>
-					<a href="mailto:info@splitacharter.com?subject=Captain Registration Inquiry" class="btn btn-primary btn-large">Contact Admin to Onboard</a>
+					<a href="mailto:info@splitacharter.boats?subject=Captain Registration Inquiry" class="btn btn-primary btn-large">Contact Admin to Onboard</a>
 				</div>
 
 				<!-- FAQs for Captains -->

@@ -96,7 +96,7 @@
 					For privacy-related inquiries, data requests, or support, please reach out to us at:
 				</p>
 				<p class="contact-email">
-					Email: <a href="mailto:info@splitacharter.com">info@splitacharter.com</a>
+					Email: <a href="mailto:info@splitacharter.boats">info@splitacharter.boats</a>
 				</p>
 			</section>
 		</div>

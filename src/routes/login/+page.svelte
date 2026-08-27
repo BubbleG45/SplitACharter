@@ -146,6 +146,9 @@
 						<span class="input-helper">Include country code (e.g., +1 for USA)</span>
 					</div>
 					<button type="submit" class="btn btn-primary w-full">Send Code via SMS</button>
+					<p class="sms-disclosure">
+						By submitting your phone number, you agree to receive a one-time verification code via SMS from SplitACharter. Message and data rates may apply. Reply HELP for help, STOP to cancel. View <a href="/terms">Terms</a> &amp; <a href="/privacy">Privacy Policy</a>.
+					</p>
 				</form>
 			{/if}
 		{/if}
@@ -284,6 +287,22 @@
 	}
 	.mt-2 {
 		margin-top: 0.5rem;
+	}
+
+	.sms-disclosure {
+		font-size: 0.76rem;
+		color: var(--text-muted);
+		line-height: 1.45;
+		margin-top: -0.5rem;
+		text-align: center;
+	}
+	.sms-disclosure a {
+		color: var(--primary);
+		text-decoration: underline;
+		font-weight: 500;
+	}
+	.sms-disclosure a:hover {
+		color: var(--primary-hover, var(--primary));
 	}
 
 	.alert {

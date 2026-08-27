@@ -372,7 +372,7 @@
 								<!-- Reservation Question & Cancel Action -->
 								<div class="booking-card-footer">
 									<a
-										href="mailto:info@splitacharter.com?subject={encodeURIComponent(`Trip Question - Booking Ref: ${booking.id}`)}&body={encodeURIComponent(`Hello SplitACharter Support,\n\nI have a question regarding my trip reservation.\n\nBooking Reference: ${booking.id}\nTrip Type: ${template?.trip_type || 'N/A'}\nDate: ${trip?.date || 'N/A'}\nLocation: ${template?.location || 'N/A'}\n\nMy Question:\n`)}"
+										href="mailto:info@splitacharter.boats?subject={encodeURIComponent(`Trip Question - Booking Ref: ${booking.id}`)}&body={encodeURIComponent(`Hello SplitACharter Support,\n\nI have a question regarding my trip reservation.\n\nBooking Reference: ${booking.id}\nTrip Type: ${template?.trip_type || 'N/A'}\nDate: ${trip?.date || 'N/A'}\nLocation: ${template?.location || 'N/A'}\n\nMy Question:\n`)}"
 										target="_blank"
 										rel="noopener noreferrer"
 										class="btn btn-secondary btn-question"

@@ -104,14 +104,32 @@
 			</section>
 
 			<section class="legal-section">
-				<h2>6. Communications & SMS Policy</h2>
+				<h2>6. SMS Program Terms &amp; Conditions</h2>
 				<p>
-					By signing up or providing your mobile phone number, you consent to receive transactional SMS messages (magic links, OTP verification codes, reconfirmation requests, and trip status updates). Message frequency varies based on reservation activity. Standard message and data rates may apply. Reply <strong>STOP</strong> at any time to opt out of SMS notifications.
+					SplitACharter operates an automated transactional SMS notification service to support customer authentication, booking coordination, group matching, and trip reconfirmations.
 				</p>
+				<ul>
+					<li><strong>Program Description &amp; Use Cases:</strong> When you provide your mobile phone number during sign-in (<a href="/login">/login</a>) or reservation checkout (<a href="/checkout">/checkout</a>) and opt in, you may receive SMS messages including:
+						<ul>
+							<li>One-time password (OTP) verification security codes</li>
+							<li>Booking reservation receipts and deposit notifications</li>
+							<li>Charter group match status alerts</li>
+							<li>Mandatory trip reconfirmation reminders and window deadlines</li>
+							<li>Assigned licensed captain contact and meeting information</li>
+						</ul>
+					</li>
+					<li><strong>Opt-In Process:</strong> Customers opt in by entering their mobile phone number on our public website (<code>https://splitacharter.boats/login</code>) or by selecting the explicit, unchecked-by-default SMS opt-in checkbox during checkout (<code>https://splitacharter.boats/checkout</code>). SMS consent is never required as a condition of purchasing any charter or using email-based booking services.</li>
+					<li><strong>Message Frequency:</strong> Message frequency varies depending on your active booking status and upcoming charter schedules (typically 1–4 messages per reservation flow).</li>
+					<li><strong>Pricing &amp; Rates:</strong> Message and data rates may apply as determined by your wireless carrier. SplitACharter does not charge any additional mobile fee.</li>
+					<li><strong>Opt-Out / Unsubscribe (STOP):</strong> You can cancel SMS notifications at any time by texting <strong>STOP</strong>, <strong>CANCEL</strong>, <strong>UNSUBSCRIBE</strong>, <strong>END</strong>, or <strong>QUIT</strong> in response to any message. You will receive a single confirmation text confirming your opt-out. After opting out, no further text messages will be sent unless you re-subscribe by texting <strong>START</strong> or <strong>UNSTOP</strong>.</li>
+					<li><strong>Support &amp; Assistance (HELP):</strong> For assistance with SMS communications, reply <strong>HELP</strong> or <strong>INFO</strong> to any message, or contact our support team at <a href="mailto:info@splitacharter.boats">info@splitacharter.boats</a>.</li>
+					<li><strong>Carrier Liability Disclaimer:</strong> Wireless carriers (including but not limited to AT&amp;T, T-Mobile, Verizon) are not liable for delayed, undelivered, or misdirected messages.</li>
+					<li><strong>Privacy &amp; Data Sharing:</strong> Your mobile number and SMS consent records are handled strictly under our <a href="/privacy">Privacy Policy</a> and will never be shared, rented, or sold to third parties or affiliates for marketing or promotional purposes.</li>
+				</ul>
 			</section>
 
 			<section class="legal-section">
-				<h2>7. Customer Conduct & Account Suspension</h2>
+				<h2>7. Customer Conduct &amp; Account Suspension</h2>
 				<p>
 					Customers who accumulate 3 strikes (issued for non-reconfirmation or no-show violations) may have their account permanently suspended from the SplitACharter platform.
 				</p>
@@ -120,10 +138,10 @@
 			<section class="legal-section">
 				<h2>8. Contact Us</h2>
 				<p>
-					If you have questions regarding these Terms & Conditions, please contact us at:
+					If you have questions regarding these Terms &amp; Conditions, please contact us at:
 				</p>
 				<p class="contact-email">
-					Email: <a href="mailto:info@splitacharter.com">info@splitacharter.com</a>
+					Email: <a href="mailto:info@splitacharter.boats">info@splitacharter.boats</a>
 				</p>
 			</section>
 		</div>

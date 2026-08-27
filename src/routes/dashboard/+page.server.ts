@@ -287,7 +287,7 @@ export const actions: Actions = {
 			.eq('id', user.id)
 			.maybeSingle();
 
-		const email = existingCustomer?.email || user.email || `user_${user.id}@splitacharter.com`;
+		const email = existingCustomer?.email || user.email || `user_${user.id}@splitacharter.boats`;
 		const phone = existingCustomer?.phone || user.phone || null;
 		const howHeard = existingCustomer?.how_heard || 'Other';
 		const smsOptIn = existingCustomer?.sms_opt_in ?? true;

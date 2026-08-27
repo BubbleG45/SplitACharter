@@ -149,7 +149,7 @@
 					date: data.date,
 					name: name || data.profile?.name || 'Customer',
 					phone: phone || data.profile?.phone || '555-000-0000',
-					email: email || data.userEmail || 'customer@splitacharter.com',
+					email: email || data.userEmail || 'customer@splitacharter.boats',
 					groupSize
 				})
 			});
@@ -452,7 +452,7 @@
 									bind:checked={smsOptIn}
 								/>
 								<label for="sms_opt_in">
-									Opt-in to SMS notifications. You must consent to receive transaction alerts, booking match updates, and reconfirmation text notifications.
+									I agree to receive transactional SMS notifications from SplitACharter regarding my booking, group match status, and reconfirmation alerts. Message frequency varies based on booking activity. Message and data rates may apply. Reply <strong>HELP</strong> for help or <strong>STOP</strong> to cancel at any time. Consent is not a condition of booking. View <a href="/terms" target="_blank" class="legal-link">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" class="legal-link">Privacy Policy</a>.
 								</label>
 							</div>
 						</div>
@@ -1008,6 +1008,14 @@
 		line-height: 1.5;
 		cursor: pointer;
 		font-weight: 400;
+	}
+	.checkbox-row label a {
+		color: var(--primary);
+		text-decoration: underline;
+		font-weight: 500;
+	}
+	.checkbox-row label a:hover {
+		color: var(--primary-hover, var(--primary));
 	}
 
 	.agreement-row {
