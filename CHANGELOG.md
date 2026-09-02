@@ -150,3 +150,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-02 13:50 UTC (2922252)
 - Update browse page banner headline for clarity
+
+### Push Update — 2026-09-02 13:57 UTC (65adee1)
+- fix(auth): add depends('supabase:auth') to +layout.server.ts for instant reactive admin header sync
