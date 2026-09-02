@@ -35,9 +35,7 @@ cash or card, on the day of the trip — SplitACharter never touches charter mon
 **Core mechanic:** Listings are reusable templates, not dated events. When a customer picks
 a date, the system finds or creates a dated "trip instance" for that template. When two
 groups have booked and reconfirmed, an automated text blast goes to every eligible captain
-in the database simultaneously. The first to reply YES wins the booking. The instant a trip
-reaches 2-of-2 confirmed, a fresh 0-of-2 instance is spawned for the same date/type/location
-so there's always something to book — customers should never hit a dead end.
+in the database simultaneously. The first to reply YES wins the booking. **Do not auto-generate or auto-spawn a new trip instance when a trip reaches 2-of-2 confirmed.**
 
 **Phase 1 scope only.** No captain login/portal, no premium captain tiers, no
 booking-platform API integrations (FareHarbor etc.), no Stripe Connect/escrow, no reviews,

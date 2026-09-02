@@ -212,7 +212,7 @@ export const captainMatchingWorkflow = inngest.createFunction(
 		const matchData = await step.run('find-eligible-captains', async () => {
 			const { data: trip } = await supabaseAdmin
 				.from('trip_instances')
-				.select('id, date, referring_captain_id, referring_captain_ids, listing_templates(trip_type, location, meeting_area)')
+				.select('id, date, listing_templates(trip_type, location, meeting_area)')
 				.eq('id', tripInstanceId)
 				.single();
 
@@ -240,9 +240,9 @@ export const captainMatchingWorkflow = inngest.createFunction(
 				c.locations?.includes(location)
 			);
 
-			// Collect all referring captain IDs (combining single referring_captain_id and referring_captain_ids array)
+			// Collect all referring captain IDs (combining single referring_captain_id and referring_captain_ids array if present)
 			const refIds = new Set<string>();
-			if (trip.referring_captain_id) refIds.add(trip.referring_captain_id);
+			if ((trip as any).referring_captain_id) refIds.add((trip as any).referring_captain_id);
 			if (Array.isArray((trip as any).referring_captain_ids)) {
 				for (const id of (trip as any).referring_captain_ids) {
 					if (id) refIds.add(id);

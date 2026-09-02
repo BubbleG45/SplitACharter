@@ -6,6 +6,10 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+- **Admin Settings Notification Template Channel Reactivity Fix (`/admin/settings`)**: Fixed an issue in the notification settings manager where enabling a previously inactive notification channel (such as the Email Channel on Captain Blast) left the message template textarea disabled and uneditable. Upgraded the settings state management to Svelte 5 reactive proxies so that checking or unchecking channel toggles instantly unlocks the template fields and lets administrators type, edit, and save email and SMS body templates seamlessly.
+- **Captain Blast & Trip Confirmation Schema Query Fix**: Fixed an issue where the trip confirmation and captain blast dispatch failed silently when the second booking reconfirmed due to a legacy query referencing an unmigrated database column (`referring_captain_id`). Updated the trip confirmation query in `trips.ts` and the Inngest background matching function to ensure trips seamlessly transition to `Confirmed` and dispatch automated captain SMS text blasts immediately. Confirmed and dispatched captain notifications for stuck trips.
+- **Trip Instance Generation Policy Update**: Clarified and aligned the system rules so fresh trip instances are not automatically spawned upon a trip reaching confirmed status.
+
 ### 🧭 Browse & Search Experience
 - **Browse Banner 1-of-2 Clarification (`/browse`)**: Updated the informational banner headline and subtext shown when browsing without a selected date to "Charters with 1 of 2 Groups Booked — Join & Confirm Instantly" ("These trips are 50% filled. Join as the 2nd group to confirm right away, or select a trip date above to start a fresh trip."). This clearly communicates to visitors that a group is already waiting and that joining confirms the charter immediately.
 

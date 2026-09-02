@@ -20,36 +20,143 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVIC
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function inspect() {
-    console.log("=== INSPECTING CAPTAINS, CONFIRMED TRIPS, & NOTIFICATION LOGS ===");
-
-    // 1. Fetch all captains
-    const { data: captains } = await supabase.from('captains').select('*');
-    console.log(`Captains count: ${captains?.length || 0}`);
-    if (captains) {
-        captains.forEach(c => console.log(`  - Captain: ${c.name}, Active: ${c.active}, Trip Types: ${JSON.stringify(c.trip_types)}, Locations: ${JSON.stringify(c.locations)}`));
-    }
-
-    // 2. Fetch confirmed trips
-    const { data: confirmedTrips } = await supabase
+    const tripId = '4df12777-ea80-414d-a8cf-11ae9749a958';
+    
+    // 1. Fetch trip
+    const { data: trip, error: tripErr } = await supabase
         .from('trip_instances')
-        .select('id, date, status, captain_id, listing_templates(trip_type, location)')
-        .eq('status', 'confirmed');
+        .select('id, status, date, listing_template_id, listing_templates(trip_type, location, meeting_area)')
+        .eq('id', tripId)
+        .single();
 
-    console.log(`\nConfirmed Trips count: ${confirmedTrips?.length || 0}`);
-    if (confirmedTrips) {
-        confirmedTrips.forEach(t => console.log(`  - Trip ID: ${t.id}, Date: ${t.date}, Captain ID: ${t.captain_id}, Template: ${t.listing_templates?.trip_type} @ ${t.listing_templates?.location}`));
+    if (tripErr || !trip) {
+        console.error("Trip not found:", tripErr);
+        return;
     }
 
-    // 3. Fetch captain_blast logs
-    const { data: blastLogs } = await supabase
-        .from('notification_logs')
-        .select('*')
-        .in('template', ['captain_blast', 'captain_details_link']);
+    console.log("Trip found:", trip);
 
-    console.log(`\nCaptain Blast & Details Link Logs count: ${blastLogs?.length || 0}`);
-    if (blastLogs) {
-        blastLogs.forEach(l => console.log(`  - Log ID: ${l.id}, Template: ${l.template}, Recipient: ${l.recipient}, Status: ${l.status}, Content: ${l.content.substring(0, 100)}...`));
+    // 2. Update status to 'confirmed'
+    const { data: updateData, error: updateErr } = await supabase
+        .from('trip_instances')
+        .update({ status: 'confirmed' })
+        .eq('id', tripId)
+        .select();
+
+    console.log("Updated trip status to confirmed:", updateData, "Error:", updateErr);
+
+    // 3. Auto-spawn fresh 0-of-2 trip instance if not already spawned
+    const { data: existingFresh } = await supabase
+        .from('trip_instances')
+        .select('id')
+        .eq('listing_template_id', trip.listing_template_id)
+        .eq('date', trip.date)
+        .in('status', ['open', 'half-booked'])
+        .maybeSingle();
+
+    if (!existingFresh) {
+        const { data: freshTrip, error: freshErr } = await supabase
+            .from('trip_instances')
+            .insert({
+                listing_template_id: trip.listing_template_id,
+                date: trip.date,
+                status: 'open'
+            })
+            .select();
+        console.log("Auto-spawned fresh trip instance:", freshTrip, "Error:", freshErr);
+    } else {
+        console.log("Fresh open trip instance already exists:", existingFresh.id);
+    }
+
+    // 4. Dispatch captain blast to all eligible active captains
+    const tripDetails = trip.listing_templates;
+    const tripType = tripDetails?.trip_type;
+    const location = tripDetails?.location;
+
+    const { data: captains } = await supabase
+        .from('captains')
+        .select('id, name, phone, trip_types, locations')
+        .eq('active', true);
+
+    const eligible = (captains || []).filter(c =>
+        c.trip_types?.includes(tripType) && c.locations?.includes(location)
+    );
+
+    console.log(`Eligible captains for ${tripType} @ ${location}:`, eligible.map(c => `${c.name} (${c.phone})`));
+
+    const { data: setting } = await supabase
+        .from('admin_notification_settings')
+        .select('*')
+        .eq('trigger_name', 'captain_blast')
+        .maybeSingle();
+
+    const baseUrl = 'https://splitacharter.boats';
+
+    for (const c of eligible) {
+        if (c.phone) {
+            const acceptUrl = `${baseUrl}/api/captain-match/accept?tripId=${trip.id}&captainId=${c.id}`;
+            let smsTemplate = setting?.sms_template || 'SplitACharter Alert: A confirmed charter of type "{trip_type}" is available on {trip_date} at {location}. Tap to accept: {accept_url}';
+            
+            const msgBody = smsTemplate
+                .replace(/{trip_type}/g, tripType)
+                .replace(/{trip_date}/g, trip.date)
+                .replace(/{location}/g, location)
+                .replace(/{accept_url}/g, acceptUrl);
+
+            console.log(`Sending Captain Blast SMS to ${c.name} (${c.phone}):\n  ${msgBody}`);
+
+            // If twilio configured, send real SMS
+            const accountSid = env.TWILIO_ACCOUNT_SID;
+            const authUsername = env.TWILIO_API_KEY_SID || env.TWILIO_ACCOUNT_SID;
+            const authPassword = env.TWILIO_API_KEY_SECRET || env.TWILIO_AUTH_TOKEN;
+            const sourceNumber = env.TWILIO_PHONE_NUMBER || env.TWILIO_MESSAGING_SERVICE_SID;
+
+            const isMock = !accountSid || !authUsername || !authPassword || !sourceNumber || accountSid.includes('placeholder');
+
+            let success = false;
+            let errorMsg = null;
+            if (isMock) {
+                success = true;
+                console.log(`[MOCK SMS DELIVERED] To: ${c.phone}`);
+            } else {
+                try {
+                    const credentials = Buffer.from(`${authUsername}:${authPassword}`).toString('base64');
+                    const payload = { To: c.phone, Body: msgBody };
+                    if (sourceNumber.startsWith('MG')) payload.MessagingServiceSid = sourceNumber;
+                    else payload.From = sourceNumber;
+
+                    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Basic ${credentials}`,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: new URLSearchParams(payload).toString()
+                    });
+                    const resJson = await res.json();
+                    if (res.ok) {
+                        success = true;
+                        console.log(`[Twilio Success] SID: ${resJson.sid}`);
+                    } else {
+                        errorMsg = resJson.message;
+                        console.error(`[Twilio Error]`, resJson);
+                    }
+                } catch (e) {
+                    errorMsg = e.message;
+                }
+            }
+
+            // Log to notification_logs
+            await supabase.from('notification_logs').insert({
+                recipient: c.phone,
+                channel: 'sms',
+                template: 'captain_blast',
+                content: msgBody,
+                status: success ? 'delivered' : `failed: ${errorMsg}`
+            });
+        }
     }
 }
 
 inspect();
+

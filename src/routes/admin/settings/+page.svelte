@@ -171,14 +171,26 @@
 		activeNavSection = secId;
 	}
 
-	// Automatically select the first template once settings are loaded
+	let settings = $state<any[]>([]);
+
 	$effect(() => {
-		if (!selectedId && data.settings?.length > 0) {
-			selectedId = data.settings[0].id;
+		if (data.settings) {
+			settings = data.settings.map((s: any) => ({
+				...s,
+				email_template: s.email_template ?? '',
+				sms_template: s.sms_template ?? ''
+			}));
 		}
 	});
 
-	const selectedSetting = $derived(data.settings?.find((s: any) => s.id === selectedId));
+	// Automatically select the first template once settings are loaded
+	$effect(() => {
+		if (!selectedId && settings.length > 0) {
+			selectedId = settings[0].id;
+		}
+	});
+
+	const selectedSetting = $derived(settings.find((s: any) => s.id === selectedId));
 
 	const triggerPlaceholders: Record<string, string[]> = {
 		admin_trip_cancellation: ['{customer_name}', '{trip_date}', '{trip_type}', '{cancellation_reason}', '{refund_status_text}', '{dashboard_url}'],
@@ -291,7 +303,7 @@
 				<h3>Select Template</h3>
 			</div>
 			<div class="sidebar-list">
-				{#each data.settings as setting}
+				{#each settings as setting}
 					<button 
 						type="button" 
 						class="sidebar-item" 
@@ -981,7 +993,7 @@
 				>
 					🔑 Auth Magic Link
 				</button>
-				{#each data.settings as setting}
+				{#each settings as setting}
 					{#if setting.email_template}
 						<button 
 							type="button" 

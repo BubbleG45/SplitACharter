@@ -9,14 +9,13 @@ const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KE
 /**
  * Handles automatic trip confirmation workflow when 2-of-2 groups are reconfirmed:
  * 1. Updates TripInstance status to 'confirmed'
- * 2. Auto-spawns a fresh 'open' TripInstance for the same date/type/location (per PROJECT_CONTEXT.md)
- * 3. Triggers the automated Captain Blast via Inngest with direct notification fallback
+ * 2. Triggers the automated Captain Blast via Inngest with direct notification fallback
  */
 export async function confirmTripAndTriggerCaptainBlast(tripInstanceId: string) {
 	// 1. Fetch trip details
 	const { data: trip, error: tripErr } = await supabaseAdmin
 		.from('trip_instances')
-		.select('id, status, date, listing_template_id, referring_captain_id, listing_templates(trip_type, location, meeting_area)')
+		.select('id, status, date, listing_template_id, listing_templates(trip_type, location, meeting_area)')
 		.eq('id', tripInstanceId)
 		.single();
 
