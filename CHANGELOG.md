@@ -146,3 +146,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-02 13:38 UTC (866d3a9)
 - fix(auth): use service role client for admin lookup in hooks.server.ts
+
+### Push Update — 2026-09-02 13:50 UTC (2922252)
+- Update browse page banner headline for clarity
