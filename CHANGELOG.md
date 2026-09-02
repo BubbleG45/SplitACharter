@@ -170,3 +170,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-02 15:21 UTC (7a179ac)
 - fix(settings): restore reactivity for notification template channel toggles and update captain blast dispatch
+
+### Push Update — 2026-09-02 15:37 UTC (c9fc693)
+- fix(notifications): pass captain email to notification engine and resolve live site url in Inngest matching
