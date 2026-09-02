@@ -123,3 +123,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-02 01:05 UTC (ff9dc63)
 - Add public SMS program and opt-in verification page with hosted screenshot for 10DLC compliance
+
+### Push Update — 2026-09-02 01:08 UTC (966cadb)
+- Update SMS opt-in proof screenshot to explicitly display splitacharter.boats in address bar
