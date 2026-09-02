@@ -165,3 +165,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-02 14:41 UTC (922a5c0)
 - fix(theme): ensure immediate synchronous DOM updates and stop auth listener invalidation loops
+
+### Push Update — 2026-09-02 15:21 UTC (7a179ac)
+- fix(settings): restore reactivity for notification template channel toggles and update captain blast dispatch
