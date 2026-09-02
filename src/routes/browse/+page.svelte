@@ -351,7 +351,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
 					</svg>
 					<div>
-						<h3>Showing Active Shared Charters Looking for a Group</h3>
+						<h3>Charters Ready to Split — Join & Save 50%</h3>
 						<p>Want to open a new trip or see all charter options? <strong>Select a Trip Date</strong> in the filters above to unlock all available charters for your date!</p>
 					</div>
 				</div>
