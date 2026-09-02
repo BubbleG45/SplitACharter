@@ -136,3 +136,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-02 01:16 UTC (efcb03b)
 - Fix timezone date display and Stripe refund execution on admin payments ledger
+
+### Push Update — 2026-09-02 13:30 UTC (09cea26)
+- feat(auth): add Google OAuth sign-in option
