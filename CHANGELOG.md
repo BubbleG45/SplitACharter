@@ -130,3 +130,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-02 01:08 UTC (966cadb)
 - Update SMS opt-in proof screenshot to explicitly display splitacharter.boats in address bar
+
+### Push Update — 2026-09-02 01:16 UTC (efcb03b)
+- Fix timezone date display and Stripe refund execution on admin payments ledger
