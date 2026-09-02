@@ -41,8 +41,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 			return { session: null, user: null, isAdmin: false };
 		}
 
+		const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
 		// 1. Primary Check: is user's ID in admin_users?
-		const { data: adminRecord } = await event.locals.supabase
+		const { data: adminRecord } = await supabaseAdmin
 			.from('admin_users')
 			.select('id')
 			.eq('id', user.id)
@@ -52,16 +54,15 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 		// 2. Secondary Check: if not in admin_users, check if email is in admin_emails table in DB
 		if (!isAdmin && user.email) {
-			const { data: adminEmailMatch } = await event.locals.supabase
+			const { data: adminEmailMatch } = await supabaseAdmin
 				.from('admin_emails')
 				.select('email')
-				.ilike('email', user.email)
+				.ilike('email', user.email.trim())
 				.maybeSingle();
 
 			if (adminEmailMatch) {
 				isAdmin = true;
 				// Auto-sync into admin_users using service role key
-				const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 				await supabaseAdmin
 					.from('admin_users')
 					.upsert({ id: user.id });
