@@ -6,29 +6,46 @@ export type Theme = 'dark' | 'light';
 function getInitialTheme(): Theme {
 	if (!browser) return 'dark';
 	
-	const stored = localStorage.getItem('theme') as Theme | null;
-	if (stored === 'dark' || stored === 'light') {
-		return stored;
-	}
+	try {
+		const stored = localStorage.getItem('theme') as Theme | null;
+		if (stored === 'dark' || stored === 'light') {
+			return stored;
+		}
+	} catch (e) {}
 	
 	return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-const themeStore = writable<Theme>(getInitialTheme());
+const initialTheme = getInitialTheme();
+const themeStore = writable<Theme>(initialTheme);
 
 if (browser) {
-	themeStore.subscribe((value) => {
-		document.documentElement.setAttribute('data-theme', value);
-		localStorage.setItem('theme', value);
-	});
+	try {
+		document.documentElement.setAttribute('data-theme', initialTheme);
+	} catch (e) {}
 }
 
 export const theme = {
 	subscribe: themeStore.subscribe,
 	set: (newTheme: Theme) => {
+		if (browser) {
+			try {
+				document.documentElement.setAttribute('data-theme', newTheme);
+				localStorage.setItem('theme', newTheme);
+			} catch (e) {}
+		}
 		themeStore.set(newTheme);
 	},
 	toggle: () => {
-		themeStore.update((current) => (current === 'dark' ? 'light' : 'dark'));
+		themeStore.update((current) => {
+			const next: Theme = current === 'dark' ? 'light' : 'dark';
+			if (browser) {
+				try {
+					document.documentElement.setAttribute('data-theme', next);
+					localStorage.setItem('theme', next);
+				} catch (e) {}
+			}
+			return next;
+		});
 	}
 };

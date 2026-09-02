@@ -17,13 +17,7 @@
 		const {
 			data: { subscription }
 		} = data.supabase.auth.onAuthStateChange((event, _session) => {
-			if (
-				event === 'SIGNED_IN' ||
-				event === 'SIGNED_OUT' ||
-				event === 'USER_UPDATED' ||
-				event === 'TOKEN_REFRESHED' ||
-				_session?.expires_at !== data.session?.expires_at
-			) {
+			if (_session?.expires_at !== data.session?.expires_at) {
 				invalidate('supabase:auth');
 			}
 		});
