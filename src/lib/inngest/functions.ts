@@ -4,7 +4,7 @@ import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { calculateReconfirmSchedule, calculateCaptainPriorityHours } from '../reconfirmation';
 import { sendSMS } from '../sms';
-import { sendNotification } from '../notifications';
+import { sendNotification, getSiteUrl } from '../notifications';
 import { refundStripePaymentIntent } from '../server/stripe';
 import { env } from '$env/dynamic/private';
 
@@ -227,7 +227,7 @@ export const captainMatchingWorkflow = inngest.createFunction(
 			// Fetch active captains
 			const { data: captains } = await supabaseAdmin
 				.from('captains')
-				.select('id, name, phone, trip_types, locations')
+				.select('id, name, phone, email, trip_types, locations')
 				.eq('active', true);
 
 			if (!captains) {
@@ -260,7 +260,7 @@ export const captainMatchingWorkflow = inngest.createFunction(
 
 		const trip = matchData.trip;
 		const tripDetails = (trip as any).listing_templates;
-		const baseUrl = env.PUBLIC_SITE_URL || 'http://localhost:5173';
+		const baseUrl = getSiteUrl();
 
 		// 2. Handle Referring Captain Priority Head-Start Window
 		if (matchData.referringCaptains && matchData.referringCaptains.length > 0) {
@@ -270,11 +270,11 @@ export const captainMatchingWorkflow = inngest.createFunction(
 
 			await step.run('dispatch-referring-captain-priority-sms', async () => {
 				for (const c of matchData.referringCaptains) {
-					if (c.phone) {
+					if (c.phone || c.email) {
 						const acceptUrl = `${baseUrl}/api/captain-match/accept?tripId=${trip.id}&captainId=${c.id}`;
 						await sendNotification(
 							'captain_blast',
-							{ phone: c.phone, name: c.name },
+							{ phone: c.phone, email: c.email, name: c.name },
 							{
 								trip_type: tripDetails?.trip_type || '',
 								trip_date: trip.date,
@@ -312,11 +312,11 @@ export const captainMatchingWorkflow = inngest.createFunction(
 			}
 
 			for (const c of captains) {
-				if (c.phone) {
+				if (c.phone || c.email) {
 					const acceptUrl = `${baseUrl}/api/captain-match/accept?tripId=${trip.id}&captainId=${c.id}`;
 					await sendNotification(
 						'captain_blast',
-						{ phone: c.phone, name: c.name },
+						{ phone: c.phone, email: c.email, name: c.name },
 						{
 							trip_type: tripDetails?.trip_type || '',
 							trip_date: trip.date,

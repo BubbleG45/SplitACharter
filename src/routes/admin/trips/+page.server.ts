@@ -481,7 +481,7 @@ export const actions: Actions = {
 		// Fetch active captains matching trip_type and location
 		const { data: captains } = await supabase
 			.from('captains')
-			.select('id, name, phone, trip_types, locations')
+			.select('id, name, phone, email, trip_types, locations')
 			.eq('active', true);
 
 		const eligible = (captains || []).filter((c) =>
@@ -497,11 +497,11 @@ export const actions: Actions = {
 
 		let sentCount = 0;
 		for (const c of eligible) {
-			if (c.phone) {
+			if (c.phone || c.email) {
 				const acceptUrl = `${defaultBaseUrl}/api/captain-match/accept?tripId=${trip.id}&captainId=${c.id}`;
 				await sendNotification(
 					'captain_blast',
-					{ phone: c.phone, name: c.name },
+					{ phone: c.phone, email: c.email, name: c.name },
 					{
 						trip_type: tripDetails?.trip_type || '',
 						trip_date: trip.date,

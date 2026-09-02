@@ -39,7 +39,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Fetch Captain Details
 		const { data: captain } = await supabaseAdmin
 			.from('captains')
-			.select('name, phone')
+			.select('name, phone, email')
 			.eq('id', captainId)
 			.single();
 
@@ -64,13 +64,13 @@ export const GET: RequestHandler = async ({ url }) => {
 		const captainPhone = captain?.phone || 'N/A';
 
 		// Trigger notification to the winning Captain with the secure details link
-		if (captain?.phone) {
+		if (captain?.phone || captain?.email) {
 			const detailsToken = generateCaptainToken(tripId, captainId);
 			const detailsUrl = `${url.origin}/captain-match/trip-details?tripId=${tripId}&captainId=${captainId}&token=${detailsToken}`;
 
 			await sendNotification(
 				'captain_details_link',
-				{ phone: captain.phone, name: captain.name },
+				{ phone: captain.phone, email: captain.email, name: captain.name },
 				{
 					trip_date: tripDateStr,
 					trip_type: tripDetails?.trip_type || '',

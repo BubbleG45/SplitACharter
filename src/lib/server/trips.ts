@@ -53,7 +53,7 @@ export async function confirmTripAndTriggerCaptainBlast(tripInstanceId: string) 
 		if (tripType && location) {
 			const { data: captains } = await supabaseAdmin
 				.from('captains')
-				.select('id, name, phone, trip_types, locations')
+				.select('id, name, phone, email, trip_types, locations')
 				.eq('active', true);
 
 			const eligible = (captains || []).filter(
@@ -62,12 +62,12 @@ export async function confirmTripAndTriggerCaptainBlast(tripInstanceId: string) 
 
 			const baseUrl = getSiteUrl();
 			for (const c of eligible) {
-				if (c.phone) {
+				if (c.phone || c.email) {
 					const acceptUrl = `${baseUrl}/api/captain-match/accept?tripId=${trip.id}&captainId=${c.id}`;
 					try {
 						await sendNotification(
 							'captain_blast',
-							{ phone: c.phone, name: c.name },
+							{ phone: c.phone, email: c.email, name: c.name },
 							{
 								trip_type: tripType,
 								trip_date: trip.date,
