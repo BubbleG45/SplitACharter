@@ -12,6 +12,7 @@ This change log keeps the site owner up to date on all updates, new features, de
 ### 🔐 User Accounts & Authentication
 - **Google OAuth Sign-In Option (`/login`)**: Added a prominent "Continue with Google" sign-in option to the login page alongside the existing passwordless Email Magic Link and SMS OTP methods. Users can now securely authenticate with a single click using their Google account. New customers signing in with Google are automatically registered in the system, and authenticated users are seamlessly routed to their dashboard or admin portal.
 - **Admin Session Privileges Fix**: Upgraded server-side session resolution in `hooks.server.ts` to query admin access using elevated database permissions, guaranteeing that newly signed-in administrators immediately receive their admin privileges and dashboard navigation link regardless of database Row Level Security policies.
+- **Instant Reactive Admin Header Sync**: Added automatic server data invalidation (`depends('supabase:auth')`) to the root layout so that when an administrator logs in, the navigation bar instantly updates to display "Admin Dashboard" without requiring a manual browser refresh.
 
 ### 💳 Payments & Admin Tools
 - **Payments Ledger Stripe Refund Execution & Validation (`/admin/payments`)**: Upgraded the manual refund action on the payments ledger to ensure refunds always trigger live Stripe API refunds directly, report clear error alerts if Stripe rejects a request, execute using secure admin client database access, and properly respect cancellation in the confirmation dialog.
