@@ -7,9 +7,10 @@ This change log keeps the site owner up to date on all updates, new features, de
 ## 🚀 September 2026
 
 ### 🧭 Browse & Search Experience
-- **Browse Banner Headline Clarity (`/browse`)**: Updated the informational banner headline shown when browsing without a selected date from "Showing Active Shared Charters Looking for a Group" to "Charters Ready to Split — Join & Save 50%". This makes the value proposition and purpose of existing half-booked charters immediately clear to all visitors.
+- **Browse Banner 1-of-2 Clarification (`/browse`)**: Updated the informational banner headline and subtext shown when browsing without a selected date to "Charters with 1 of 2 Groups Booked — Join & Confirm Instantly" ("These trips are 50% filled. Join as the 2nd group to confirm right away, or select a trip date above to start a fresh trip."). This clearly communicates to visitors that a group is already waiting and that joining confirms the charter immediately.
 
 ### 🔐 User Accounts & Authentication
+- **Customer Dashboard Header Streamlining (`/dashboard`)**: Removed the redundant "SplitACharter Portal" pill badge above the welcome greeting for a cleaner, modern customer dashboard presentation.
 - **Google OAuth Sign-In Option (`/login`)**: Added a prominent "Continue with Google" sign-in option to the login page alongside the existing passwordless Email Magic Link and SMS OTP methods. Users can now securely authenticate with a single click using their Google account. New customers signing in with Google are automatically registered in the system, and authenticated users are seamlessly routed to their dashboard or admin portal.
 - **Admin Session Privileges Fix**: Upgraded server-side session resolution in `hooks.server.ts` to query admin access using elevated database permissions, guaranteeing that newly signed-in administrators immediately receive their admin privileges and dashboard navigation link regardless of database Row Level Security policies.
 - **Instant Reactive Admin Header Sync**: Added automatic server data invalidation (`depends('supabase:auth')`) to the root layout so that when an administrator logs in, the navigation bar instantly updates to display "Admin Dashboard" without requiring a manual browser refresh.

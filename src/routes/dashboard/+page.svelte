@@ -65,7 +65,6 @@
 	<div class="dashboard-container">
 		<header class="dashboard-header">
 			<div class="user-welcome">
-				<span class="logo-badge">SplitACharter Portal</span>
 				<h1>Hello, {data.profile?.name || 'Customer'}</h1>
 				<p class="subtitle">Manage your shared charters, track matches, and view reservation details.</p>
 			</div>
@@ -529,19 +528,6 @@
 		align-items: flex-end;
 		margin-bottom: 3rem;
 		gap: 2rem;
-	}
-	.logo-badge {
-		font-size: 0.8rem;
-		padding: 4px 10px;
-		border-radius: 4px;
-		background: rgba(6, 182, 212, 0.15);
-		color: var(--primary);
-		border: 1px solid rgba(6, 182, 212, 0.25);
-		font-weight: 600;
-		display: inline-block;
-		margin-bottom: 0.5rem;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
 	}
 	.dashboard-header h1 {
 		font-size: 2.5rem;
