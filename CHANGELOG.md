@@ -6,6 +6,9 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### 🔐 User Accounts & Authentication
+- **Google OAuth Sign-In Option (`/login`)**: Added a prominent "Continue with Google" sign-in option to the login page alongside the existing passwordless Email Magic Link and SMS OTP methods. Users can now securely authenticate with a single click using their Google account. New customers signing in with Google are automatically registered in the system, and authenticated users are seamlessly routed to their dashboard or admin portal.
+
 ### 💳 Payments & Admin Tools
 - **Payments Ledger Stripe Refund Execution & Validation (`/admin/payments`)**: Upgraded the manual refund action on the payments ledger to ensure refunds always trigger live Stripe API refunds directly, report clear error alerts if Stripe rejects a request, execute using secure admin client database access, and properly respect cancellation in the confirmation dialog.
 - **Payments Ledger Trip Date Timezone Display Fix (`/admin/payments`)**: Fixed a date rendering issue on the admin payments ledger where charter trip dates were inadvertently shifted to the previous day in US time zones due to standard UTC date parsing. Dates now consistently display the exact scheduled charter date across all user time zones.

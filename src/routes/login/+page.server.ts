@@ -21,6 +21,23 @@ export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
 };
 
 export const actions: Actions = {
+	signInWithGoogle: async ({ url, locals: { supabase } }) => {
+		const siteUrl = getSiteUrl(url.origin);
+		const { data, error } = await supabase.auth.signInWithOAuth({
+			provider: 'google',
+			options: {
+				redirectTo: `${siteUrl}/auth/callback`
+			}
+		});
+
+		if (error || !data?.url) {
+			console.error('Google OAuth sign-in error:', error);
+			return fail(500, { message: error?.message || 'Failed to initialize Google sign-in.' });
+		}
+
+		throw redirect(303, data.url);
+	},
+
 	signInWithEmail: async ({ request, url }) => {
 		const formData = await request.formData();
 		const email = formData.get('email') as string;

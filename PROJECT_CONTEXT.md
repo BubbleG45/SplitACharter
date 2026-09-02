@@ -21,12 +21,7 @@ The spec (Developer Specification v6.0) and this file disagree in exactly one pl
 Anywhere else they appear to conflict, treat it as a misreading and re-check both before
 assuming a second contradiction exists.
 
-**Auth/signup method.** Spec Section 2 lists Sign Up Options as Google login, Facebook
-login, and standard email/password. **This is superseded.** The actual decision, reflected
-everywhere else in this file (Section 2) and in both the Development Plan and the Antigravity
-Prompt Guide, is **passwordless only: email magic link + SMS OTP**. No password field
-anywhere. No Google or Facebook OAuth. If a task's plan proposes social login or a password
-field because it pattern-matched on the spec PDF instead of this file, reject the plan.
+**Auth/signup method.** Passwordless authentication with three supported sign-in options: **Google OAuth, Email magic link, and SMS OTP**, with persistent (long-lived) sessions. No typed password field anywhere.
 
 ---
 
@@ -61,7 +56,7 @@ flag it, don't build it.
 | SMS | Twilio (Programmable SMS + inbound webhook for replies) |
 | Email | **Resend** |
 | Payments | **Stripe** Payment Intents (Customer objects from day one, so Connect can be added later without a rebuild) |
-| Auth | **Supabase Auth** — passwordless only: email magic link + SMS OTP, with persistent (long-lived) sessions. No password auth, no Google/Facebook OAuth. Session handling via `@supabase/ssr` — never hand-roll session security |
+| Auth | **Supabase Auth** — Google OAuth, Email magic link, and SMS OTP, with persistent (long-lived) sessions. No password auth. Session handling via `@supabase/ssr` — never hand-roll session security |
 | Hosting | **Vercel** |
 
 **Why SvelteKit specifically:** this site will be used in areas with poor connectivity, and
