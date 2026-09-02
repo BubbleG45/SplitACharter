@@ -154,3 +154,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-02 13:57 UTC (65adee1)
 - fix(auth): add depends('supabase:auth') to +layout.server.ts for instant reactive admin header sync
+
+### Push Update — 2026-09-02 14:36 UTC (c65d51e)
+- Clarify browse banner 1-of-2 messaging and streamline dashboard header
