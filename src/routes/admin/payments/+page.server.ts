@@ -1,11 +1,16 @@
 import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
+import { createClient } from '@supabase/supabase-js';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { sendNotification } from '$lib/notifications';
 import { refundStripePaymentIntent } from '$lib/server/stripe';
 import { confirmTripAndTriggerCaptainBlast } from '$lib/server/trips';
 
+const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-	const { data: payments, error: loadErr } = await supabase
+	const { data: payments, error: loadErr } = await supabaseAdmin
 		.from('payment_records')
 		.select(`
 			id,
@@ -43,7 +48,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 };
 
 export const actions: Actions = {
-	triggerRefund: async ({ request, locals: { supabase } }) => {
+	triggerRefund: async ({ request }) => {
 		const formData = await request.formData();
 		const paymentId = formData.get('paymentId') as string;
 		const bookingId = formData.get('bookingId') as string;
@@ -53,13 +58,13 @@ export const actions: Actions = {
 		}
 
 		// Retrieve original payment details
-		const { data: originalPay } = await supabase
+		const { data: originalPay, error: payFetchErr } = await supabaseAdmin
 			.from('payment_records')
 			.select('amount, stripe_payment_intent_id')
 			.eq('id', paymentId)
 			.single();
 
-		if (!originalPay) {
+		if (payFetchErr || !originalPay) {
 			return fail(404, { message: 'Original payment record not found.' });
 		}
 
@@ -68,7 +73,7 @@ export const actions: Actions = {
 		}
 
 		// Check if already refunded
-		const { data: existingRefunds } = await supabase
+		const { data: existingRefunds } = await supabaseAdmin
 			.from('payment_records')
 			.select('amount')
 			.eq('booking_id', bookingId)
@@ -79,19 +84,8 @@ export const actions: Actions = {
 			return fail(400, { message: 'This transaction has already been fully refunded.' });
 		}
 
-		// 1. Cancel the booking
-		const { error: bookingCancelErr } = await supabase
-			.from('bookings')
-			.update({ status: 'canceled' })
-			.eq('id', bookingId);
-
-		if (bookingCancelErr) {
-			console.error('Failed to cancel booking for refund:', bookingCancelErr);
-			return fail(500, { message: 'Failed to cancel booking state.' });
-		}
-
-		// 2. Call real Stripe API to process refund
-		let refundIntentId = `re_manual_${Math.random().toString(36).substring(2, 12)}`;
+		// 1. Process refund directly in Stripe first
+		let refundIntentId: string;
 		try {
 			const stripeRefund = await refundStripePaymentIntent({
 				paymentIntentId: originalPay.stripe_payment_intent_id
@@ -99,9 +93,24 @@ export const actions: Actions = {
 			refundIntentId = stripeRefund.refundId;
 		} catch (err: any) {
 			console.error('Stripe API refund error in admin panel:', err);
+			return fail(500, { 
+				message: `Stripe Refund Failed: ${err?.message || 'Unable to communicate with Stripe API'}` 
+			});
 		}
 
-		const { error: refundErr } = await supabase
+		// 2. Cancel the booking
+		const { error: bookingCancelErr } = await supabaseAdmin
+			.from('bookings')
+			.update({ status: 'canceled' })
+			.eq('id', bookingId);
+
+		if (bookingCancelErr) {
+			console.error('Failed to cancel booking for refund:', bookingCancelErr);
+			return fail(500, { message: 'Failed to update booking status to canceled.' });
+		}
+
+		// 3. Insert the refund payment record
+		const { error: refundErr } = await supabaseAdmin
 			.from('payment_records')
 			.insert({
 				booking_id: bookingId,
@@ -112,11 +121,11 @@ export const actions: Actions = {
 
 		if (refundErr) {
 			console.error('Failed to insert refund record:', refundErr);
-			return fail(500, { message: 'Failed to record refund transaction.' });
+			return fail(500, { message: 'Failed to record refund transaction in database.' });
 		}
 
-		// 3. Send notification to customer
-		const { data: bookingDetails } = await supabase
+		// 4. Send notification to customer
+		const { data: bookingDetails } = await supabaseAdmin
 			.from('bookings')
 			.select('trip_instance_id, customers(name, email, phone), trip_instances(date, listing_templates(trip_type))')
 			.eq('id', bookingId)
@@ -127,19 +136,23 @@ export const actions: Actions = {
 		const tripDetails = trip?.listing_templates;
 
 		if (customer) {
-			await sendNotification(
-				'matching_timeout', // Reuses the refund notification template
-				{ email: customer.email, phone: customer.phone, name: customer.name },
-				{
-					trip_date: trip?.date || '',
-					trip_type: tripDetails?.trip_type || ''
-				}
-			);
+			try {
+				await sendNotification(
+					'matching_timeout', // Reuses the refund notification template
+					{ email: customer.email, phone: customer.phone, name: customer.name },
+					{
+						trip_date: trip?.date || '',
+						trip_type: tripDetails?.trip_type || ''
+					}
+				);
+			} catch (notifErr) {
+				console.error('Error sending customer refund notification:', notifErr);
+			}
 		}
 
-		// 4. Re-evaluate remaining active bookings on the trip instance
+		// 5. Re-evaluate remaining active bookings on the trip instance
 		if (bookingDetails?.trip_instance_id) {
-			const { data: remainingBookings } = await supabase
+			const { data: remainingBookings } = await supabaseAdmin
 				.from('bookings')
 				.select('id, status, customers(name, email, phone)')
 				.eq('trip_instance_id', bookingDetails.trip_instance_id)
@@ -151,18 +164,22 @@ export const actions: Actions = {
 				newTripStatus = 'half-booked';
 				const remaining = remainingBookings![0];
 				if (['reconfirmed', 'awaiting-reconfirm', 'held', 'paid'].includes(remaining.status)) {
-					await supabase
+					await supabaseAdmin
 						.from('bookings')
 						.update({ status: 'paid', reconfirmation_timestamp: null })
 						.eq('id', remaining.id);
 
 					const remainingCustomer = (remaining as any).customers;
 					if (remainingCustomer) {
-						await sendNotification(
-							'counterpart_forfeited',
-							{ email: remainingCustomer.email, phone: remainingCustomer.phone, name: remainingCustomer.name },
-							{ trip_date: trip?.date || '' }
-						);
+						try {
+							await sendNotification(
+								'counterpart_forfeited',
+								{ email: remainingCustomer.email, phone: remainingCustomer.phone, name: remainingCustomer.name },
+								{ trip_date: trip?.date || '' }
+							);
+						} catch (notifErr) {
+							console.error('Error sending counterpart notification:', notifErr);
+						}
 					}
 				}
 			} else if (activeCount === 2) {
@@ -170,13 +187,13 @@ export const actions: Actions = {
 				if (bothReconfirmed) {
 					await confirmTripAndTriggerCaptainBlast(bookingDetails.trip_instance_id);
 				} else {
-					await supabase
+					await supabaseAdmin
 						.from('trip_instances')
 						.update({ status: 'pending-reconfirm' })
 						.eq('id', bookingDetails.trip_instance_id);
 				}
 			} else {
-				await supabase
+				await supabaseAdmin
 					.from('trip_instances')
 					.update({ status: newTripStatus })
 					.eq('id', bookingDetails.trip_instance_id);

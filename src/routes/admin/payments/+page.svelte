@@ -38,22 +38,34 @@
 
 	function formatDate(dateStr: string) {
 		if (!dateStr) return 'N/A';
-		return new Date(dateStr).toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
-		});
+		try {
+			const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+			if (isNaN(d.getTime())) return dateStr;
+			return d.toLocaleDateString('en-US', {
+				month: 'short',
+				day: 'numeric',
+				year: 'numeric'
+			});
+		} catch {
+			return dateStr;
+		}
 	}
 
 	function formatDateTime(dateTimeStr: string) {
 		if (!dateTimeStr) return 'N/A';
-		return new Date(dateTimeStr).toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		});
+		try {
+			const d = new Date(dateTimeStr);
+			if (isNaN(d.getTime())) return dateTimeStr;
+			return d.toLocaleDateString('en-US', {
+				month: 'short',
+				day: 'numeric',
+				year: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
+		} catch {
+			return dateTimeStr;
+		}
 	}
 
 	function exportToCSV() {
@@ -206,7 +218,11 @@
 								<form 
 									method="POST" 
 									action="?/triggerRefund" 
-									use:enhance={() => {
+									use:enhance={({ cancel }) => {
+										if (!confirm('Are you sure you want to issue a full manual refund of $50.00 for this booking? This will cancel the reservation.')) {
+											cancel();
+											return;
+										}
 										refundingId = payment.id;
 										return async ({ update }) => {
 											await update();
@@ -221,7 +237,6 @@
 										type="submit" 
 										class="btn btn-secondary btn-xs"
 										disabled={refundingId === payment.id}
-										onclick={() => !confirm('Are you sure you want to issue a full manual refund of $50.00 for this booking? This will cancel the reservation.')}
 									>
 										{refundingId === payment.id ? 'Refunding...' : 'Refund $50'}
 									</button>

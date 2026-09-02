@@ -6,6 +6,10 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### 💳 Payments & Admin Tools
+- **Payments Ledger Stripe Refund Execution & Validation (`/admin/payments`)**: Upgraded the manual refund action on the payments ledger to ensure refunds always trigger live Stripe API refunds directly, report clear error alerts if Stripe rejects a request, execute using secure admin client database access, and properly respect cancellation in the confirmation dialog.
+- **Payments Ledger Trip Date Timezone Display Fix (`/admin/payments`)**: Fixed a date rendering issue on the admin payments ledger where charter trip dates were inadvertently shifted to the previous day in US time zones due to standard UTC date parsing. Dates now consistently display the exact scheduled charter date across all user time zones.
+
 ### 📱 SMS Messaging & Carrier Compliance (A2P 10DLC)
 - **Public SMS Program & Opt-In Verification Page (`/sms-opt-in`)**: Created a dedicated, 100% publicly accessible compliance page containing our full SMS Program Policy, message specifications, frequency, rate disclaimers, STOP/HELP instructions, and an uncropped visual replica and screenshot of our checkout opt-in workflow. This allows wireless carrier compliance reviewers (TCR / Twilio) to verify our SMS consent collection immediately without running into private login or authentication screens.
 - **Hosted Opt-In Screenshot Proof (`/sms-opt-in-proof.png`)**: Added a direct public high-resolution visual screenshot asset demonstrating the customer profile fields, unchecked consent checkbox, and disclosure copy for direct carrier audit verification.
