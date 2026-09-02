@@ -4,6 +4,15 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ---
 
+## 🚀 September 2026
+
+### 📱 SMS Messaging & Carrier Compliance (A2P 10DLC)
+- **Public SMS Program & Opt-In Verification Page (`/sms-opt-in`)**: Created a dedicated, 100% publicly accessible compliance page containing our full SMS Program Policy, message specifications, frequency, rate disclaimers, STOP/HELP instructions, and an uncropped visual replica and screenshot of our checkout opt-in workflow. This allows wireless carrier compliance reviewers (TCR / Twilio) to verify our SMS consent collection immediately without running into private login or authentication screens.
+- **Hosted Opt-In Screenshot Proof (`/sms-opt-in-proof.png`)**: Added a direct public high-resolution visual screenshot asset demonstrating the customer profile fields, unchecked consent checkbox, and disclosure copy for direct carrier audit verification.
+- **Footer Navigation Update**: Added the "SMS Program & Opt-In" link to the site-wide footer under "Legal & Policies".
+
+---
+
 ## 🚀 August 2026
 
 ### 🎨 Design & Social Sharing

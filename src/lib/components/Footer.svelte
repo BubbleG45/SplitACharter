@@ -28,6 +28,7 @@
 				<ul>
 					<li><a href="/terms">Terms & Conditions</a></li>
 					<li><a href="/privacy">Privacy Policy</a></li>
+					<li><a href="/sms-opt-in">SMS Program &amp; Opt-In</a></li>
 					<li><a href="/how-it-works#cancellation-policy">Cancellation & Refund Policy</a></li>
 				</ul>
 			</div>
