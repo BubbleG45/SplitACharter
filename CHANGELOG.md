@@ -120,3 +120,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-08-27 23:07 UTC (7ef9b11)
 - Add carrier-compliant A2P 10DLC SMS opt-in disclosures and align support domain to splitacharter.boats
+
+### Push Update — 2026-09-02 01:05 UTC (ff9dc63)
+- Add public SMS program and opt-in verification page with hosted screenshot for 10DLC compliance
