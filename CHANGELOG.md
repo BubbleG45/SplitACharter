@@ -140,3 +140,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-02 13:30 UTC (09cea26)
 - feat(auth): add Google OAuth sign-in option
+
+### Push Update — 2026-09-02 13:38 UTC (866d3a9)
+- fix(auth): use service role client for admin lookup in hooks.server.ts
