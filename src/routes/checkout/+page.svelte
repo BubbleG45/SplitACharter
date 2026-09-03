@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { loadStripe, type Stripe, type StripeElements } from '@stripe/stripe-js';
 
@@ -134,7 +135,7 @@
 	async function prepareStripePayment() {
 		paymentErrorMessage = '';
 
-		if (!stripe || !data.publishableKey || data.publishableKey.includes('placeholder')) {
+		if (!data.isAuthenticated || !stripe || !data.publishableKey || data.publishableKey.includes('placeholder')) {
 			mode = 'sandbox';
 			return true;
 		}
@@ -759,21 +760,36 @@
 					</section>
 
 					<div class="form-actions">
-						<button
-							type="submit"
-							class="btn btn-primary btn-large w-full btn-submit-checkout"
-							disabled={submitting || groupSize > data.maxAvailablePassengers || data.maxAvailablePassengers <= 0}
-						>
-							{#if submitting}
-								<svg class="spinner-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-									<circle class="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-									<path class="spinner-head" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-								</svg>
-								<span>Processing Reservation Deposit...</span>
-							{:else}
-								{isTestMode ? 'Simulate $50.00 Test Deposit & Reserve Slot' : 'Pay $50.00 & Reserve Slot'}
-							{/if}
-						</button>
+						{#if !data.isAuthenticated}
+							<div class="auth-prompt-card glass" style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; text-align: center;">
+								<p style="margin-bottom: 0.75rem; font-size: 0.9rem; color: var(--text-primary);">
+									<strong>Account verification required:</strong> Please sign in with your email or phone number to finalize your booking reservation.
+								</p>
+								<a
+									href="/login?next={encodeURIComponent(page.url.pathname + page.url.search)}"
+									class="btn btn-primary btn-large w-full"
+									style="display: flex; align-items: center; justify-content: center; text-decoration: none;"
+								>
+									Sign In with Email or Phone to Reserve Slot
+								</a>
+							</div>
+						{:else}
+							<button
+								type="submit"
+								class="btn btn-primary btn-large w-full btn-submit-checkout"
+								disabled={submitting || groupSize > data.maxAvailablePassengers || data.maxAvailablePassengers <= 0}
+							>
+								{#if submitting}
+									<svg class="spinner-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+										<circle class="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="spinner-head" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+									<span>Processing Reservation Deposit...</span>
+								{:else}
+									{isTestMode ? 'Simulate $50.00 Test Deposit & Reserve Slot' : 'Pay $50.00 & Reserve Slot'}
+								{/if}
+							</button>
+						{/if}
 					</div>
 				</form>
 			</div>

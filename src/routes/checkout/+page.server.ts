@@ -129,15 +129,26 @@ async function findOrCreateTripInstanceForGroup(
 export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supabase } }) => {
 	const { session, user } = await safeGetSession();
 
-	if (!session || !user) {
-		throw redirect(303, `/login?next=${encodeURIComponent(url.pathname + url.search)}`);
-	}
+	let templateId = url.searchParams.get('templateId');
+	let date = url.searchParams.get('date');
 
-	const templateId = url.searchParams.get('templateId');
-	const date = url.searchParams.get('date');
-
+	// If accessed without parameters (e.g. direct review link /checkout), load the first active listing as default preview
 	if (!templateId || !date) {
-		throw redirect(303, '/browse');
+		const { data: defaultListing } = await supabase
+			.from('listing_templates')
+			.select('id')
+			.eq('active', true)
+			.limit(1)
+			.maybeSingle();
+
+		if (defaultListing) {
+			templateId = defaultListing.id;
+			const defaultDate = new Date();
+			defaultDate.setDate(defaultDate.getDate() + 7);
+			date = defaultDate.toISOString().split('T')[0];
+		} else {
+			throw redirect(303, '/browse');
+		}
 	}
 
 	// Fetch Listing Template
@@ -152,31 +163,36 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		throw error(404, 'Listing template not found');
 	}
 
-	// Fetch Customer Profile
+	// Fetch Customer Profile if authenticated
 	const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+	let profile: any = null;
 
-	const { data: profile } = await supabaseAdmin
-		.from('customers')
-		.select('*')
-		.eq('id', user.id)
-		.maybeSingle();
-
-	// If customer has 3 or more strikes or is flagged, redirect to account-locked page
-	if (profile && ((profile.strike_count && profile.strike_count >= 3) || profile.flagged)) {
-		throw redirect(303, '/account-locked');
-	}
-
-	if (user.email) {
-		const { data: emailMatch } = await supabaseAdmin
+	if (user) {
+		const { data: customerProfile } = await supabaseAdmin
 			.from('customers')
-			.select('id, strike_count, flagged')
-			.ilike('email', user.email)
-			.or('flagged.eq.true,strike_count.gte.3')
-			.limit(1)
+			.select('*')
+			.eq('id', user.id)
 			.maybeSingle();
 
-		if (emailMatch) {
+		profile = customerProfile;
+
+		// If customer has 3 or more strikes or is flagged, redirect to account-locked page
+		if (profile && ((profile.strike_count && profile.strike_count >= 3) || profile.flagged)) {
 			throw redirect(303, '/account-locked');
+		}
+
+		if (user.email) {
+			const { data: emailMatch } = await supabaseAdmin
+				.from('customers')
+				.select('id, strike_count, flagged')
+				.ilike('email', user.email)
+				.or('flagged.eq.true,strike_count.gte.3')
+				.limit(1)
+				.maybeSingle();
+
+			if (emailMatch) {
+				throw redirect(303, '/account-locked');
+			}
 		}
 	}
 
@@ -236,8 +252,9 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		tripInstanceId: selectedTripInstanceId,
 		initialGroupSize,
 		initialPromoCode,
-		userEmail: user.email || '',
-		publishableKey: PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
+		userEmail: user?.email || '',
+		publishableKey: PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+		isAuthenticated: !!(session && user)
 	};
 };
 
