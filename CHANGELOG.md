@@ -174,3 +174,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-02 15:37 UTC (c9fc693)
 - fix(notifications): pass captain email to notification engine and resolve live site url in Inngest matching
+
+### Push Update — 2026-09-03 17:01 UTC (a280607)
+- Allow public checkout preview with uncropped opt-in form while requiring authentication to finalize bookings
