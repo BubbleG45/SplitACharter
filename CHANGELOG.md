@@ -274,3 +274,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-06 18:02 UTC (a217810)
 - fix: resolve hydration crash on error page and ensure lifeline clicks work
+
+### Push Update — 2026-09-06 18:10 UTC (b553255)
+- Add charter price range explanation to FAQ and update change log
