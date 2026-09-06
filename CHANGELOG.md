@@ -183,3 +183,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-03 17:01 UTC (a280607)
 - Allow public checkout preview with uncropped opt-in form while requiring authentication to finalize bookings
+
+### Push Update — 2026-09-06 17:06 UTC (18cd91a)
+- feat: add home page photo carousel with admin settings management
