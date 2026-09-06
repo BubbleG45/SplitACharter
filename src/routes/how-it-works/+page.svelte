@@ -20,6 +20,10 @@
 			a: "SplitACharter lets you book private charters for exactly half the price. Each group pays the $50 reservation fee to SplitACharter. On the day of the trip, each group pays exactly half of the captain's charter rate directly to the captain at the dock."
 		},
 		{
+			q: "Why is there a price range for charter trips?",
+			a: "SplitACharter connects you with an independent network of licensed, vetted commercial captains, each operating their own private vessel. Rather than imposing a single flat rate across different boats, each trip template displays an estimated price range reflecting the diverse fleet available in that harbor.\n\nPricing varies based on vessel type and size (from nimble center consoles to spacious catamarans or luxury sportfishers), on-board amenities (such as air-conditioned cabins, enclosed private restrooms, shaded deck seating, and premium sound systems), and specialized gear (such as tournament-grade fishing tackle, live bait, snorkeling equipment, and coolers).\n\nOnce both groups book and reconfirm, the trip details are dispatched to local captains. When a captain accepts the booking, you receive their exact charter rate, and each group simply pays their 50% split directly to the captain at the dock."
+		},
+		{
 			q: "What is the reconfirmation window?",
 			a: "Once a second group joins your trip, a notification is sent via email and SMS. Both groups must reconfirm their reservation. The window to reconfirm is 24 hours if the trip is > 72 hours away, 12 hours if it is 48–72 hours away, or up to 2 hours if it is less than 24 hours away."
 		},
@@ -177,7 +181,9 @@
 								</button>
 								{#if openGroupFaq === i}
 									<div transition:slide={{ duration: 200 }} class="faq-answer">
-										<p>{faq.a}</p>
+										{#each faq.a.split('\n\n') as paragraph}
+											<p>{paragraph}</p>
+										{/each}
 									</div>
 								{/if}
 							</div>
@@ -234,7 +240,9 @@
 								</button>
 								{#if openCaptainFaq === i}
 									<div transition:slide={{ duration: 200 }} class="faq-answer">
-										<p>{faq.a}</p>
+										{#each faq.a.split('\n\n') as paragraph}
+											<p>{paragraph}</p>
+										{/each}
 									</div>
 								{/if}
 							</div>
@@ -529,6 +537,10 @@
 		line-height: 1.6;
 		border-top: 1px solid rgba(255, 255, 255, 0.03);
 		padding-top: 1rem;
+	}
+
+	.faq-answer p + p {
+		margin-top: 0.75rem;
 	}
 
 	@media (max-width: 768px) {

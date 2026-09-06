@@ -6,6 +6,11 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### ❓ Trip Pricing Range FAQ (`/how-it-works`)
+
+- **Charter Price Range Explanation**: Added a dedicated, professional FAQ entry to the "How It Works" page addressing why charters display estimated price ranges rather than a single fixed rate. It clearly explains that SplitACharter partners with an independent network of licensed commercial captains who operate distinct vessels of varying sizes, hull designs, amenities (such as air conditioning, private restrooms, shaded deck seating, and premium sound systems), and specialized gear (like tournament fishing tackle or snorkel equipment). It clarifies that the exact rate is locked in as soon as an available captain accepts their confirmed booking, with each group paying their 50% share directly at the dock.
+- **Enhanced Multi-Paragraph FAQ Formatting**: Upgraded the FAQ accordion answer display to cleanly support multi-paragraph responses with balanced paragraph spacing across both Adventurer and Captain FAQ sections.
+
 ### 🛟 Custom "Man Overboard" 404 Error Page
 
 - **Interactive "Man Overboard" Rescue Scene**: Created a custom, playful 404 error page for broken or non-existent URLs. Visitors are greeted by a nautical rescue scene with a bobbing life preserver ring and swimmer adrift on gentle ocean swells while the SplitACharter boat cruises safely in the distance.
