@@ -9,13 +9,17 @@
 	let is404 = $derived(status === 404);
 
 	function throwLifeline() {
-		if (rescued || isTossing) return;
+		if (rescued) {
+			jumpBackIn();
+			return;
+		}
+		if (isTossing) return;
 		isTossing = true;
 		setTimeout(() => {
 			isTossing = false;
 			rescued = true;
 			tossCount += 1;
-		}, 750);
+		}, 700);
 	}
 
 	function jumpBackIn() {
@@ -463,6 +467,9 @@
 		align-items: center;
 		justify-content: center;
 		outline: none;
+		position: relative;
+		z-index: 10;
+		pointer-events: auto;
 		transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 	}
 

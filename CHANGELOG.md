@@ -10,6 +10,7 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 - **Interactive "Man Overboard" Rescue Scene**: Created a custom, playful 404 error page for broken or non-existent URLs. Visitors are greeted by a nautical rescue scene with a bobbing life preserver ring and swimmer adrift on gentle ocean swells while the SplitACharter boat cruises safely in the distance.
 - **Interactive Lifeline Toss Action**: Visitors can click "Throw Lifeline to Swimmer" (or click directly on the floating life ring) to trigger an animated rope toss that pulls the swimmer safely back to the deck with a celebratory rescue confirmation.
+- **Error Page Hydration Safeguard**: Safely guarded root layout authentication listeners during error boundaries, ensuring client-side interactivity and animations initialize without hydration interruption.
 - **Safe Return Navigation**: Prominently features clear recovery actions ("Return to Safe Harbor" to head home and "Find an Active Charter" to browse trips), along with friendly captain's advice so visitors never feel stranded.
 - **Light & Dark Theme Seamless Compatibility**: Built entirely with our semantic theme variables for seamless, high-contrast readability across both Light Mode and Dark Mode with zero layout flash.
 
@@ -260,6 +261,7 @@ This change log keeps the site owner up to date on all updates, new features, de
 - fix: disambiguate captains foreign key relationship on admin trips queries
 
 ### Push Update — 2026-09-06 17:50 UTC (7b5c22c)
+
 - Add trip archiving and trip date sorting to customer dashboard
 
 ### Push Update — 2026-09-06 17:57 UTC (0729be9)

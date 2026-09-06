@@ -7,23 +7,24 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 
-
 	let { data, children } = $props();
 
 	let isAdminRoute = $derived(page.url.pathname.startsWith('/admin'));
 	let origin = $derived(page.url.origin || '');
 
 	onMount(() => {
+		if (!data?.supabase?.auth) return;
+
 		const {
 			data: { subscription }
 		} = data.supabase.auth.onAuthStateChange((event, _session) => {
-			if (_session?.expires_at !== data.session?.expires_at) {
+			if (_session?.expires_at !== data?.session?.expires_at) {
 				invalidate('supabase:auth');
 			}
 		});
 
 		return () => {
-			subscription.unsubscribe();
+			subscription?.unsubscribe();
 		};
 	});
 </script>
@@ -41,7 +42,7 @@
 </svelte:head>
 
 {#if !isAdminRoute}
-	<Header session={data.session} isAdmin={data.isAdmin} />
+	<Header session={data?.session} isAdmin={data?.isAdmin ?? false} />
 {/if}
 
 {@render children()}
@@ -49,4 +50,3 @@
 {#if !isAdminRoute}
 	<Footer />
 {/if}
-
