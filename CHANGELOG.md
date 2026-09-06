@@ -6,6 +6,18 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### 📊 Admin Reports & Ad-Hoc Data Explorer (`/admin/reports`)
+
+- **New Admin Reports Hub**: Added a dedicated, comprehensive analytics and reporting center at `/admin/reports` with direct links from the main Admin Dashboard overview cards and the admin navigation sidebar.
+- **Performance Analytics**: Includes sales performance reporting broken down by preset time periods (Today, Yesterday, This Week, Last Week, This Month, Last Month, This Year, Last Year, and custom date ranges). Platform administrators can review gross reservation deposits, processed refunds, net retained sales, passenger counts, and confirmed trips.
+- **Sales by Trip Type**: Provides an instant volume breakdown showing booking counts, total passenger groups, and net revenue across every charter activity (e.g. Inshore Fishing, Offshore Fishing, Sunset Cruises, Snorkeling & Diving).
+- **Confirmed Charters Audit**: Lists all trips that reached 2-of-2 reconfirmed status, complete with scheduled trip dates, locations, assigned captains and charters, group counts, passenger totals, and deposit totals.
+- **Captains Promo Code Use Report**: Built an operational tracker for captain promotional referral codes. Admins can audit each captain's code performance, total bookings referenced, confirmed charters generated, total passengers, and last-used dates.
+- **Customer Contact & Profile Directory**: Added a searchable customer directory report displaying customer names, email addresses, direct phone numbers, SMS opt-in status, locations, total bookings, lifetime spend, and account standing.
+- **Accounting & Payouts Report**: Added financial auditing tracking gross reservation deposits collected, customer refund details, net platform revenue retained, and automated Stripe bank payout transfers to SplitACharter's bank account.
+- **Ad-Hoc Custom Data Pull Builder**: Built an interactive visual query builder allowing administrators to pull custom data on demand. Admins can pick any dataset (Bookings, Trip Instances, Customers, Captains, or Payment Records), select which columns to display, filter by status or keyword, adjust record limits, and preview the live results on screen.
+- **One-Click CSV Exports**: Added instant CSV file download buttons to every report table and custom ad-hoc query view so administrators can export data into Excel or spreadsheets in one click.
+
 ### ❓ Trip Pricing Range FAQ (`/how-it-works`)
 
 - **Charter Price Range Explanation**: Added a dedicated, professional FAQ entry to the "How It Works" page addressing why charters display estimated price ranges rather than a single fixed rate. It clearly explains that SplitACharter partners with an independent network of licensed commercial captains who operate distinct vessels of varying sizes, hull designs, amenities (such as air conditioning, private restrooms, shaded deck seating, and premium sound systems), and specialized gear (like tournament fishing tackle or snorkel equipment). It clarifies that the exact rate is locked in as soon as an available captain accepts their confirmed booking, with each group paying their 50% share directly at the dock.

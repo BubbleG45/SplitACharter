@@ -177,3 +177,65 @@ export async function getStripeAccountDetails() {
 		};
 	}
 }
+
+export interface StripePayoutItem {
+	id: string;
+	amount: number;
+	currency: string;
+	status: string;
+	arrivalDate: string;
+	created: string;
+	method: string;
+	type: string;
+}
+
+export async function getStripePayouts(limit = 25): Promise<{ payouts: StripePayoutItem[]; isMock: boolean; error?: string }> {
+	const stripe = getStripeClient();
+	const key = STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY || '';
+
+	if (!key || key.includes('placeholder')) {
+		return {
+			payouts: [
+				{
+					id: 'po_mock_1a2b3c',
+					amount: 250.0,
+					currency: 'USD',
+					status: 'paid',
+					arrivalDate: new Date(Date.now() - 86400000 * 2).toISOString(),
+					created: new Date(Date.now() - 86400000 * 3).toISOString(),
+					method: 'standard',
+					type: 'bank_account'
+				},
+				{
+					id: 'po_mock_4d5e6f',
+					amount: 150.0,
+					currency: 'USD',
+					status: 'in_transit',
+					arrivalDate: new Date(Date.now() + 86400000).toISOString(),
+					created: new Date(Date.now() - 86400000).toISOString(),
+					method: 'standard',
+					type: 'bank_account'
+				}
+			],
+			isMock: true
+		};
+	}
+
+	try {
+		const response = await stripe.payouts.list({ limit });
+		const payouts: StripePayoutItem[] = response.data.map((p) => ({
+			id: p.id,
+			amount: (p.amount || 0) / 100,
+			currency: (p.currency || 'usd').toUpperCase(),
+			status: p.status,
+			arrivalDate: new Date((p.arrival_date || 0) * 1000).toISOString(),
+			created: new Date((p.created || 0) * 1000).toISOString(),
+			method: p.method || 'standard',
+			type: p.type || 'bank_account'
+		}));
+		return { payouts, isMock: false };
+	} catch (err: any) {
+		console.warn('Failed to fetch Stripe payouts:', err?.message || err);
+		return { payouts: [], isMock: false, error: err?.message || 'Unable to retrieve Stripe payouts' };
+	}
+}
