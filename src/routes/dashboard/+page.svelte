@@ -39,8 +39,35 @@
 	let nameSuccessMsg = $state('');
 	let nameErrorMsg = $state('');
 
+	// Archive & Sorting state
+	let sortOrder = $state<'date-asc' | 'date-desc'>('date-asc');
+	let isArchivedExpanded = $state(false);
+	let archivingId = $state<string | null>(null);
+	let unarchivingId = $state<string | null>(null);
+	let isMounted = $state(false);
+
 	$effect(() => {
 		nameValue = data.profile?.name || '';
+	});
+
+	$effect(() => {
+		if (!isMounted) {
+			try {
+				const savedSort = localStorage.getItem('dashboard_trip_sort');
+				if (savedSort === 'date-asc' || savedSort === 'date-desc') {
+					sortOrder = savedSort;
+				}
+			} catch (e) {
+				// localStorage unavailable
+			}
+			isMounted = true;
+		} else {
+			try {
+				localStorage.setItem('dashboard_trip_sort', sortOrder);
+			} catch (e) {
+				// localStorage unavailable
+			}
+		}
 	});
 
 	function handleCopy(id: string) {
@@ -52,6 +79,50 @@
 			}
 		}, 2000);
 	}
+
+	function canArchiveBooking(booking: any): boolean {
+		if (booking.is_archived) return false;
+		if (['canceled', 'forfeited', 'completed'].includes(booking.status)) return true;
+		const trip = (Array.isArray(booking.trip_instances) ? booking.trip_instances[0] : booking.trip_instances) as any;
+		if (trip?.date) {
+			const tripDate = new Date(trip.date + 'T23:59:59');
+			if (!isNaN(tripDate.getTime()) && tripDate.getTime() < Date.now()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function getTripTimestamp(booking: any): number {
+		const trip = (Array.isArray(booking.trip_instances) ? booking.trip_instances[0] : booking.trip_instances) as any;
+		if (!trip?.date) return 0;
+		const t = new Date(trip.date + 'T00:00:00').getTime();
+		return isNaN(t) ? 0 : t;
+	}
+
+	let activeBookings = $derived.by(() => {
+		const list = (data.bookings || []).filter((b: any) => !b.is_archived);
+		return list.slice().sort((a: any, b: any) => {
+			const timeA = getTripTimestamp(a);
+			const timeB = getTripTimestamp(b);
+			if (timeA === 0 && timeB === 0) return 0;
+			if (timeA === 0) return 1;
+			if (timeB === 0) return -1;
+			return sortOrder === 'date-asc' ? timeA - timeB : timeB - timeA;
+		});
+	});
+
+	let archivedBookings = $derived.by(() => {
+		const list = (data.bookings || []).filter((b: any) => b.is_archived);
+		return list.slice().sort((a: any, b: any) => {
+			const timeA = getTripTimestamp(a);
+			const timeB = getTripTimestamp(b);
+			if (timeA === 0 && timeB === 0) return 0;
+			if (timeA === 0) return 1;
+			if (timeB === 0) return -1;
+			return sortOrder === 'date-asc' ? timeA - timeB : timeB - timeA;
+		});
+	});
 </script>
 
 <svelte:head>
@@ -214,9 +285,272 @@
 		</div>
 
 
+		{#snippet bookingCard(booking: any, isArchived: boolean)}
+			{@const trip = (Array.isArray(booking.trip_instances) ? booking.trip_instances[0] : booking.trip_instances) as any}
+			{@const template = (trip && Array.isArray(trip.listing_templates) ? trip.listing_templates[0] : trip?.listing_templates) as any}
+			
+			<div class="booking-card glass" class:card-archived={isArchived}>
+				<div class="booking-card-header">
+					<div class="trip-meta">
+						<span class="trip-date">{formatDate(trip?.date)}</span>
+						<h3>{template?.trip_type || 'Charter Reservation'}</h3>
+						<span class="trip-loc">{template?.location || 'Florida Keys'} — {template?.meeting_area || 'Meeting details sent after confirmation'}</span>
+					</div>
+					
+					<div class="status-meta">
+						{#if isArchived}
+							<div class="status-group">
+								<span class="status-lbl">Archive Status</span>
+								<span class="status-badge badge-archived">
+									Archived
+								</span>
+							</div>
+						{/if}
+						<div class="status-group">
+							<span class="status-lbl">Booking State</span>
+							<span class="status-badge booking-{booking.status}">
+								{booking.status}
+							</span>
+						</div>
+						<div class="status-group">
+							<span class="status-lbl">Charter Share</span>
+							<span class="status-badge trip-{trip?.status || 'open'}">
+								{#if trip?.status === 'open'}
+									0 of 2 Booked
+								{:else if trip?.status === 'half-booked'}
+									1 of 2 Booked (Half-Booked)
+								{:else if trip?.status === 'pending-reconfirm'}
+									2 of 2 Booked (Pending Reconfirmation)
+								{:else}
+									{trip?.status || 'open'}
+								{/if}
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="booking-card-body">
+					<div class="detail-row">
+						<div class="detail-item">
+							<span class="lbl">Group Size</span>
+							<span class="val">{booking.group_size} Passengers</span>
+						</div>
+						<div class="detail-item">
+							<span class="lbl">Reservation deposit paid</span>
+							<span class="val price-val">$50.00</span>
+						</div>
+						<div class="detail-item">
+							<span class="lbl">Booking Reference</span>
+							<span class="val ref-val" style="display: flex; align-items: center; gap: 6px;">
+								<span style="flex: 1; word-break: break-all;">{booking.id}</span>
+								<button
+									type="button"
+									class="copy-btn"
+									title="Copy Reference ID"
+									onclick={() => handleCopy(booking.id)}
+									style="background: none; border: none; padding: 4px; display: inline-flex; align-items: center; cursor: pointer; color: {copiedId === booking.id ? 'var(--success)' : 'var(--text-muted)'}; transition: color 0.2s;"
+								>
+									{#if copiedId === booking.id}
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 14px; height: 14px;">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+										</svg>
+									{:else}
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 14px; height: 14px;">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H5.25m11.9-3.664A2.251 2.251 0 0015 2.25h-1.5a2.251 2.251 0 00-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 00-9-9z" />
+										</svg>
+									{/if}
+								</button>
+							</span>
+						</div>
+					</div>
+
+					<!-- Action/Helper Info boxes based on status (only show on active bookings) -->
+					{#if !isArchived}
+						{#if booking.status === 'paid' && trip?.status === 'half-booked'}
+							<div class="info-alert info-primary glass">
+								<span class="pulse-dot"></span>
+								<p><strong>Waiting for a second group to join.</strong> Once another group books this date, both groups will receive a text and email request to reconfirm. If no group joins by the trip date, your deposit is automatically refunded.</p>
+							</div>
+						{:else if booking.status === 'paid' && trip?.status === 'pending-reconfirm'}
+							<div class="info-alert info-warning glass">
+								<p><strong>Reconfirmation Pending.</strong> The charter has reached 2-of-2 groups. You will receive an SMS and email notification shortly to reconfirm your attendance. Check your phone!</p>
+							</div>
+						{:else if booking.status === 'awaiting-reconfirm'}
+							<div class="info-alert info-warning glass action-alert">
+								<p><strong>Attendance Verification Required!</strong> Please reconfirm your booking now. Failure to do so before the window closes will result in forfeiture of your deposit.</p>
+								<form
+									method="POST"
+									action="?/reconfirm"
+									use:enhance={({ formData }) => {
+										const id = formData.get('bookingId') as string;
+										reconfirmingId = id;
+										return async ({ result, update }) => {
+											await update();
+											reconfirmingId = null;
+											if (result.type === 'success') {
+												reconfirmedSuccessId = id;
+												setTimeout(() => {
+													if (reconfirmedSuccessId === id) reconfirmedSuccessId = null;
+												}, 5000);
+											}
+										};
+									}}
+								>
+									<input type="hidden" name="bookingId" value={booking.id} />
+									<button
+										type="submit"
+										class="btn btn-primary btn-small btn-reconfirm"
+										disabled={reconfirmingId === booking.id}
+									>
+										{#if reconfirmingId === booking.id}
+											<svg class="spinner-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+												<circle class="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+												<path class="spinner-head" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+											</svg>
+											<span>Reconfirming...</span>
+										{:else}
+											<span>Reconfirm Booking</span>
+										{/if}
+									</button>
+								</form>
+							</div>
+						{:else if booking.status === 'reconfirmed'}
+							{#if reconfirmedSuccessId === booking.id}
+								<div class="info-alert info-success glass banner-pop">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; color: var(--success); flex-shrink: 0;">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+									</svg>
+									<p><strong>Successfully Reconfirmed!</strong> Your slot is locked in. We are running captain matching now!</p>
+								</div>
+							{:else}
+								<div class="info-alert info-success glass">
+									<p><strong>Booking Reconfirmed!</strong> You've verified your slot. We are now running the captain matching sequence. Once a captain accepts, we will send you their contact details!</p>
+								</div>
+							{/if}
+						{:else if booking.status === 'held'}
+							<div class="info-alert info-danger glass">
+								<p><strong>Booking Held.</strong> Your counterpart group failed to reconfirm, so the trip has reset. Your $50.00 fee is being held. You can apply it to a new match or request a manual refund from support.</p>
+							</div>
+						{/if}
+					{/if}
+
+					<!-- Reservation Question, Archive, and Cancel Actions -->
+					<div class="booking-card-footer">
+						<a
+							href="mailto:info@splitacharter.boats?subject={encodeURIComponent(`Trip Question - Booking Ref: ${booking.id}`)}&body={encodeURIComponent(`Hello SplitACharter Support,\n\nI have a question regarding my trip reservation.\n\nBooking Reference: ${booking.id}\nTrip Type: ${template?.trip_type || 'N/A'}\nDate: ${trip?.date || 'N/A'}\nLocation: ${template?.location || 'N/A'}\n\nMy Question:\n`)}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="btn btn-secondary btn-question"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+							</svg>
+							<span>Have Questions? Email Support</span>
+						</a>
+
+						<div class="card-footer-actions">
+							{#if isArchived}
+								<form
+									method="POST"
+									action="?/unarchiveBooking"
+									style="display: inline;"
+									use:enhance={() => {
+										unarchivingId = booking.id;
+										return async ({ update }) => {
+											await update();
+											unarchivingId = null;
+										};
+									}}
+								>
+									<input type="hidden" name="bookingId" value={booking.id} />
+									<button
+										type="submit"
+										class="btn btn-secondary btn-unarchive"
+										disabled={unarchivingId === booking.id}
+										title="Restore this trip back to your active reservations"
+									>
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+										</svg>
+										<span>{unarchivingId === booking.id ? 'Restoring...' : 'Unarchive Trip'}</span>
+									</button>
+								</form>
+							{:else}
+								{#if canArchiveBooking(booking)}
+									<form
+										method="POST"
+										action="?/archiveBooking"
+										style="display: inline;"
+										use:enhance={() => {
+											archivingId = booking.id;
+											return async ({ update }) => {
+												await update();
+												archivingId = null;
+											};
+										}}
+									>
+										<input type="hidden" name="bookingId" value={booking.id} />
+										<button
+											type="submit"
+											class="btn btn-secondary btn-archive"
+											disabled={archivingId === booking.id}
+											title="Archive and hide this trip from your active list"
+										>
+											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-4 h-4">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+											</svg>
+											<span>{archivingId === booking.id ? 'Archiving...' : 'Archive'}</span>
+										</button>
+									</form>
+								{/if}
+
+								{#if !['canceled', 'forfeited', 'completed'].includes(booking.status)}
+									<div class="cancel-action-group">
+										<button
+											type="button"
+											class="btn btn-danger-outline btn-cancel"
+											onclick={() => (cancelingBooking = { booking, trip, template })}
+										>
+											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+											</svg>
+											<span>Cancel Booking</span>
+										</button>
+										<a href="/how-it-works#cancellation-policy" target="_blank" class="faq-policy-link">
+											FAQ Cancellation Policy
+										</a>
+									</div>
+								{/if}
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+		{/snippet}
+
 		<!-- Bookings List -->
 		<section class="bookings-section">
-			<h2>My Reservations</h2>
+			<div class="bookings-header-bar">
+				<h2>My Reservations</h2>
+				{#if data.bookings.length > 1}
+					<div class="sort-control-group">
+						<label for="trip-sort-select" class="sort-label">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
+							</svg>
+							<span>Sort:</span>
+						</label>
+						<select
+							id="trip-sort-select"
+							class="sort-select"
+							bind:value={sortOrder}
+						>
+							<option value="date-asc">Trip Date: Soonest first</option>
+							<option value="date-desc">Trip Date: Latest first</option>
+						</select>
+					</div>
+				{/if}
+			</div>
 
 			{#if data.bookings.length === 0}
 				<div class="empty-state glass">
@@ -227,182 +561,66 @@
 					<p>You haven't booked any shared charters yet. Browse our listing templates to open a date or join an existing trip!</p>
 					<a href="/browse" class="btn btn-primary mt-4">Browse Charters</a>
 				</div>
+			{:else if activeBookings.length === 0}
+				<div class="empty-state glass">
+					<div class="archived-empty-icon-box">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+						</svg>
+					</div>
+					<h3>No Active Reservations</h3>
+					<p>All your charter reservations are currently archived. You can view or restore them from the Archived Trips section below.</p>
+					<button
+						type="button"
+						class="btn btn-secondary mt-4"
+						onclick={() => (isArchivedExpanded = true)}
+					>
+						View Archived Trips ({archivedBookings.length})
+					</button>
+				</div>
 			{:else}
 				<div class="bookings-list">
-					{#each data.bookings as booking (booking.id)}
-						{@const trip = (Array.isArray(booking.trip_instances) ? booking.trip_instances[0] : booking.trip_instances) as any}
-						{@const template = (trip && Array.isArray(trip.listing_templates) ? trip.listing_templates[0] : trip?.listing_templates) as any}
-						
-						<div class="booking-card glass">
-							<div class="booking-card-header">
-								<div class="trip-meta">
-									<span class="trip-date">{formatDate(trip?.date)}</span>
-									<h3>{template?.trip_type || 'Charter Reservation'}</h3>
-									<span class="trip-loc">{template?.location || 'Florida Keys'} — {template?.meeting_area || 'Meeting details sent after confirmation'}</span>
-								</div>
-								
-								<div class="status-meta">
-									<div class="status-group">
-										<span class="status-lbl">Booking State</span>
-										<span class="status-badge booking-{booking.status}">
-											{booking.status}
-										</span>
-									</div>
-									<div class="status-group">
-										<span class="status-lbl">Charter Share</span>
-										<span class="status-badge trip-{trip?.status || 'open'}">
-											{#if trip?.status === 'open'}
-												0 of 2 Booked
-											{:else if trip?.status === 'half-booked'}
-												1 of 2 Booked (Half-Booked)
-											{:else if trip?.status === 'pending-reconfirm'}
-												2 of 2 Booked (Pending Reconfirmation)
-											{:else}
-												{trip?.status || 'open'}
-											{/if}
-										</span>
-									</div>
-								</div>
+					{#each activeBookings as booking (booking.id)}
+						{@render bookingCard(booking, false)}
+					{/each}
+				</div>
+			{/if}
+
+			{#if archivedBookings.length > 0}
+				<div class="archived-section glass">
+					<button
+						type="button"
+						class="archived-accordion-toggle"
+						onclick={() => (isArchivedExpanded = !isArchivedExpanded)}
+						aria-expanded={isArchivedExpanded}
+					>
+						<div class="archived-toggle-title">
+							<div class="archived-icon-box">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-5 h-5">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+								</svg>
 							</div>
-
-							<div class="booking-card-body">
-								<div class="detail-row">
-									<div class="detail-item">
-										<span class="lbl">Group Size</span>
-										<span class="val">{booking.group_size} Passengers</span>
-									</div>
-									<div class="detail-item">
-										<span class="lbl">Reservation deposit paid</span>
-										<span class="val price-val">$50.00</span>
-									</div>
-									<div class="detail-item">
-										<span class="lbl">Booking Reference</span>
-										<span class="val ref-val" style="display: flex; align-items: center; gap: 6px;">
-											<span style="flex: 1; word-break: break-all;">{booking.id}</span>
-											<button
-												type="button"
-												class="copy-btn"
-												title="Copy Reference ID"
-												onclick={() => handleCopy(booking.id)}
-												style="background: none; border: none; padding: 4px; display: inline-flex; align-items: center; cursor: pointer; color: {copiedId === booking.id ? 'var(--success)' : 'var(--text-muted)'}; transition: color 0.2s;"
-											>
-												{#if copiedId === booking.id}
-													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 14px; height: 14px;">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-													</svg>
-												{:else}
-													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 14px; height: 14px;">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H5.25m11.9-3.664A2.251 2.251 0 0015 2.25h-1.5a2.251 2.251 0 00-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 00-9-9z" />
-													</svg>
-												{/if}
-											</button>
-										</span>
-									</div>
-								</div>
-
-								<!-- Action/Helper Info boxes based on status -->
-								{#if booking.status === 'paid' && trip?.status === 'half-booked'}
-									<div class="info-alert info-primary glass">
-										<span class="pulse-dot"></span>
-										<p><strong>Waiting for a second group to join.</strong> Once another group books this date, both groups will receive a text and email request to reconfirm. If no group joins by the trip date, your deposit is automatically refunded.</p>
-									</div>
-								{:else if booking.status === 'paid' && trip?.status === 'pending-reconfirm'}
-									<div class="info-alert info-warning glass">
-										<p><strong>Reconfirmation Pending.</strong> The charter has reached 2-of-2 groups. You will receive an SMS and email notification shortly to reconfirm your attendance. Check your phone!</p>
-									</div>
-								{:else if booking.status === 'awaiting-reconfirm'}
-									<div class="info-alert info-warning glass action-alert">
-										<p><strong>Attendance Verification Required!</strong> Please reconfirm your booking now. Failure to do so before the window closes will result in forfeiture of your deposit.</p>
-										<form
-											method="POST"
-											action="?/reconfirm"
-											use:enhance={({ formData }) => {
-												const id = formData.get('bookingId') as string;
-												reconfirmingId = id;
-												return async ({ result, update }) => {
-													await update();
-													reconfirmingId = null;
-													if (result.type === 'success') {
-														reconfirmedSuccessId = id;
-														setTimeout(() => {
-															if (reconfirmedSuccessId === id) reconfirmedSuccessId = null;
-														}, 5000);
-													}
-												};
-											}}
-										>
-											<input type="hidden" name="bookingId" value={booking.id} />
-											<button
-												type="submit"
-												class="btn btn-primary btn-small btn-reconfirm"
-												disabled={reconfirmingId === booking.id}
-											>
-												{#if reconfirmingId === booking.id}
-													<svg class="spinner-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-														<circle class="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-														<path class="spinner-head" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-													</svg>
-													<span>Reconfirming...</span>
-												{:else}
-													<span>Reconfirm Booking</span>
-												{/if}
-											</button>
-										</form>
-									</div>
-								{:else if booking.status === 'reconfirmed'}
-									{#if reconfirmedSuccessId === booking.id}
-										<div class="info-alert info-success glass banner-pop">
-											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; color: var(--success); flex-shrink: 0;">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-											</svg>
-											<p><strong>Successfully Reconfirmed!</strong> Your slot is locked in. We are running captain matching now!</p>
-										</div>
-									{:else}
-										<div class="info-alert info-success glass">
-											<p><strong>Booking Reconfirmed!</strong> You've verified your slot. We are now running the captain matching sequence. Once a captain accepts, we will send you their contact details!</p>
-										</div>
-									{/if}
-								{:else if booking.status === 'held'}
-									<div class="info-alert info-danger glass">
-										<p><strong>Booking Held.</strong> Your counterpart group failed to reconfirm, so the trip has reset. Your $50.00 fee is being held. You can apply it to a new match or request a manual refund from support.</p>
-									</div>
-								{/if}
-
-								<!-- Reservation Question & Cancel Action -->
-								<div class="booking-card-footer">
-									<a
-										href="mailto:info@splitacharter.boats?subject={encodeURIComponent(`Trip Question - Booking Ref: ${booking.id}`)}&body={encodeURIComponent(`Hello SplitACharter Support,\n\nI have a question regarding my trip reservation.\n\nBooking Reference: ${booking.id}\nTrip Type: ${template?.trip_type || 'N/A'}\nDate: ${trip?.date || 'N/A'}\nLocation: ${template?.location || 'N/A'}\n\nMy Question:\n`)}"
-										target="_blank"
-										rel="noopener noreferrer"
-										class="btn btn-secondary btn-question"
-									>
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-										</svg>
-										<span>Have Questions? Email Support</span>
-									</a>
-
-									{#if !['canceled', 'forfeited', 'completed'].includes(booking.status)}
-										<div class="cancel-action-group">
-											<button
-												type="button"
-												class="btn btn-danger-outline btn-cancel"
-												onclick={() => (cancelingBooking = { booking, trip, template })}
-											>
-												<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-												</svg>
-												<span>Cancel Booking</span>
-											</button>
-											<a href="/how-it-works#cancellation-policy" target="_blank" class="faq-policy-link">
-												FAQ Cancellation Policy
-											</a>
-										</div>
-									{/if}
-								</div>
+							<div class="archived-toggle-text">
+								<h3>Archived Trips</h3>
+								<span class="archived-count-badge">{archivedBookings.length} {archivedBookings.length === 1 ? 'trip' : 'trips'}</span>
 							</div>
 						</div>
-					{/each}
+						<div class="archived-chevron" class:expanded={isArchivedExpanded}>
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+							</svg>
+						</div>
+					</button>
+
+					{#if isArchivedExpanded}
+						<div class="archived-content">
+							<div class="bookings-list archived-list">
+								{#each archivedBookings as booking (booking.id)}
+									{@render bookingCard(booking, true)}
+								{/each}
+							</div>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</section>
@@ -1141,6 +1359,194 @@
 		color: var(--danger);
 		font-size: 0.75rem;
 		margin-top: 2px;
+	}
+
+	/* Trip Sorting & Header Bar */
+	.bookings-header-bar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 1rem;
+		margin-bottom: 1.5rem;
+	}
+	.bookings-header-bar h2 {
+		margin-bottom: 0 !important;
+	}
+	.sort-control-group {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: var(--bg-surface);
+		border: 1px solid var(--border-light);
+		padding: 6px 12px;
+		border-radius: 8px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+	}
+	.sort-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-muted);
+	}
+	.sort-select {
+		background: transparent;
+		border: none;
+		color: var(--text-primary);
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		outline: none;
+		padding: 2px 4px;
+	}
+	.sort-select option {
+		background: var(--bg-surface);
+		color: var(--text-primary);
+	}
+
+	/* Card Actions */
+	.card-footer-actions {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+	.btn-archive,
+	.btn-unarchive {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 0.85rem;
+		padding: 8px 14px;
+		border-radius: 6px;
+		cursor: pointer;
+		font-weight: 600;
+		transition: all 0.2s ease;
+	}
+	.btn-archive {
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid var(--border-light);
+		color: var(--text-secondary);
+	}
+	.btn-archive:hover:not(:disabled) {
+		background: rgba(255, 255, 255, 0.08);
+		color: var(--text-primary);
+		border-color: var(--text-muted);
+	}
+	.btn-archive:disabled,
+	.btn-unarchive:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+	.btn-unarchive {
+		background: rgba(6, 182, 212, 0.08);
+		border: 1px solid rgba(6, 182, 212, 0.3);
+		color: var(--primary);
+	}
+	.btn-unarchive:hover:not(:disabled) {
+		background: rgba(6, 182, 212, 0.16);
+		border-color: var(--primary);
+	}
+
+	/* Collapsible Archived Trips Section */
+	.archived-section {
+		margin-top: 3rem;
+		border: 1px solid var(--border-light);
+		border-radius: 12px;
+		overflow: hidden;
+		transition: border-color 0.2s ease;
+	}
+	.archived-accordion-toggle {
+		width: 100%;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1.25rem 1.75rem;
+		background: transparent;
+		border: none;
+		color: var(--text-primary);
+		cursor: pointer;
+		text-align: left;
+		transition: background-color 0.2s ease;
+	}
+	.archived-accordion-toggle:hover {
+		background: rgba(255, 255, 255, 0.02);
+	}
+	.archived-toggle-title {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+	.archived-icon-box {
+		width: 40px;
+		height: 40px;
+		border-radius: 8px;
+		background: rgba(148, 163, 184, 0.1);
+		color: var(--text-secondary);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.archived-toggle-text {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+	.archived-toggle-text h3 {
+		font-size: 1.15rem;
+		font-weight: 700;
+		margin: 0;
+	}
+	.archived-count-badge {
+		font-size: 0.75rem;
+		font-weight: 700;
+		padding: 2px 8px;
+		border-radius: 12px;
+		background: rgba(148, 163, 184, 0.15);
+		color: var(--text-secondary);
+	}
+	.archived-chevron {
+		color: var(--text-muted);
+		transition: transform 0.25s ease;
+		display: flex;
+		align-items: center;
+	}
+	.archived-chevron.expanded {
+		transform: rotate(180deg);
+	}
+	.archived-content {
+		padding: 0 1.75rem 1.75rem 1.75rem;
+		border-top: 1px solid var(--border-light);
+	}
+	.archived-list {
+		margin-top: 1.5rem;
+	}
+	.card-archived {
+		opacity: 0.85;
+		border-style: dashed;
+	}
+	.card-archived:hover {
+		opacity: 1;
+	}
+	.status-badge.badge-archived {
+		background: rgba(148, 163, 184, 0.15);
+		color: var(--text-secondary);
+		border: 1px solid rgba(148, 163, 184, 0.3);
+	}
+	.archived-empty-icon-box {
+		width: 60px;
+		height: 60px;
+		border-radius: 50%;
+		background: rgba(148, 163, 184, 0.1);
+		color: var(--text-muted);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0 auto 1rem auto;
 	}
 </style>
 

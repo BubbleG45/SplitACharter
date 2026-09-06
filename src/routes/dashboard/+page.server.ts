@@ -30,6 +30,7 @@ export const load: PageServerLoad = async ({ locals: { safeGetSession, supabase 
 			group_size,
 			status,
 			reconfirmation_timestamp,
+			is_archived,
 			created_at,
 			trip_instances (
 				id,
@@ -315,6 +316,113 @@ export const actions: Actions = {
 			nameUpdated: true,
 			message: 'Name updated successfully.'
 		};
+	},
+	archiveBooking: async ({ request, locals: { safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+
+		if (!session || !user) {
+			return fail(401, { message: 'Unauthorized. Please sign in.' });
+		}
+
+		const formData = await request.formData();
+		const bookingId = formData.get('bookingId') as string;
+
+		if (!bookingId) {
+			return fail(400, { message: 'Booking ID is required.' });
+		}
+
+		const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+		// Fetch booking and trip date to verify ownership and eligibility
+		const { data: booking, error: fetchErr } = await supabaseAdmin
+			.from('bookings')
+			.select(`
+				id,
+				customer_id,
+				status,
+				trip_instances (
+					date
+				)
+			`)
+			.eq('id', bookingId)
+			.single();
+
+		if (fetchErr || !booking) {
+			return fail(404, { message: 'Booking not found.' });
+		}
+
+		if (booking.customer_id !== user.id) {
+			return fail(403, { message: 'Forbidden. You do not own this booking.' });
+		}
+
+		const isInactive = ['canceled', 'forfeited', 'completed'].includes(booking.status);
+		const trip = Array.isArray(booking.trip_instances) ? booking.trip_instances[0] : booking.trip_instances;
+
+		let isPastDate = false;
+		if (trip?.date) {
+			const tripDate = new Date(trip.date + 'T23:59:59');
+			isPastDate = !isNaN(tripDate.getTime()) && tripDate.getTime() < Date.now();
+		}
+
+		if (!isInactive && !isPastDate) {
+			return fail(400, {
+				message: 'Active upcoming trips cannot be archived to avoid missing reconfirmations or updates.'
+			});
+		}
+
+		const { error: updateErr } = await supabaseAdmin
+			.from('bookings')
+			.update({ is_archived: true, updated_at: new Date().toISOString() })
+			.eq('id', bookingId);
+
+		if (updateErr) {
+			console.error('Error archiving booking:', updateErr);
+			return fail(500, { message: 'Failed to archive booking.' });
+		}
+
+		return { success: true, archived: true };
+	},
+	unarchiveBooking: async ({ request, locals: { safeGetSession } }) => {
+		const { session, user } = await safeGetSession();
+
+		if (!session || !user) {
+			return fail(401, { message: 'Unauthorized. Please sign in.' });
+		}
+
+		const formData = await request.formData();
+		const bookingId = formData.get('bookingId') as string;
+
+		if (!bookingId) {
+			return fail(400, { message: 'Booking ID is required.' });
+		}
+
+		const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+		const { data: booking, error: fetchErr } = await supabaseAdmin
+			.from('bookings')
+			.select('id, customer_id')
+			.eq('id', bookingId)
+			.single();
+
+		if (fetchErr || !booking) {
+			return fail(404, { message: 'Booking not found.' });
+		}
+
+		if (booking.customer_id !== user.id) {
+			return fail(403, { message: 'Forbidden. You do not own this booking.' });
+		}
+
+		const { error: updateErr } = await supabaseAdmin
+			.from('bookings')
+			.update({ is_archived: false, updated_at: new Date().toISOString() })
+			.eq('id', bookingId);
+
+		if (updateErr) {
+			console.error('Error unarchiving booking:', updateErr);
+			return fail(500, { message: 'Failed to restore booking.' });
+		}
+
+		return { success: true, unarchived: true };
 	}
 };
 

@@ -28,6 +28,67 @@
 	let selectedTripType = $state('all');
 	let selectedLocation = $state('all');
 
+	// Trip sorting state
+	let tripSortColumn = $state<'date' | 'specs' | 'captain' | 'bookings' | 'status'>('date');
+	let tripSortDirection = $state<'asc' | 'desc'>('asc');
+
+	function toggleTripSort(col: 'date' | 'specs' | 'captain' | 'bookings' | 'status') {
+		if (tripSortColumn === col) {
+			tripSortDirection = tripSortDirection === 'asc' ? 'desc' : 'asc';
+		} else {
+			tripSortColumn = col;
+			tripSortDirection = 'asc';
+		}
+	}
+
+	// Booking sorting state (applies to nested bookings tables)
+	let bookingSortColumn = $state<'name' | 'contact' | 'size' | 'status' | 'created_at'>('created_at');
+	let bookingSortDirection = $state<'asc' | 'desc'>('asc');
+
+	function toggleBookingSort(col: 'name' | 'contact' | 'size' | 'status' | 'created_at') {
+		if (bookingSortColumn === col) {
+			bookingSortDirection = bookingSortDirection === 'asc' ? 'desc' : 'asc';
+		} else {
+			bookingSortColumn = col;
+			bookingSortDirection = 'asc';
+		}
+	}
+
+	function getSortedBookings(bookings: any[]) {
+		if (!bookings || bookings.length <= 1) return bookings || [];
+		return [...bookings].sort((a: any, b: any) => {
+			let comp = 0;
+			const custA = Array.isArray(a.customers) ? a.customers[0] : a.customers;
+			const custB = Array.isArray(b.customers) ? b.customers[0] : b.customers;
+
+			if (bookingSortColumn === 'name') {
+				const nameA = (custA?.name || '').toLowerCase();
+				const nameB = (custB?.name || '').toLowerCase();
+				comp = nameA.localeCompare(nameB);
+			} else if (bookingSortColumn === 'contact') {
+				const contactA = (custA?.email || custA?.phone || '').toLowerCase();
+				const contactB = (custB?.email || custB?.phone || '').toLowerCase();
+				comp = contactA.localeCompare(contactB);
+			} else if (bookingSortColumn === 'size') {
+				comp = (a.group_size || 0) - (b.group_size || 0);
+			} else if (bookingSortColumn === 'status') {
+				comp = (a.status || '').localeCompare(b.status || '');
+			} else if (bookingSortColumn === 'created_at') {
+				const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+				const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+				comp = timeA - timeB;
+			}
+
+			if (comp === 0) {
+				const idA = a.id || '';
+				const idB = b.id || '';
+				comp = idA.localeCompare(idB);
+			}
+
+			return bookingSortDirection === 'asc' ? comp : -comp;
+		});
+	}
+
 	// Unique trip types & locations derived from listing templates
 	let availableTripTypes = $derived(
 		Array.from(new Set(data.listingTemplates.map((t: any) => t.trip_type))).sort()
@@ -166,13 +227,59 @@
 			return statusMatch && tripTypeMatch && locationMatch && searchMatch;
 		})
 		.sort((a: any, b: any) => {
-			const dateCompare = (a.date || '').localeCompare(b.date || '');
-			if (dateCompare !== 0) {
-				return dateCompare;
+			let comp = 0;
+
+			if (tripSortColumn === 'date') {
+				comp = (a.date || '').localeCompare(b.date || '');
+				if (comp === 0) {
+					const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+					const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+					comp = createdB - createdA;
+				}
+			} else if (tripSortColumn === 'specs') {
+				const tplA = Array.isArray(a.listing_templates) ? a.listing_templates[0] : a.listing_templates;
+				const tplB = Array.isArray(b.listing_templates) ? b.listing_templates[0] : b.listing_templates;
+				const typeA = (tplA?.trip_type || '').toLowerCase();
+				const typeB = (tplB?.trip_type || '').toLowerCase();
+				comp = typeA.localeCompare(typeB);
+				if (comp === 0) {
+					const locA = (tplA?.location || '').toLowerCase();
+					const locB = (tplB?.location || '').toLowerCase();
+					comp = locA.localeCompare(locB);
+				}
+			} else if (tripSortColumn === 'captain') {
+				const capA = Array.isArray(a.captains) ? a.captains[0] : a.captains;
+				const capB = Array.isArray(b.captains) ? b.captains[0] : b.captains;
+				const nameA = (capA?.name || 'Unassigned').toLowerCase();
+				const nameB = (capB?.name || 'Unassigned').toLowerCase();
+				comp = nameA.localeCompare(nameB);
+			} else if (tripSortColumn === 'bookings') {
+				const activeA = a.bookings?.filter((b: any) => b.status !== 'canceled' && b.status !== 'forfeited')?.length || 0;
+				const activeB = b.bookings?.filter((b: any) => b.status !== 'canceled' && b.status !== 'forfeited')?.length || 0;
+				comp = activeA - activeB;
+				if (comp === 0) {
+					const totalA = a.bookings?.length || 0;
+					const totalB = b.bookings?.length || 0;
+					comp = totalA - totalB;
+				}
+			} else if (tripSortColumn === 'status') {
+				const statusA = (a.status || '').toLowerCase();
+				const statusB = (b.status || '').toLowerCase();
+				comp = statusA.localeCompare(statusB);
 			}
-			const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
-			const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
-			return createdB - createdA;
+
+			if (comp === 0) {
+				const dateCompare = (a.date || '').localeCompare(b.date || '');
+				if (dateCompare !== 0) {
+					comp = dateCompare;
+				} else {
+					const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+					const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+					comp = createdB - createdA;
+				}
+			}
+
+			return tripSortDirection === 'asc' ? comp : -comp;
 		})
 	);
 
@@ -460,17 +567,40 @@
 							</button>
 						</div>
 					</th>
-					<th>Date</th>
-					<th>Charter Specs</th>
-					<th>Assigned Captain</th>
-					<th>Bookings</th>
-					<th>
+					<th class="sortable-th" onclick={() => toggleTripSort('date')} aria-sort={tripSortColumn === 'date' ? (tripSortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+						<div class="th-content">
+							<span>Date</span>
+							<span class="sort-icon">{tripSortColumn === 'date' ? (tripSortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+						</div>
+					</th>
+					<th class="sortable-th" onclick={() => toggleTripSort('specs')} aria-sort={tripSortColumn === 'specs' ? (tripSortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+						<div class="th-content">
+							<span>Charter Specs</span>
+							<span class="sort-icon">{tripSortColumn === 'specs' ? (tripSortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+						</div>
+					</th>
+					<th class="sortable-th" onclick={() => toggleTripSort('captain')} aria-sort={tripSortColumn === 'captain' ? (tripSortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+						<div class="th-content">
+							<span>Assigned Captain</span>
+							<span class="sort-icon">{tripSortColumn === 'captain' ? (tripSortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+						</div>
+					</th>
+					<th class="sortable-th" onclick={() => toggleTripSort('bookings')} aria-sort={tripSortColumn === 'bookings' ? (tripSortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+						<div class="th-content">
+							<span>Bookings</span>
+							<span class="sort-icon">{tripSortColumn === 'bookings' ? (tripSortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+						</div>
+					</th>
+					<th class="sortable-th" onclick={() => toggleTripSort('status')} aria-sort={tripSortColumn === 'status' ? (tripSortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
 						<div class="th-with-help">
-							<span>Status</span>
+							<div class="th-content">
+								<span>Status</span>
+								<span class="sort-icon">{tripSortColumn === 'status' ? (tripSortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+							</div>
 							<button
 								type="button"
 								class="help-icon-btn"
-								onclick={() => (showStatusHelpModal = true)}
+								onclick={(e) => { e.stopPropagation(); showStatusHelpModal = true; }}
 								title="Click for Status definitions"
 								aria-label="Status Definitions Help"
 							>
@@ -626,16 +756,41 @@
 										<table class="nested-table">
 											<thead>
 												<tr>
-													<th>Customer Name</th>
-													<th>Contact Details</th>
-													<th>Group Size</th>
-													<th>Booking Status</th>
-													<th>Created Date</th>
+													<th class="sortable-th" onclick={() => toggleBookingSort('name')} aria-sort={bookingSortColumn === 'name' ? (bookingSortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+														<div class="th-content">
+															<span>Customer Name</span>
+															<span class="sort-icon">{bookingSortColumn === 'name' ? (bookingSortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+														</div>
+													</th>
+													<th class="sortable-th" onclick={() => toggleBookingSort('contact')} aria-sort={bookingSortColumn === 'contact' ? (bookingSortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+														<div class="th-content">
+															<span>Contact Details</span>
+															<span class="sort-icon">{bookingSortColumn === 'contact' ? (bookingSortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+														</div>
+													</th>
+													<th class="sortable-th" onclick={() => toggleBookingSort('size')} aria-sort={bookingSortColumn === 'size' ? (bookingSortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+														<div class="th-content">
+															<span>Group Size</span>
+															<span class="sort-icon">{bookingSortColumn === 'size' ? (bookingSortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+														</div>
+													</th>
+													<th class="sortable-th" onclick={() => toggleBookingSort('status')} aria-sort={bookingSortColumn === 'status' ? (bookingSortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+														<div class="th-content">
+															<span>Booking Status</span>
+															<span class="sort-icon">{bookingSortColumn === 'status' ? (bookingSortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+														</div>
+													</th>
+													<th class="sortable-th" onclick={() => toggleBookingSort('created_at')} aria-sort={bookingSortColumn === 'created_at' ? (bookingSortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+														<div class="th-content">
+															<span>Created Date</span>
+															<span class="sort-icon">{bookingSortColumn === 'created_at' ? (bookingSortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+														</div>
+													</th>
 													<th>Communications</th>
 												</tr>
 											</thead>
 											<tbody>
-												{#each trip.bookings as booking (booking.id)}
+												{#each getSortedBookings(trip.bookings) as booking (booking.id)}
 													{@const customer = (Array.isArray(booking.customers) ? booking.customers[0] : booking.customers) as any}
 													{@const formattedDate = formatDateTime(booking.created_at)}
 													<tr>
@@ -1146,6 +1301,30 @@
 {/if}
 
 <style>
+	.sortable-th {
+		cursor: pointer;
+		user-select: none;
+		transition: background 0.15s ease, color 0.15s ease;
+	}
+	.sortable-th:hover {
+		color: var(--primary);
+		background: rgba(255, 255, 255, 0.04);
+	}
+	.nested-table th.sortable-th:hover {
+		color: var(--primary);
+		background: rgba(255, 255, 255, 0.07);
+	}
+	.th-content {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.sort-icon {
+		font-size: 0.75rem;
+		color: var(--primary);
+		opacity: 0.8;
+	}
+
 	.th-with-help {
 		display: inline-flex;
 		align-items: center;
