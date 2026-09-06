@@ -192,3 +192,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-06 17:15 UTC (ce7e228)
 - fix: update sandbar carousel image with verified working url and fallback handlers
+
+### Push Update — 2026-09-06 17:29 UTC (7bc6d96)
+- feat: add photo focal repositioning, recommended sizing guidelines, and edit auto-scroll
