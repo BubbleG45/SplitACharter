@@ -206,3 +206,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-06 17:37 UTC (e34932a)
 - fix: disambiguate captains foreign key relationship on admin trips queries
+
+### Push Update — 2026-09-06 17:50 UTC (7b5c22c)
+- Add trip archiving and trip date sorting to customer dashboard
