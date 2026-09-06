@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 				status,
 				captain_id,
 				created_at,
-				captains (
+				captains:captains!trip_instances_captain_id_fkey (
 					name,
 					phone
 				),
@@ -314,7 +314,7 @@ export const actions: Actions = {
 				status,
 				captain_id,
 				updated_at,
-				captains (
+				captains:captains!trip_instances_captain_id_fkey (
 					id,
 					name,
 					phone,
