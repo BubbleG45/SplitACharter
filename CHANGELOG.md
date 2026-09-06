@@ -196,3 +196,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-06 17:29 UTC (7bc6d96)
 - feat: add photo focal repositioning, recommended sizing guidelines, and edit auto-scroll
+
+### Push Update — 2026-09-06 17:37 UTC (e34932a)
+- fix: disambiguate captains foreign key relationship on admin trips queries
