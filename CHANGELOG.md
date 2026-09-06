@@ -261,3 +261,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-06 17:50 UTC (7b5c22c)
 - Add trip archiving and trip date sorting to customer dashboard
+
+### Push Update — 2026-09-06 17:57 UTC (0729be9)
+- feat: add custom Man Overboard 404 error page with interactive lifebuoy rescue
