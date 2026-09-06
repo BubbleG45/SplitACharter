@@ -20,7 +20,8 @@ const defaultSeedSlides = [
 		link_url: '/browse?type=Sunset%20Cruise',
 		link_text: 'Explore Sunset Cruises',
 		display_order: 1,
-		active: true
+		active: true,
+		object_position: 'center'
 	},
 	{
 		id: 'default-slide-2',
@@ -30,7 +31,8 @@ const defaultSeedSlides = [
 		link_url: '/browse?type=Offshore%20Fishing',
 		link_text: 'Find Fishing Splits',
 		display_order: 2,
-		active: true
+		active: true,
+		object_position: 'center'
 	},
 	{
 		id: 'default-slide-3',
@@ -40,7 +42,8 @@ const defaultSeedSlides = [
 		link_url: '/browse?type=Sandbar%20Charter',
 		link_text: 'Browse Sandbar Trips',
 		display_order: 3,
-		active: true
+		active: true,
+		object_position: 'center'
 	},
 	{
 		id: 'default-slide-4',
@@ -50,7 +53,8 @@ const defaultSeedSlides = [
 		link_url: '/browse?type=Reef%20Snorkeling',
 		link_text: 'View Snorkel & Dive Trips',
 		display_order: 4,
-		active: true
+		active: true,
+		object_position: 'center'
 	}
 ];
 

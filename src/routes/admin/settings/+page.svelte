@@ -30,7 +30,8 @@
 		image_url: '',
 		link_url: '',
 		link_text: '',
-		display_order: 1
+		display_order: 1,
+		object_position: 'center'
 	});
 	let addSlideMode = $state<'file' | 'url'>('file');
 	let addSlidePreview = $state<string | null>(null);
@@ -39,6 +40,50 @@
 	let editSlideMode = $state<'keep' | 'file' | 'url'>('keep');
 	let editSlidePreview = $state<string | null>(null);
 	let editSlideError = $state<string | null>(null);
+
+	const positionOptions = [
+		{ id: 'center', label: '↔️ Center (Balanced)', value: 'center' },
+		{ id: 'top', label: '⬆️ Top Focus (Keep sky / masts)', value: 'top' },
+		{ id: 'bottom', label: '⬇️ Bottom Focus (Keep deck / water)', value: 'bottom' },
+		{ id: 'left', label: '⬅️ Left Focus', value: 'left center' },
+		{ id: 'right', label: '➡️ Right Focus', value: 'right center' }
+	];
+
+	function startAddSlide() {
+		isAddingSlide = true;
+		editingSlide = null;
+		addSlidePreview = null;
+		addSlideError = null;
+		newSlideDraft = {
+			title: '',
+			caption: '',
+			image_url: '',
+			link_url: '',
+			link_text: '',
+			display_order: (data.carouselSlides?.length || 0) + 1,
+			object_position: 'center'
+		};
+		setTimeout(() => {
+			const el = document.getElementById('slide-form-anchor');
+			if (el) {
+				el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+		}, 60);
+	}
+
+	function startEditSlide(slide: any) {
+		editingSlide = { ...slide, object_position: slide.object_position || 'center' };
+		isAddingSlide = false;
+		editSlideMode = 'keep';
+		editSlidePreview = null;
+		editSlideError = null;
+		setTimeout(() => {
+			const el = document.getElementById('slide-form-anchor');
+			if (el) {
+				el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+		}, 60);
+	}
 
 	function handleAddImageChange(e: Event) {
 		const target = e.target as HTMLInputElement;
@@ -949,20 +994,7 @@
 				<button 
 					type="button" 
 					class="btn btn-primary" 
-					onclick={() => {
-						isAddingSlide = true;
-						editingSlide = null;
-						addSlidePreview = null;
-						addSlideError = null;
-						newSlideDraft = {
-							title: '',
-							caption: '',
-							image_url: '',
-							link_url: '',
-							link_text: '',
-							display_order: (data.carouselSlides?.length || 0) + 1
-						};
-					}}
+					onclick={startAddSlide}
 				>
 					+ Add New Photo Slide
 				</button>
@@ -981,6 +1013,9 @@
 			</div>
 		{/if}
 
+		<!-- Scroll Anchor for Add/Edit Forms -->
+		<div id="slide-form-anchor" class="slide-form-anchor-marker"></div>
+
 		<!-- Add Slide Form -->
 		{#if isAddingSlide}
 			<div class="slide-form-card glass glow-box">
@@ -988,6 +1023,21 @@
 					<h4>Add New Carousel Slide</h4>
 					<button type="button" class="btn-text-close" onclick={() => isAddingSlide = false}>✕ Close</button>
 				</div>
+
+				<!-- Photo Sizing & Composition Guidelines -->
+				<div class="photo-guidelines-box glass">
+					<div class="guidelines-title">
+						<span class="icon">📐</span>
+						<strong>Recommended Photo Specifications & Framing</strong>
+					</div>
+					<ul class="guidelines-list">
+						<li><strong>Recommended Aspect Ratio:</strong> <code>16:9</code> landscape (e.g. <code>1920 × 1080px</code> or <code>1280 × 720px</code>).</li>
+						<li><strong>Orientation:</strong> Horizontal photos look best across desktop and mobile. Avoid tall/vertical photos.</li>
+						<li><strong>Prevent Cut-Offs:</strong> If your subject (boat masts, sky, or deck) is cut off, use the <em>Focal Repositioning</em> buttons below to adjust the vertical crop!</li>
+						<li><strong>File Limits:</strong> JPEG, PNG, or WebP up to 5MB.</li>
+					</ul>
+				</div>
+
 				<form
 					method="POST"
 					action="?/addCarouselSlide"
@@ -1063,14 +1113,34 @@
 							</div>
 						{/if}
 
+						<!-- Image Focal Repositioning -->
+						<div class="form-group full-width">
+							<span class="field-label-text">Photo Focal Repositioning (Crop Alignment)</span>
+							<p class="field-hint">Choose which portion of the image stays visible when cropped to the 16:9 carousel.</p>
+							<div class="focal-options-grid">
+								{#each positionOptions as opt}
+									<button
+										type="button"
+										class="focal-opt-btn"
+										class:active={newSlideDraft.object_position === opt.value}
+										onclick={() => { newSlideDraft.object_position = opt.value; }}
+									>
+										{opt.label}
+									</button>
+								{/each}
+							</div>
+							<input type="hidden" name="object_position" value={newSlideDraft.object_position} />
+						</div>
+
 						{#if addSlidePreview || (addSlideMode === 'url' && newSlideDraft.image_url)}
 							<div class="form-group full-width">
-								<span class="field-label-text">Image Preview</span>
-								<div class="image-upload-preview">
+								<span class="field-label-text">Live Image Preview (Repositioned to {newSlideDraft.object_position})</span>
+								<div class="image-upload-preview preview-aspect-16-9">
 									<img
 										src={addSlidePreview || newSlideDraft.image_url}
 										alt="Preview"
 										class="upload-preview-thumb"
+										style="object-position: {newSlideDraft.object_position};"
 									/>
 								</div>
 							</div>
@@ -1109,11 +1179,26 @@
 
 		<!-- Edit Slide Form -->
 		{#if editingSlide}
-			<div class="slide-form-card glass glow-box">
+			<div class="slide-form-card glass glow-box editing-pulse">
 				<div class="form-card-title">
-					<h4>Edit Carousel Slide: {editingSlide.title}</h4>
+					<h4>✏️ Editing Carousel Slide: {editingSlide.title}</h4>
 					<button type="button" class="btn-text-close" onclick={() => editingSlide = null}>✕ Close</button>
 				</div>
+
+				<!-- Photo Sizing & Composition Guidelines -->
+				<div class="photo-guidelines-box glass">
+					<div class="guidelines-title">
+						<span class="icon">📐</span>
+						<strong>Recommended Photo Specifications & Framing</strong>
+					</div>
+					<ul class="guidelines-list">
+						<li><strong>Recommended Aspect Ratio:</strong> <code>16:9</code> landscape (e.g. <code>1920 × 1080px</code> or <code>1280 × 720px</code>).</li>
+						<li><strong>Orientation:</strong> Horizontal photos look best across desktop and mobile. Avoid tall/vertical photos.</li>
+						<li><strong>Prevent Cut-Offs:</strong> If your subject is getting cut off, choose a <em>Focal Repositioning</em> alignment below to adjust the crop!</li>
+						<li><strong>File Limits:</strong> JPEG, PNG, or WebP up to 5MB.</li>
+					</ul>
+				</div>
+
 				<form
 					method="POST"
 					action="?/updateCarouselSlide"
@@ -1175,9 +1260,9 @@
 						{#if editSlideMode === 'keep'}
 							<input type="hidden" name="image_url" value={editingSlide.image_url} />
 							<div class="form-group full-width">
-								<span class="field-label-text">Current Image</span>
-								<div class="image-upload-preview">
-									<img src={editingSlide.image_url} alt={editingSlide.title} class="upload-preview-thumb" />
+								<span class="field-label-text">Current Image Preview (Alignment: {editingSlide.object_position || 'center'})</span>
+								<div class="image-upload-preview preview-aspect-16-9">
+									<img src={editingSlide.image_url} alt={editingSlide.title} class="upload-preview-thumb" style="object-position: {editingSlide.object_position || 'center'};" />
 								</div>
 							</div>
 						{:else if editSlideMode === 'file'}
@@ -1195,9 +1280,9 @@
 							</div>
 							{#if editSlidePreview}
 								<div class="form-group full-width">
-									<span class="field-label-text">New Image Preview</span>
-									<div class="image-upload-preview">
-										<img src={editSlidePreview} alt="New upload preview" class="upload-preview-thumb" />
+									<span class="field-label-text">New Image Preview (Alignment: {editingSlide.object_position || 'center'})</span>
+									<div class="image-upload-preview preview-aspect-16-9">
+										<img src={editSlidePreview} alt="New upload preview" class="upload-preview-thumb" style="object-position: {editingSlide.object_position || 'center'};" />
 									</div>
 								</div>
 							{/if}
@@ -1215,13 +1300,32 @@
 							</div>
 							{#if editingSlide.image_url}
 								<div class="form-group full-width">
-									<span class="field-label-text">URL Image Preview</span>
-									<div class="image-upload-preview">
-										<img src={editingSlide.image_url} alt="URL Preview" class="upload-preview-thumb" />
+									<span class="field-label-text">URL Image Preview (Alignment: {editingSlide.object_position || 'center'})</span>
+									<div class="image-upload-preview preview-aspect-16-9">
+										<img src={editingSlide.image_url} alt="URL Preview" class="upload-preview-thumb" style="object-position: {editingSlide.object_position || 'center'};" />
 									</div>
 								</div>
 							{/if}
 						{/if}
+
+						<!-- Image Focal Repositioning -->
+						<div class="form-group full-width">
+							<span class="field-label-text">Photo Focal Repositioning (Crop Alignment)</span>
+							<p class="field-hint">Choose which portion of the image stays visible when cropped to the 16:9 carousel.</p>
+							<div class="focal-options-grid">
+								{#each positionOptions as opt}
+									<button
+										type="button"
+										class="focal-opt-btn"
+										class:active={(editingSlide.object_position || 'center') === opt.value}
+										onclick={() => { editingSlide.object_position = opt.value; }}
+									>
+										{opt.label}
+									</button>
+								{/each}
+							</div>
+							<input type="hidden" name="object_position" value={editingSlide.object_position || 'center'} />
+						</div>
 
 						<div class="form-group">
 							<label for="edit-slide-link-url">Button Link Destination</label>
@@ -1268,6 +1372,7 @@
 								src={slide.image_url}
 								alt={slide.title}
 								class="slide-mgmt-thumb"
+								style="object-position: {slide.object_position || 'center'};"
 								onerror={(e) => {
 									const img = e.currentTarget as HTMLImageElement;
 									if (!img.src.includes('photo-1544551763-46a013bb70d5')) {
@@ -1284,6 +1389,9 @@
 								<span class="badge" class:badge-active={slide.active} class:badge-inactive={!slide.active}>
 									{slide.active ? '● Live' : '○ Hidden'}
 								</span>
+								{#if slide.object_position && slide.object_position !== 'center'}
+									<span class="badge badge-focal">Crop: {slide.object_position}</span>
+								{/if}
 							</div>
 
 							<p class="slide-card-caption">{slide.caption}</p>
@@ -1313,13 +1421,7 @@
 							<button
 								type="button"
 								class="btn btn-secondary btn-sm"
-								onclick={() => {
-									editingSlide = { ...slide };
-									isAddingSlide = false;
-									editSlideMode = 'keep';
-									editSlidePreview = null;
-									editSlideError = null;
-								}}
+								onclick={() => startEditSlide(slide)}
 							>
 								Edit
 							</button>
@@ -2142,12 +2244,113 @@
 		max-width: 900px;
 		margin: 0 auto;
 	}
+	.slide-form-anchor-marker {
+		scroll-margin-top: 100px;
+	}
+	.photo-guidelines-box {
+		padding: 1rem 1.25rem;
+		border-radius: 10px;
+		background: rgba(37, 99, 235, 0.06);
+		border: 1px solid rgba(37, 99, 235, 0.2);
+		margin-bottom: 1.5rem;
+	}
+	.guidelines-title {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.95rem;
+		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+	}
+	.guidelines-list {
+		margin: 0;
+		padding-left: 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		line-height: 1.45;
+	}
+	.guidelines-list code {
+		background: var(--bg-base);
+		padding: 1px 5px;
+		border-radius: 4px;
+		border: 1px solid var(--border-light);
+		color: var(--primary);
+		font-size: 0.8rem;
+	}
+	.field-hint {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		margin: -0.25rem 0 0.5rem 0;
+		line-height: 1.35;
+	}
+	.focal-options-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.focal-opt-btn {
+		padding: 6px 12px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		border-radius: 6px;
+		background: var(--bg-base);
+		border: 1px solid var(--border-light);
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.focal-opt-btn:hover {
+		border-color: var(--primary);
+		color: var(--text-primary);
+	}
+	.focal-opt-btn.active {
+		background: var(--primary);
+		color: #ffffff;
+		border-color: var(--primary);
+		box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+	}
+	.preview-aspect-16-9 {
+		aspect-ratio: 16 / 9;
+		max-width: 480px;
+		max-height: 270px;
+		width: 100%;
+		background: #000000;
+	}
 	.slide-form-card {
 		padding: 1.75rem;
 		border: 1px solid var(--border-light);
 		border-radius: 12px;
 		background: var(--bg-surface);
 		margin-bottom: 2rem;
+		transition: all 0.3s ease;
+	}
+	.editing-pulse {
+		border-color: var(--primary) !important;
+		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35), var(--glass-shadow) !important;
+		animation: editGlow 1.2s ease-in-out;
+	}
+	@keyframes editGlow {
+		0% {
+			transform: scale(0.99);
+			box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.5);
+		}
+		50% {
+			transform: scale(1);
+			box-shadow: 0 0 0 10px rgba(37, 99, 235, 0.2);
+		}
+		100% {
+			box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+		}
+	}
+	.badge-focal {
+		background: rgba(56, 189, 248, 0.12);
+		color: #38bdf8;
+		border: 1px solid rgba(56, 189, 248, 0.25);
+		font-size: 0.7rem;
+		padding: 2px 6px;
 	}
 	.slide-edit-form {
 		width: 100%;

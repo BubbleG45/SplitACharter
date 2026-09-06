@@ -6,6 +6,7 @@
 		image_url: string;
 		link_url?: string | null;
 		link_text?: string | null;
+		object_position?: string | null;
 	}
 
 	let { slides = [] }: { slides: Slide[] } = $props();
@@ -106,6 +107,7 @@
 								alt={slide.title}
 								loading={index === 0 ? 'eager' : 'lazy'}
 								class="slide-img"
+								style="object-position: {slide.object_position || 'center'};"
 								onerror={(e) => {
 									const img = e.currentTarget as HTMLImageElement;
 									if (!img.src.includes('photo-1544551763-46a013bb70d5')) {

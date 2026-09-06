@@ -19,7 +19,8 @@ const defaultSeedSlides = [
 		link_url: '/browse?type=Sunset%20Cruise',
 		link_text: 'Explore Sunset Cruises',
 		display_order: 1,
-		active: true
+		active: true,
+		object_position: 'center'
 	},
 	{
 		title: 'Offshore Sportfishing',
@@ -28,7 +29,8 @@ const defaultSeedSlides = [
 		link_url: '/browse?type=Offshore%20Fishing',
 		link_text: 'Find Fishing Splits',
 		display_order: 2,
-		active: true
+		active: true,
+		object_position: 'center'
 	},
 	{
 		title: 'Sandbar & Eco Adventures',
@@ -37,7 +39,8 @@ const defaultSeedSlides = [
 		link_url: '/browse?type=Sandbar%20Charter',
 		link_text: 'Browse Sandbar Trips',
 		display_order: 3,
-		active: true
+		active: true,
+		object_position: 'center'
 	},
 	{
 		title: 'Coral Reef & Wreck Diving',
@@ -46,7 +49,8 @@ const defaultSeedSlides = [
 		link_url: '/browse?type=Reef%20Snorkeling',
 		link_text: 'View Snorkel & Dive Trips',
 		display_order: 4,
-		active: true
+		active: true,
+		object_position: 'center'
 	}
 ];
 
@@ -510,6 +514,8 @@ export const actions: Actions = {
 			return fail(400, { carouselMessage: 'Please upload an image file or provide an image URL.' });
 		}
 
+		const objectPosition = (formData.get('object_position') as string)?.trim() || 'center';
+
 		const { error: insertErr } = await supabase
 			.from('landing_carousel_slides')
 			.insert({
@@ -519,7 +525,8 @@ export const actions: Actions = {
 				link_url: linkUrl,
 				link_text: linkText,
 				display_order: displayOrder,
-				active
+				active,
+				object_position: objectPosition
 			});
 
 		if (insertErr) {
@@ -538,6 +545,7 @@ export const actions: Actions = {
 		const linkText = (formData.get('link_text') as string)?.trim() || null;
 		const displayOrder = parseInt((formData.get('display_order') as string) || '0', 10);
 		const active = formData.get('active') === 'true';
+		const objectPosition = (formData.get('object_position') as string)?.trim() || 'center';
 
 		let imageUrl = (formData.get('image_url') as string)?.trim() || '';
 		const imageFile = formData.get('image_file') as File | null;
@@ -602,7 +610,8 @@ export const actions: Actions = {
 				link_url: linkUrl,
 				link_text: linkText,
 				display_order: displayOrder,
-				active
+				active,
+				object_position: objectPosition
 			})
 			.eq('id', id);
 
