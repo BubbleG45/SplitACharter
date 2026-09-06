@@ -36,7 +36,7 @@ const defaultSeedSlides = [
 		id: 'default-slide-3',
 		title: 'Sandbar & Eco Adventures',
 		caption: 'Anchor in waist-deep turquoise shallows at Islamorada or Key West sandbars with friends and family.',
-		image_url: 'https://images.unsplash.com/photo-1510414842594-a61752afb394?auto=format&fit=crop&w=1600&q=80',
+		image_url: 'https://images.unsplash.com/photo-1559827291-72ee739d0d9a?auto=format&fit=crop&w=1600&q=80',
 		link_url: '/browse?type=Sandbar%20Charter',
 		link_text: 'Browse Sandbar Trips',
 		display_order: 3,

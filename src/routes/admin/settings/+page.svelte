@@ -1264,7 +1264,17 @@
 				{#each data.carouselSlides as slide (slide.id)}
 					<div class="slide-mgmt-card glass" class:inactive-card={!slide.active}>
 						<div class="slide-card-thumb-col">
-							<img src={slide.image_url} alt={slide.title} class="slide-mgmt-thumb" />
+							<img
+								src={slide.image_url}
+								alt={slide.title}
+								class="slide-mgmt-thumb"
+								onerror={(e) => {
+									const img = e.currentTarget as HTMLImageElement;
+									if (!img.src.includes('photo-1544551763-46a013bb70d5')) {
+										img.src = 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1600&q=80';
+									}
+								}}
+							/>
 							<div class="slide-order-tag">#{slide.display_order}</div>
 						</div>
 

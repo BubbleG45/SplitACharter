@@ -106,7 +106,7 @@ VALUES
     (
         'Sandbar & Eco Adventures',
         'Anchor in waist-deep turquoise shallows at Islamorada or Key West sandbars with friends and family.',
-        'https://images.unsplash.com/photo-1510414842594-a61752afb394?auto=format&fit=crop&w=1600&q=80',
+        'https://images.unsplash.com/photo-1559827291-72ee739d0d9a?auto=format&fit=crop&w=1600&q=80',
         '/browse?type=Sandbar%20Charter',
         'Browse Sandbar Trips',
         3,
