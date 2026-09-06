@@ -324,6 +324,7 @@ The application supports both Dark Mode and Light Mode with seamless theme toggl
 
 ## 12. Change Log Maintenance Rules
 
-- **Automated Update Workflow:** Every feature, bug fix, architectural change, or UI enhancement MUST be documented in `CHANGELOG.md` under the active month section in plain, non-technical English.
+- **Automated Update Workflow:** Every feature, bug fix, architectural change, or UI enhancement MUST be documented in `CHANGELOG.md` under the active month section in plain, non-technical English with a standard timestamp (e.g., `— YYYY-MM-DD HH:mm UTC` in category headings or bullet items).
+- **Timestamp Standardization:** Use UTC timestamps matching format `— YYYY-MM-DD HH:mm UTC` (or date-only `— YYYY-MM-DD` / bracketed `[YYYY-MM-DD HH:mm UTC]`). The Admin Settings Change Log parser automatically converts these into localized time badges with UTC tooltips in the Admin UI.
 - **Commit & Release Synchronization:** Because `CHANGELOG.md` is loaded directly via Vite raw import (`CHANGELOG.md?raw`), updating `CHANGELOG.md` before git push guarantees that the Admin Settings Change Log view (`/admin/settings?tab=sec-changelog`) stays 100% up to date on every deployment automatically.
 

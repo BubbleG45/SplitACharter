@@ -150,16 +150,92 @@
 	interface ChangelogItem {
 		title: string;
 		description: string;
+		timestamp?: string | null;
 	}
 
 	interface ChangelogCategory {
 		name: string;
+		timestamp?: string | null;
 		items: ChangelogItem[];
 	}
 
 	interface ChangelogSection {
 		title: string;
 		categories: ChangelogCategory[];
+	}
+
+	function extractTimestamp(text: string): { cleanText: string; timestamp: string | null } {
+		if (!text) return { cleanText: '', timestamp: null };
+
+		// 1. Bracket format: [YYYY-MM-DD...]
+		const bracketMatch = text.match(/\[(\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}(?::\d{2})?(?:\s*UTC)?)?)\]/i);
+		if (bracketMatch) {
+			const timestamp = bracketMatch[1].trim();
+			const cleanText = text.replace(bracketMatch[0], '').replace(/\s{2,}/g, ' ').trim();
+			return { cleanText, timestamp };
+		}
+
+		// 2. Dash/em-dash format: — YYYY-MM-DD... or - YYYY-MM-DD...
+		const dashMatch = text.match(/(?:\s+(?:—|--|-)\s+)(\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}(?::\d{2})?(?:\s*UTC)?)?)(?=\s|$|\)|\()/i);
+		if (dashMatch) {
+			const timestamp = dashMatch[1].trim();
+			const cleanText = text.replace(dashMatch[0], ' ').replace(/\s{2,}/g, ' ').trim();
+			return { cleanText, timestamp };
+		}
+
+		return { cleanText: text, timestamp: null };
+	}
+
+	function formatTimestamp(tsStr: string | null | undefined): { local: string; utc: string } | null {
+		if (!tsStr) return null;
+		const trimmed = tsStr.trim();
+		if (!trimmed) return null;
+
+		const dateOnlyMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+		if (dateOnlyMatch) {
+			const year = parseInt(dateOnlyMatch[1], 10);
+			const month = parseInt(dateOnlyMatch[2], 10) - 1;
+			const day = parseInt(dateOnlyMatch[3], 10);
+			const d = new Date(Date.UTC(year, month, day, 12, 0, 0));
+			const local = d.toLocaleDateString('en-US', {
+				month: 'short',
+				day: 'numeric',
+				year: 'numeric'
+			});
+			return { local, utc: trimmed };
+		}
+
+		let isoStr = trimmed;
+		if (trimmed.toUpperCase().endsWith('UTC')) {
+			isoStr = trimmed.slice(0, -3).trim().replace(' ', 'T') + 'Z';
+		} else if (!trimmed.includes('T') && trimmed.includes(' ')) {
+			isoStr = trimmed.replace(' ', 'T') + 'Z';
+		}
+
+		const d = new Date(isoStr);
+		if (isNaN(d.getTime())) {
+			return { local: trimmed, utc: trimmed };
+		}
+
+		const localDate = d.toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		});
+		const localTime = d.toLocaleTimeString('en-US', {
+			hour: 'numeric',
+			minute: '2-digit'
+		});
+
+		const utcHours = String(d.getUTCHours()).padStart(2, '0');
+		const utcMinutes = String(d.getUTCMinutes()).padStart(2, '0');
+		const utcDate = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+		const utcStr = `${utcDate} ${utcHours}:${utcMinutes} UTC`;
+
+		return {
+			local: `${localDate}, ${localTime}`,
+			utc: utcStr
+		};
 	}
 
 	const parsedChangelog = $derived.by(() => {
@@ -181,12 +257,13 @@
 				sections.push(currentSection);
 				currentCategory = null;
 			} else if (line.startsWith('### ')) {
-				const catName = line.replace(/^###\s+/, '').trim();
+				const rawCatName = line.replace(/^###\s+/, '').trim();
 				if (!currentSection) {
 					currentSection = { title: '🚀 Platform Updates', categories: [] };
 					sections.push(currentSection);
 				}
-				currentCategory = { name: catName, items: [] };
+				const { cleanText, timestamp } = extractTimestamp(rawCatName);
+				currentCategory = { name: cleanText || rawCatName, timestamp, items: [] };
 				currentSection.categories.push(currentCategory);
 			} else if (line.startsWith('- ')) {
 				if (!currentSection) {
@@ -194,22 +271,43 @@
 					sections.push(currentSection);
 				}
 				if (!currentCategory) {
-					currentCategory = { name: '📌 Feature Updates', categories: [] } as any;
-					currentCategory = { name: '📌 Feature Updates', items: [] };
+					currentCategory = { name: '📌 Feature Updates', timestamp: null, items: [] };
 					currentSection.categories.push(currentCategory);
 				}
 
-				const boldMatch = line.match(/^-\s+\*\*([^*]+)\*\*:\s*(.*)$/);
+				const boldMatch = line.match(/^-\s+\*\*([^*]+)\*\*(.*?):\s*(.*)$/);
 				if (boldMatch) {
+					const rawTitle = boldMatch[1].trim();
+					const between = boldMatch[2].trim();
+					const description = boldMatch[3].trim();
+
+					let itemTitle = rawTitle;
+					let itemTimestamp: string | null = null;
+
+					if (between) {
+						const betweenExt = extractTimestamp(between);
+						if (betweenExt.timestamp) {
+							itemTimestamp = betweenExt.timestamp;
+						}
+					}
+					if (!itemTimestamp) {
+						const titleExt = extractTimestamp(rawTitle);
+						itemTitle = titleExt.cleanText;
+						itemTimestamp = titleExt.timestamp;
+					}
+
 					currentCategory.items.push({
-						title: boldMatch[1].trim(),
-						description: boldMatch[2].trim()
+						title: itemTitle,
+						description,
+						timestamp: itemTimestamp
 					});
 				} else {
 					const plainText = line.replace(/^-\s+/, '').trim();
+					const { cleanText, timestamp } = extractTimestamp(plainText);
 					currentCategory.items.push({
 						title: 'General Update',
-						description: plainText
+						description: cleanText,
+						timestamp
 					});
 				}
 			}
@@ -1797,12 +1895,28 @@
 							{@const matchingItems = category.items.filter(item => 
 								!changelogSearch.trim() || 
 								item.title.toLowerCase().includes(changelogSearch.toLowerCase()) || 
-								item.description.toLowerCase().includes(changelogSearch.toLowerCase())
+								item.description.toLowerCase().includes(changelogSearch.toLowerCase()) ||
+								(item.timestamp && item.timestamp.toLowerCase().includes(changelogSearch.toLowerCase())) ||
+								(category.timestamp && category.timestamp.toLowerCase().includes(changelogSearch.toLowerCase())) ||
+								(category.name.toLowerCase().includes(changelogSearch.toLowerCase()))
 							)}
 							{#if matchingItems.length > 0}
 								<div class="changelog-category-card glass">
 									<div class="category-card-header">
-										<h3>{category.name}</h3>
+										<div class="category-title-group">
+											<h3>{category.name}</h3>
+											{#if category.timestamp}
+												{@const catTime = formatTimestamp(category.timestamp)}
+												{#if catTime}
+													<span class="changelog-time-badge" title="UTC: {catTime.utc}">
+														<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="clock-icon">
+															<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+														</svg>
+														{catTime.local}
+													</span>
+												{/if}
+											{/if}
+										</div>
 										<span class="category-count">{matchingItems.length} update{matchingItems.length === 1 ? '' : 's'}</span>
 									</div>
 									<div class="category-items-list">
@@ -1810,7 +1924,20 @@
 											<div class="changelog-item-row">
 												<div class="item-icon-dot"></div>
 												<div class="item-content">
-													<h4 class="item-title">{item.title}</h4>
+													<div class="item-title-row">
+														<h4 class="item-title">{item.title}</h4>
+														{#if item.timestamp}
+															{@const itmTime = formatTimestamp(item.timestamp)}
+															{#if itmTime}
+																<span class="changelog-item-time-badge" title="UTC: {itmTime.utc}">
+																	<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="clock-icon">
+																		<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+																	</svg>
+																	{itmTime.local}
+																</span>
+															{/if}
+														{/if}
+													</div>
 													<p class="item-desc">{item.description}</p>
 												</div>
 											</div>
@@ -3373,15 +3500,67 @@
 	.category-card-header {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
+		align-items: flex-start;
+		gap: 0.75rem;
 		padding-bottom: 0.75rem;
 		border-bottom: 1px solid var(--border-light);
 	}
+	.category-title-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		min-width: 0;
+	}
 	.category-card-header h3 {
 		margin: 0;
-		font-size: 1.1rem;
+		font-size: 1.05rem;
 		font-weight: 700;
 		color: var(--text-primary);
+		line-height: 1.35;
+	}
+	.changelog-time-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		background: var(--input-bg);
+		border: 1px solid var(--border-light);
+		padding: 0.2rem 0.55rem;
+		border-radius: 6px;
+		width: fit-content;
+		cursor: help;
+		transition: all 0.15s ease;
+	}
+	.changelog-time-badge:hover, .changelog-item-time-badge:hover {
+		color: var(--text-primary);
+		border-color: var(--primary);
+		background: var(--glass-bg);
+	}
+	.item-title-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.45rem;
+	}
+	.changelog-item-time-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-size: 0.7rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		background: var(--input-bg);
+		border: 1px solid var(--border-light);
+		padding: 0.1rem 0.45rem;
+		border-radius: 4px;
+		cursor: help;
+		transition: all 0.15s ease;
+	}
+	.clock-icon {
+		opacity: 0.7;
+		flex-shrink: 0;
 	}
 	.category-count {
 		font-size: 0.75rem;
@@ -3391,6 +3570,7 @@
 		background: rgba(56, 189, 248, 0.12);
 		color: var(--primary);
 		border: 1px solid rgba(56, 189, 248, 0.25);
+		flex-shrink: 0;
 	}
 	.category-items-list {
 		display: flex;
@@ -3415,6 +3595,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
+		min-width: 0;
 	}
 	.item-title {
 		margin: 0;

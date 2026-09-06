@@ -79,3 +79,9 @@ From the Inngest Dev Server Dashboard, send a test event to verify wiring:
 - **Payload:** `{}` (or any JSON payload)
 
 You will see the run succeed in the dashboard run history, and a message logged in your SvelteKit server console.
+
+---
+
+## Disaster Recovery
+
+For database backup, point-in-time recovery (PITR), and incident restoration runbooks, see [docs/DISASTER_RECOVERY.md](docs/DISASTER_RECOVERY.md).

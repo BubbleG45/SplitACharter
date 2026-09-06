@@ -6,7 +6,24 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
-### 📊 Admin Reports & Ad-Hoc Data Explorer (`/admin/reports`)
+### 🕒 Change Log Timestamps & Live Admin UI Badges (`/admin/settings?tab=sec-changelog`) — 2026-09-06 19:35 UTC
+
+- **Live Local-Time Badges with UTC Hover Tooltips**: Added timestamp badges with clock icons to the Admin Settings Change Log view. Timestamps automatically format to the viewing administrator's local browser timezone and show the exact UTC timestamp on hover.
+- **Dual-Level Timestamp Support**: Enhanced the Change Log markdown parser to extract timestamps at both the category heading level (e.g. `### Feature Name — YYYY-MM-DD HH:mm UTC`) and individual bullet item level (e.g. `- **Update Title** — YYYY-MM-DD HH:mm UTC: Details`), giving administrators precise visibility into when updates occur.
+- **Flexible Format Parsing**: Supports both full date/time stamps (`YYYY-MM-DD HH:mm UTC`) and date-only stamps (`YYYY-MM-DD`), accommodating both em-dash (`— 2026-09-06 19:35 UTC`) and bracket (`[2026-09-06 19:35 UTC]`) syntax.
+- **Search Integration**: Updated the Change Log keyword filter so administrators can search by timestamp, date, or time in addition to feature keywords.
+- **Backfilled September 2026 History**: Backfilled verified git commit timestamps onto all September 2026 updates, ensuring all recent platform changes display exact publish dates immediately.
+- **Standardized Maintenance Guidelines**: Updated project rules in `AGENTS.md` and `PROJECT_CONTEXT.md` to mandate inclusion of standard UTC timestamps on all future change log entries.
+
+### 🛡️ Automated Zero-Cost Off-Site Database Backups & Disaster Recovery Runbook (`docs/DISASTER_RECOVERY.md`) — 2026-09-06 18:50 UTC
+
+- **$0/Month Off-Site Automated Backups**: Established an automated, zero-cost disaster recovery workflow via GitHub Actions (`.github/workflows/database-backup.yml`) that runs twice daily (at 02:00 UTC and 14:00 UTC) and supports manual on-demand triggers. It safely dumps, compresses, and uploads encrypted PostgreSQL backups to an independent Cloudflare R2 bucket (within free-tier allowances).
+- **Breach & Ransomware Isolation**: Because backup archives are stored on Cloudflare R2 completely independent of Supabase and Vercel, platform data remains 100% recoverable even in the event of a Supabase account takeover, project deletion, or credential compromise.
+- **Automated Retention**: Configured the backup pipeline to automatically prune backup archives older than 14 days to keep storage clean and within free limits.
+- **Rapid Restoration Helper Script**: Created an emergency database restoration script (`scripts/restore-database.sh`) that restores compressed snapshots to any target PostgreSQL database in under 20 minutes with a single command.
+- **Stripe & Background Job Reconciliation**: Documented an external reconciliation procedure to replay Stripe payment webhooks (safely protected against duplicate processing by our idempotent webhook handler) and resync Inngest reconfirmation workflows for any bookings made during the recovery window.
+
+### 📊 Admin Reports & Ad-Hoc Data Explorer (`/admin/reports`) — 2026-09-06 14:47 UTC
 
 - **New Admin Reports Hub**: Added a dedicated, comprehensive analytics and reporting center at `/admin/reports` with direct links from the main Admin Dashboard overview cards and the admin navigation sidebar.
 - **Performance Analytics**: Includes sales performance reporting broken down by preset time periods (Today, Yesterday, This Week, Last Week, This Month, Last Month, This Year, Last Year, and custom date ranges). Platform administrators can review gross reservation deposits, processed refunds, net retained sales, passenger counts, and confirmed trips.
@@ -18,12 +35,12 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **Ad-Hoc Custom Data Pull Builder**: Built an interactive visual query builder allowing administrators to pull custom data on demand. Admins can pick any dataset (Bookings, Trip Instances, Customers, Captains, or Payment Records), select which columns to display, filter by status or keyword, adjust record limits, and preview the live results on screen.
 - **One-Click CSV Exports**: Added instant CSV file download buttons to every report table and custom ad-hoc query view so administrators can export data into Excel or spreadsheets in one click.
 
-### ❓ Trip Pricing Range FAQ (`/how-it-works`)
+### ❓ Trip Pricing Range FAQ (`/how-it-works`) — 2026-09-06 14:09 UTC
 
 - **Charter Price Range Explanation**: Added a dedicated, professional FAQ entry to the "How It Works" page addressing why charters display estimated price ranges rather than a single fixed rate. It clearly explains that SplitACharter partners with an independent network of licensed commercial captains who operate distinct vessels of varying sizes, hull designs, amenities (such as air conditioning, private restrooms, shaded deck seating, and premium sound systems), and specialized gear (like tournament fishing tackle or snorkel equipment). It clarifies that the exact rate is locked in as soon as an available captain accepts their confirmed booking, with each group paying their 50% share directly at the dock.
 - **Enhanced Multi-Paragraph FAQ Formatting**: Upgraded the FAQ accordion answer display to cleanly support multi-paragraph responses with balanced paragraph spacing across both Adventurer and Captain FAQ sections.
 
-### 🛟 Custom "Man Overboard" 404 Error Page
+### 🛟 Custom "Man Overboard" 404 Error Page — 2026-09-06 13:57 UTC
 
 - **Interactive "Man Overboard" Rescue Scene**: Created a custom, playful 404 error page for broken or non-existent URLs. Visitors are greeted by a nautical rescue scene with a bobbing life preserver ring and swimmer adrift on gentle ocean swells while the SplitACharter boat cruises safely in the distance.
 - **Interactive Lifeline Toss Action**: Visitors can click "Throw Lifeline to Swimmer" (or click directly on the floating life ring) to trigger an animated rope toss that pulls the swimmer safely back to the deck with a celebratory rescue confirmation.
@@ -31,14 +48,14 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **Safe Return Navigation**: Prominently features clear recovery actions ("Return to Safe Harbor" to head home and "Find an Active Charter" to browse trips), along with friendly captain's advice so visitors never feel stranded.
 - **Light & Dark Theme Seamless Compatibility**: Built entirely with our semantic theme variables for seamless, high-contrast readability across both Light Mode and Dark Mode with zero layout flash.
 
-### 🗂️ Customer Dashboard Trip Archiving & Date Sorting (`/dashboard`)
+### 🗂️ Customer Dashboard Trip Archiving & Date Sorting (`/dashboard`) — 2026-09-06 13:50 UTC
 
 - **Trip Date Sorting**: Added an instant trip date sort dropdown to the customer reservations dashboard. Customers can sort their charter reservations by "Trip Date: Soonest first" (default) or "Trip Date: Latest first", with their preference automatically remembered across visits via local browser storage.
 - **Archive & Hide Old Trips**: Allowed customers to archive and hide inactive or past charter trips (completed, canceled, forfeited, or past scheduled dates) to keep their active dashboard view clean and decluttered. Active upcoming reservations requiring attendance reconfirmation cannot be archived to safeguard customers from missing trip notifications.
 - **Collapsible Archived Trips Drawer**: Added an expandable accordion drawer at the bottom of the dashboard titled "Archived Trips" showing total archived trip count. Customers can open the drawer anytime to review their past charter details, copy booking references, or click "Unarchive Trip" to restore a trip back to their active reservations list.
 - **Device-Synced Archive Persistence**: Integrated database-backed archive state tracking so archived trips remain cleanly synchronized across any device, browser, or login session.
 
-### 📸 Home Page Photo Carousel & Content Management
+### 📸 Home Page Photo Carousel & Content Management — 2026-09-06 13:06 UTC
 
 - **Photo Crop Repositioning & Focal Alignment**: Added vertical and horizontal focal alignment controls (`Center`, `Top Focus`, `Bottom Focus`, `Left Focus`, `Right Focus`) to both the Add Slide and Edit Slide forms. When widescreen 16:9 cropping cuts off photo subjects (like boat masts, skyline, or boat decks), administrators can adjust the focal alignment with instant real-time live preview.
 - **Recommended Photo Specifications Banner**: Added an informational guidelines card to the slide creation and editing interface outlining optimal dimensions (16:9 widescreen, 1920×1080px or 1280×720px), landscape orientation advice, and file limits (up to 5MB).
@@ -56,11 +73,11 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **Interactive Column Heading Sorting for Trips & Bookings (`/admin/trips`)**: Added instant column header sorting to the charter trips management dashboard. Administrators can click on any column heading in the master table (`Date`, `Charter Specs`, `Assigned Captain`, `Bookings`, and `Status`) to sort trips in ascending or descending order with visual directional indicators (`▲`, `▼`, `↕`). In addition, clicking on any column header in the nested customer bookings table (`Customer Name`, `Contact Details`, `Group Size`, `Booking Status`, and `Created Date`) immediately sorts all attendee bookings across trips.
 - **Trip Instance Generation Policy Update**: Clarified and aligned the system rules so fresh trip instances are not automatically spawned upon a trip reaching confirmed status.
 
-### 🧭 Browse & Search Experience
+### 🧭 Browse & Search Experience — 2026-09-02 14:36 UTC
 
 - **Browse Banner 1-of-2 Clarification (`/browse`)**: Updated the informational banner headline and subtext shown when browsing without a selected date to "Charters with 1 of 2 Groups Booked — Join & Confirm Instantly" ("These trips are 50% filled. Join as the 2nd group to confirm right away, or select a trip date above to start a fresh trip."). This clearly communicates to visitors that a group is already waiting and that joining confirms the charter immediately.
 
-### 🔐 User Accounts & Authentication
+### 🔐 User Accounts & Authentication — 2026-09-02 13:30 UTC
 
 - **Customer Dashboard Header Streamlining (`/dashboard`)**: Removed the redundant "SplitACharter Portal" pill badge above the welcome greeting for a cleaner, modern customer dashboard presentation.
 - **Google OAuth Sign-In Option (`/login`)**: Added a prominent "Continue with Google" sign-in option to the login page alongside the existing passwordless Email Magic Link and SMS OTP methods. Users can now securely authenticate with a single click using their Google account. New customers signing in with Google are automatically registered in the system, and authenticated users are seamlessly routed to their dashboard or admin portal.
@@ -68,13 +85,13 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **Instant Reactive Admin Header Sync**: Added automatic server data invalidation (`depends('supabase:auth')`) to the root layout so that when an administrator logs in, the navigation bar instantly updates to display "Admin Dashboard" without requiring a manual browser refresh.
 - **Dark Mode Toggle Responsiveness Fix**: Fixed an issue where background auth listener cycles during Google OAuth session initialization could interfere with theme switching. Made the theme store DOM attribute and storage updates direct and synchronous for instant, reliable toggling across all authentication states.
 
-### 💳 Payments & Admin Tools
+### 💳 Payments & Admin Tools — 2026-09-03 13:00 UTC
 
 - **Public Checkout Preview & Guest Authentication Guard (`/checkout`)**: Made the reservation checkout page publicly viewable so that visitors and carrier compliance reviewers can inspect the full booking form, customer profile fields, and SMS opt-in disclosures directly at `https://www.splitacharter.boats/checkout` without encountering an authentication redirect. Kept booking reservation deposits and finalized checkout strictly guarded by authentication, prompting unauthenticated users to sign in with email magic link or SMS OTP before submitting payment.
 - **Payments Ledger Stripe Refund Execution & Validation (`/admin/payments`)**: Upgraded the manual refund action on the payments ledger to ensure refunds always trigger live Stripe API refunds directly, report clear error alerts if Stripe rejects a request, execute using secure admin client database access, and properly respect cancellation in the confirmation dialog.
 - **Payments Ledger Trip Date Timezone Display Fix (`/admin/payments`)**: Fixed a date rendering issue on the admin payments ledger where charter trip dates were inadvertently shifted to the previous day in US time zones due to standard UTC date parsing. Dates now consistently display the exact scheduled charter date across all user time zones.
 
-### 📱 SMS Messaging & Carrier Compliance (A2P 10DLC)
+### 📱 SMS Messaging & Carrier Compliance (A2P 10DLC) — 2026-09-02 01:05 UTC
 
 - **Public SMS Program & Opt-In Verification Page (`/sms-opt-in`)**: Created a dedicated, 100% publicly accessible compliance page containing our full SMS Program Policy, message specifications, frequency, rate disclaimers, STOP/HELP instructions, and an uncropped visual replica and screenshot of our checkout opt-in workflow. This allows wireless carrier compliance reviewers (TCR / Twilio) to verify our SMS consent collection immediately without running into private login or authentication screens.
 - **Hosted Opt-In Screenshot Proof (`/sms-opt-in-proof.png`)**: Added a direct public high-resolution visual screenshot asset demonstrating the customer profile fields, unchecked consent checkbox, and disclosure copy for direct carrier audit verification.
