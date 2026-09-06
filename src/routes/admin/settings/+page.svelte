@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+	import PhotoCarousel from '$lib/components/PhotoCarousel.svelte';
 
 	let { data, form }: { data: any; form: any } = $props();
 
@@ -19,6 +20,73 @@
 		avatar: '',
 		quote: ''
 	});
+
+	// Carousel Management States
+	let editingSlide = $state<any | null>(null);
+	let isAddingSlide = $state(false);
+	let newSlideDraft = $state({
+		title: '',
+		caption: '',
+		image_url: '',
+		link_url: '',
+		link_text: '',
+		display_order: 1
+	});
+	let addSlideMode = $state<'file' | 'url'>('file');
+	let addSlidePreview = $state<string | null>(null);
+	let addSlideError = $state<string | null>(null);
+
+	let editSlideMode = $state<'keep' | 'file' | 'url'>('keep');
+	let editSlidePreview = $state<string | null>(null);
+	let editSlideError = $state<string | null>(null);
+
+	function handleAddImageChange(e: Event) {
+		const target = e.target as HTMLInputElement;
+		const file = target.files?.[0];
+		addSlideError = null;
+		if (!file) {
+			addSlidePreview = null;
+			return;
+		}
+		const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/jpg'];
+		if (!allowed.includes(file.type)) {
+			addSlideError = 'Invalid image format. Allowed: JPG, PNG, WEBP, AVIF.';
+			target.value = '';
+			addSlidePreview = null;
+			return;
+		}
+		if (file.size > 5 * 1024 * 1024) {
+			addSlideError = 'File size exceeds 5MB limit.';
+			target.value = '';
+			addSlidePreview = null;
+			return;
+		}
+		addSlidePreview = URL.createObjectURL(file);
+	}
+
+	function handleEditImageChange(e: Event) {
+		const target = e.target as HTMLInputElement;
+		const file = target.files?.[0];
+		editSlideError = null;
+		if (!file) {
+			editSlidePreview = null;
+			return;
+		}
+		const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/jpg'];
+		if (!allowed.includes(file.type)) {
+			editSlideError = 'Invalid image format. Allowed: JPG, PNG, WEBP, AVIF.';
+			target.value = '';
+			editSlidePreview = null;
+			return;
+		}
+		if (file.size > 5 * 1024 * 1024) {
+			editSlideError = 'File size exceeds 5MB limit.';
+			target.value = '';
+			editSlidePreview = null;
+			return;
+		}
+		editSlidePreview = URL.createObjectURL(file);
+	}
 
 	let activeNavSection = $state('sec-notifications');
 	let highlightedSection = $state<string | null>(null);
@@ -260,6 +328,14 @@
 			onclick={() => navigateToSection('sec-reviews')}
 		>
 			⭐ Reviews Management
+		</button>
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-carousel'} 
+			onclick={() => navigateToSection('sec-carousel')}
+		>
+			📸 Photo Carousel
 		</button>
 		<button 
 			type="button" 
@@ -829,6 +905,435 @@
 		</div>
 	{/if}
 </div>
+{:else if activeNavSection === 'sec-carousel'}
+	<div id="sec-carousel" class="admin-header section-header">
+		<div>
+			<span class="subtitle">Content Management</span>
+			<h2>Home Page Photo Carousel</h2>
+			<p class="section-desc">Manage photos, titles, captions, and links displayed in the interactive showcase on the home page.</p>
+		</div>
+	</div>
+
+	{#if form?.carouselMessage}
+		<div class="alert alert-error glass">
+			<p>{form.carouselMessage}</p>
+		</div>
+	{/if}
+
+	{#if addSlideError}
+		<div class="alert alert-error glass">
+			<p>{addSlideError}</p>
+		</div>
+	{/if}
+
+	{#if editSlideError}
+		<div class="alert alert-error glass">
+			<p>{editSlideError}</p>
+		</div>
+	{/if}
+
+	<div class="carousel-mgmt-container glass">
+		<div class="carousel-mgmt-header">
+			<div>
+				<h3>Carousel Slides ({data.carouselSlides?.length || 0})</h3>
+				<p class="sub-text">Active slides appear in the auto-playing showcase directly on the home page.</p>
+			</div>
+			<div class="header-btns">
+				{#if !data.carouselSlides || data.carouselSlides.length === 0}
+					<form method="POST" action="?/seedCarouselSlides" use:enhance>
+						<button type="submit" class="btn btn-secondary">
+							⚡ Seed 4 Starter Slides
+						</button>
+					</form>
+				{/if}
+				<button 
+					type="button" 
+					class="btn btn-primary" 
+					onclick={() => {
+						isAddingSlide = true;
+						editingSlide = null;
+						addSlidePreview = null;
+						addSlideError = null;
+						newSlideDraft = {
+							title: '',
+							caption: '',
+							image_url: '',
+							link_url: '',
+							link_text: '',
+							display_order: (data.carouselSlides?.length || 0) + 1
+						};
+					}}
+				>
+					+ Add New Photo Slide
+				</button>
+			</div>
+		</div>
+
+		<!-- Live Public Carousel Preview -->
+		{#if data.carouselSlides && data.carouselSlides.length > 0}
+			<div class="preview-carousel-wrapper">
+				<div class="preview-carousel-header">
+					<span>👁️ Live Home Page Carousel Preview (Interactive)</span>
+				</div>
+				<div class="admin-carousel-preview-box">
+					<PhotoCarousel slides={data.carouselSlides.filter((s: any) => s.active)} />
+				</div>
+			</div>
+		{/if}
+
+		<!-- Add Slide Form -->
+		{#if isAddingSlide}
+			<div class="slide-form-card glass glow-box">
+				<div class="form-card-title">
+					<h4>Add New Carousel Slide</h4>
+					<button type="button" class="btn-text-close" onclick={() => isAddingSlide = false}>✕ Close</button>
+				</div>
+				<form
+					method="POST"
+					action="?/addCarouselSlide"
+					enctype="multipart/form-data"
+					use:enhance={() => {
+						return async ({ update, result }) => {
+							await update();
+							if (result.type === 'success') {
+								isAddingSlide = false;
+								addSlidePreview = null;
+							}
+						};
+					}}
+					class="slide-edit-form"
+				>
+					<div class="slide-edit-grid">
+						<div class="form-group full-width">
+							<label for="slide-title">Slide Title</label>
+							<input id="slide-title" type="text" name="title" bind:value={newSlideDraft.title} placeholder="e.g. Sunset Catamaran Sailing" required class="text-input" />
+						</div>
+
+						<div class="form-group full-width">
+							<label for="slide-caption">Slide Caption / Description</label>
+							<textarea id="slide-caption" name="caption" rows="2" bind:value={newSlideDraft.caption} placeholder="e.g. Watch the legendary Key West sunset from the water without paying for an entire private yacht alone." required class="text-input"></textarea>
+						</div>
+
+						<!-- Image Source Selection -->
+						<div class="form-group full-width">
+							<span class="field-label-text">Photo Source</span>
+							<div class="source-mode-toggle">
+								<button
+									type="button"
+									class="mode-toggle-btn"
+									class:active={addSlideMode === 'file'}
+									onclick={() => { addSlideMode = 'file'; }}
+								>
+									📁 Upload Image File
+								</button>
+								<button
+									type="button"
+									class="mode-toggle-btn"
+									class:active={addSlideMode === 'url'}
+									onclick={() => { addSlideMode = 'url'; }}
+								>
+									🔗 External Image URL
+								</button>
+							</div>
+						</div>
+
+						{#if addSlideMode === 'file'}
+							<div class="form-group full-width">
+								<label for="slide-file">Select Image File (Max 5MB • JPG, PNG, WEBP, AVIF)</label>
+								<input
+									id="slide-file"
+									type="file"
+									name="image_file"
+									accept="image/jpeg,image/png,image/webp,image/avif,image/jpg"
+									onchange={handleAddImageChange}
+									class="text-input file-input"
+								/>
+							</div>
+						{:else}
+							<div class="form-group full-width">
+								<label for="slide-url">Image Web URL</label>
+								<input
+									id="slide-url"
+									type="url"
+									name="image_url"
+									bind:value={newSlideDraft.image_url}
+									placeholder="https://images.unsplash.com/..."
+									class="text-input"
+								/>
+							</div>
+						{/if}
+
+						{#if addSlidePreview || (addSlideMode === 'url' && newSlideDraft.image_url)}
+							<div class="form-group full-width">
+								<span class="field-label-text">Image Preview</span>
+								<div class="image-upload-preview">
+									<img
+										src={addSlidePreview || newSlideDraft.image_url}
+										alt="Preview"
+										class="upload-preview-thumb"
+									/>
+								</div>
+							</div>
+						{/if}
+
+						<div class="form-group">
+							<label for="slide-link-url">Button Link Destination (Optional)</label>
+							<input id="slide-link-url" type="text" name="link_url" bind:value={newSlideDraft.link_url} placeholder="e.g. /browse?type=Sunset%20Cruise" class="text-input" />
+						</div>
+
+						<div class="form-group">
+							<label for="slide-link-text">Button Label (Optional)</label>
+							<input id="slide-link-text" type="text" name="link_text" bind:value={newSlideDraft.link_text} placeholder="e.g. Explore Sunset Cruises" class="text-input" />
+						</div>
+
+						<div class="form-group">
+							<label for="slide-order">Display Order</label>
+							<input id="slide-order" type="number" name="display_order" bind:value={newSlideDraft.display_order} class="text-input" />
+						</div>
+
+						<div class="form-group full-width form-checkbox-group">
+							<label class="checkbox-label">
+								<input type="checkbox" name="active" value="true" checked />
+								<span>Active (Visible on public home page immediately)</span>
+							</label>
+						</div>
+
+						<div class="form-actions full-width">
+							<button type="button" class="btn btn-secondary" onclick={() => isAddingSlide = false}>Cancel</button>
+							<button type="submit" class="btn btn-primary">Save Slide</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		{/if}
+
+		<!-- Edit Slide Form -->
+		{#if editingSlide}
+			<div class="slide-form-card glass glow-box">
+				<div class="form-card-title">
+					<h4>Edit Carousel Slide: {editingSlide.title}</h4>
+					<button type="button" class="btn-text-close" onclick={() => editingSlide = null}>✕ Close</button>
+				</div>
+				<form
+					method="POST"
+					action="?/updateCarouselSlide"
+					enctype="multipart/form-data"
+					use:enhance={() => {
+						return async ({ update, result }) => {
+							await update();
+							if (result.type === 'success') {
+								editingSlide = null;
+								editSlidePreview = null;
+							}
+						};
+					}}
+					class="slide-edit-form"
+				>
+					<input type="hidden" name="id" value={editingSlide.id} />
+					<div class="slide-edit-grid">
+						<div class="form-group full-width">
+							<label for="edit-slide-title">Slide Title</label>
+							<input id="edit-slide-title" type="text" name="title" bind:value={editingSlide.title} required class="text-input" />
+						</div>
+
+						<div class="form-group full-width">
+							<label for="edit-slide-caption">Slide Caption / Description</label>
+							<textarea id="edit-slide-caption" name="caption" rows="2" bind:value={editingSlide.caption} required class="text-input"></textarea>
+						</div>
+
+						<!-- Edit Image Options -->
+						<div class="form-group full-width">
+							<span class="field-label-text">Slide Photo</span>
+							<div class="source-mode-toggle">
+								<button
+									type="button"
+									class="mode-toggle-btn"
+									class:active={editSlideMode === 'keep'}
+									onclick={() => { editSlideMode = 'keep'; }}
+								>
+									🖼️ Keep Current Image
+								</button>
+								<button
+									type="button"
+									class="mode-toggle-btn"
+									class:active={editSlideMode === 'file'}
+									onclick={() => { editSlideMode = 'file'; }}
+								>
+									📁 Upload New File
+								</button>
+								<button
+									type="button"
+									class="mode-toggle-btn"
+									class:active={editSlideMode === 'url'}
+									onclick={() => { editSlideMode = 'url'; }}
+								>
+									🔗 Change URL
+								</button>
+							</div>
+						</div>
+
+						{#if editSlideMode === 'keep'}
+							<input type="hidden" name="image_url" value={editingSlide.image_url} />
+							<div class="form-group full-width">
+								<span class="field-label-text">Current Image</span>
+								<div class="image-upload-preview">
+									<img src={editingSlide.image_url} alt={editingSlide.title} class="upload-preview-thumb" />
+								</div>
+							</div>
+						{:else if editSlideMode === 'file'}
+							<input type="hidden" name="image_url" value={editingSlide.image_url} />
+							<div class="form-group full-width">
+								<label for="edit-slide-file">Select New Image File (Max 5MB • JPG, PNG, WEBP, AVIF)</label>
+								<input
+									id="edit-slide-file"
+									type="file"
+									name="image_file"
+									accept="image/jpeg,image/png,image/webp,image/avif,image/jpg"
+									onchange={handleEditImageChange}
+									class="text-input file-input"
+								/>
+							</div>
+							{#if editSlidePreview}
+								<div class="form-group full-width">
+									<span class="field-label-text">New Image Preview</span>
+									<div class="image-upload-preview">
+										<img src={editSlidePreview} alt="New upload preview" class="upload-preview-thumb" />
+									</div>
+								</div>
+							{/if}
+						{:else}
+							<div class="form-group full-width">
+								<label for="edit-slide-url">New Image Web URL</label>
+								<input
+									id="edit-slide-url"
+									type="url"
+									name="image_url"
+									bind:value={editingSlide.image_url}
+									class="text-input"
+									required
+								/>
+							</div>
+							{#if editingSlide.image_url}
+								<div class="form-group full-width">
+									<span class="field-label-text">URL Image Preview</span>
+									<div class="image-upload-preview">
+										<img src={editingSlide.image_url} alt="URL Preview" class="upload-preview-thumb" />
+									</div>
+								</div>
+							{/if}
+						{/if}
+
+						<div class="form-group">
+							<label for="edit-slide-link-url">Button Link Destination</label>
+							<input id="edit-slide-link-url" type="text" name="link_url" bind:value={editingSlide.link_url} class="text-input" />
+						</div>
+
+						<div class="form-group">
+							<label for="edit-slide-link-text">Button Label</label>
+							<input id="edit-slide-link-text" type="text" name="link_text" bind:value={editingSlide.link_text} class="text-input" />
+						</div>
+
+						<div class="form-group">
+							<label for="edit-slide-order">Display Order</label>
+							<input id="edit-slide-order" type="number" name="display_order" bind:value={editingSlide.display_order} class="text-input" />
+						</div>
+
+						<div class="form-group full-width form-checkbox-group">
+							<label class="checkbox-label">
+								<input type="checkbox" name="active" value="true" bind:checked={editingSlide.active} />
+								<span>Active (Visible on public home page)</span>
+							</label>
+						</div>
+
+						<div class="form-actions full-width">
+							<button type="button" class="btn btn-secondary" onclick={() => editingSlide = null}>Cancel</button>
+							<button type="submit" class="btn btn-primary">Update Slide</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		{/if}
+
+		<!-- Slides Management List -->
+		<div class="slides-card-list">
+			{#if !data.carouselSlides || data.carouselSlides.length === 0}
+				<div class="empty-placeholder">
+					<p>No photo carousel slides found in the database.</p>
+				</div>
+			{:else}
+				{#each data.carouselSlides as slide (slide.id)}
+					<div class="slide-mgmt-card glass" class:inactive-card={!slide.active}>
+						<div class="slide-card-thumb-col">
+							<img src={slide.image_url} alt={slide.title} class="slide-mgmt-thumb" />
+							<div class="slide-order-tag">#{slide.display_order}</div>
+						</div>
+
+						<div class="slide-card-details-col">
+							<div class="slide-details-top">
+								<h4 class="slide-card-title">{slide.title}</h4>
+								<span class="badge" class:badge-active={slide.active} class:badge-inactive={!slide.active}>
+									{slide.active ? '● Live' : '○ Hidden'}
+								</span>
+							</div>
+
+							<p class="slide-card-caption">{slide.caption}</p>
+
+							{#if slide.link_url}
+								<div class="slide-card-link-badge">
+									🔗 <strong>{slide.link_text || 'Link'}:</strong> {slide.link_url}
+								</div>
+							{/if}
+						</div>
+
+						<div class="slide-card-actions-col">
+							<!-- Active Toggle -->
+							<form method="POST" action="?/toggleCarouselActive" use:enhance>
+								<input type="hidden" name="id" value={slide.id} />
+								<input type="hidden" name="active" value={slide.active ? 'false' : 'true'} />
+								<button
+									type="submit"
+									class="btn-toggle-switch"
+									class:active-toggle={slide.active}
+									title={slide.active ? 'Click to hide slide' : 'Click to show slide'}
+								>
+									{slide.active ? 'Enabled' : 'Disabled'}
+								</button>
+							</form>
+
+							<button
+								type="button"
+								class="btn btn-secondary btn-sm"
+								onclick={() => {
+									editingSlide = { ...slide };
+									isAddingSlide = false;
+									editSlideMode = 'keep';
+									editSlidePreview = null;
+									editSlideError = null;
+								}}
+							>
+								Edit
+							</button>
+
+							<form method="POST" action="?/deleteCarouselSlide" use:enhance>
+								<input type="hidden" name="id" value={slide.id} />
+								<button
+									type="submit"
+									class="btn-danger-action"
+									onclick={(e) => {
+										if (!confirm(`Are you sure you want to delete "${slide.title}"?`)) {
+											e.preventDefault();
+										}
+									}}
+								>
+									Delete
+								</button>
+							</form>
+						</div>
+					</div>
+				{/each}
+			{/if}
+		</div>
+	</div>
 {:else if activeNavSection === 'sec-timings'}
 
 
@@ -1586,6 +2091,259 @@
 	.btn-action-toggle:hover {
 		background: rgba(255, 255, 255, 0.1);
 		color: var(--text-primary);
+	}
+
+	/* Carousel Management Styles */
+	.carousel-mgmt-container {
+		border: 1px solid var(--border-light);
+		padding: 2rem;
+		border-radius: 12px;
+		background: var(--input-bg);
+		margin-bottom: 4rem;
+	}
+	.carousel-mgmt-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	.carousel-mgmt-header h3 {
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin: 0 0 0.25rem 0;
+	}
+	.preview-carousel-wrapper {
+		margin-bottom: 2.5rem;
+		background: var(--bg-surface);
+		border: 1px solid var(--border-light);
+		border-radius: 16px;
+		padding: 1.5rem;
+	}
+	.preview-carousel-header {
+		font-size: 0.875rem;
+		font-weight: 700;
+		color: var(--primary);
+		margin-bottom: 1rem;
+	}
+	.admin-carousel-preview-box {
+		max-width: 900px;
+		margin: 0 auto;
+	}
+	.slide-form-card {
+		padding: 1.75rem;
+		border: 1px solid var(--border-light);
+		border-radius: 12px;
+		background: var(--bg-surface);
+		margin-bottom: 2rem;
+	}
+	.slide-edit-form {
+		width: 100%;
+	}
+	.slide-edit-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1.25rem;
+	}
+	.slide-edit-grid .full-width {
+		grid-column: 1 / -1;
+	}
+	.field-label-text {
+		display: block;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		margin-bottom: 0.5rem;
+	}
+	.source-mode-toggle {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 0.5rem;
+	}
+	.mode-toggle-btn {
+		padding: 6px 14px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		border-radius: 6px;
+		background: var(--bg-base);
+		border: 1px solid var(--border-light);
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.mode-toggle-btn.active {
+		background: var(--primary);
+		color: #ffffff;
+		border-color: var(--primary);
+	}
+	.file-input {
+		padding: 8px 12px;
+		cursor: pointer;
+	}
+	.image-upload-preview {
+		margin-top: 0.5rem;
+		border-radius: 8px;
+		overflow: hidden;
+		max-width: 320px;
+		max-height: 180px;
+		border: 1px solid var(--border-light);
+	}
+	.upload-preview-thumb {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+	.form-checkbox-group {
+		margin-top: 0.25rem;
+	}
+	.checkbox-label {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		cursor: pointer;
+		font-size: 0.9rem;
+		color: var(--text-primary);
+	}
+	.checkbox-label input[type="checkbox"] {
+		width: 18px;
+		height: 18px;
+		cursor: pointer;
+	}
+	.slides-card-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+	.slide-mgmt-card {
+		display: flex;
+		align-items: center;
+		padding: 1.25rem;
+		border-radius: 12px;
+		border: 1px solid var(--border-light);
+		background: var(--bg-surface);
+		gap: 1.5rem;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+	.slide-mgmt-card:hover {
+		border-color: var(--primary);
+	}
+	.slide-mgmt-card.inactive-card {
+		opacity: 0.6;
+	}
+	.slide-card-thumb-col {
+		position: relative;
+		width: 140px;
+		height: 90px;
+		flex-shrink: 0;
+		border-radius: 8px;
+		overflow: hidden;
+		border: 1px solid var(--border-light);
+	}
+	.slide-mgmt-thumb {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+	.slide-order-tag {
+		position: absolute;
+		top: 4px;
+		left: 4px;
+		background: rgba(15, 23, 42, 0.8);
+		backdrop-filter: blur(4px);
+		color: #ffffff;
+		font-size: 0.75rem;
+		font-weight: 700;
+		padding: 2px 6px;
+		border-radius: 4px;
+	}
+	.slide-card-details-col {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.slide-details-top {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.slide-card-title {
+		font-size: 1.15rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin: 0;
+	}
+	.badge-active {
+		background: rgba(34, 197, 94, 0.15);
+		color: #22c55e;
+		border: 1px solid rgba(34, 197, 94, 0.3);
+		font-size: 0.75rem;
+		font-weight: 700;
+		padding: 2px 8px;
+		border-radius: 9999px;
+	}
+	.badge-inactive {
+		background: rgba(148, 163, 184, 0.15);
+		color: #94a3b8;
+		border: 1px solid rgba(148, 163, 184, 0.3);
+		font-size: 0.75rem;
+		font-weight: 700;
+		padding: 2px 8px;
+		border-radius: 9999px;
+	}
+	.slide-card-caption {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		margin: 0;
+		line-height: 1.4;
+	}
+	.slide-card-link-badge {
+		font-size: 0.8rem;
+		color: var(--primary);
+		margin-top: 0.25rem;
+	}
+	.slide-card-actions-col {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-shrink: 0;
+	}
+	.btn-toggle-switch {
+		padding: 6px 12px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		border-radius: 6px;
+		cursor: pointer;
+		background: rgba(148, 163, 184, 0.15);
+		color: var(--text-secondary);
+		border: 1px solid var(--border-light);
+		transition: all 0.2s ease;
+	}
+	.btn-toggle-switch.active-toggle {
+		background: rgba(34, 197, 94, 0.15);
+		color: #22c55e;
+		border-color: rgba(34, 197, 94, 0.3);
+	}
+	.btn-sm {
+		padding: 6px 14px;
+		font-size: 0.85rem;
+	}
+	@media (max-width: 768px) {
+		.slide-mgmt-card {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+		.slide-card-thumb-col {
+			width: 100%;
+			height: 160px;
+		}
+		.slide-edit-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.divider-main {

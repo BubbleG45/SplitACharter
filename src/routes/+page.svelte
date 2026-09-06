@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PhotoCarousel from '$lib/components/PhotoCarousel.svelte';
+
 	let { data }: { data: any } = $props();
 
 	const defaultReviews = [
@@ -118,6 +120,18 @@
 				{/if}
 			</div>
 		</section>
+
+		<!-- Charter Highlights Carousel Section -->
+		{#if data.carouselSlides && data.carouselSlides.length > 0}
+			<section class="carousel-section">
+				<div class="carousel-section-header">
+					<span class="badge">Featured Adventures</span>
+					<h2>Discover What You Can Split</h2>
+					<p>From world-class sportfishing to turquoise sandbars, browse our most popular shared charter trips.</p>
+				</div>
+				<PhotoCarousel slides={data.carouselSlides} />
+			</section>
+		{/if}
 
 		<!-- Reviews Marquee Section -->
 		<section class="reviews-section">
@@ -243,6 +257,36 @@
 	}
 	.font-bold {
 		font-weight: 700;
+	}
+
+	/* Charter Highlights Carousel Section */
+	.carousel-section {
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+		width: 100%;
+	}
+	.carousel-section-header {
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.6rem;
+		max-width: 680px;
+		margin: 0 auto;
+	}
+	.carousel-section-header h2 {
+		font-size: 2.25rem;
+		font-weight: 850;
+		color: var(--text-primary);
+		letter-spacing: -0.5px;
+		margin: 0;
+	}
+	.carousel-section-header p {
+		font-size: 1.05rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+		margin: 0;
 	}
 
 	/* Reviews Marquee Section */

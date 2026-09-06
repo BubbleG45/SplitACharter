@@ -1,8 +1,54 @@
 import { error, fail } from '@sveltejs/kit';
 import fs from 'fs';
 import path from 'path';
+import { createClient } from '@supabase/supabase-js';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import type { PageServerLoad, Actions } from './$types';
 import rawChangelog from '../../../../CHANGELOG.md?raw';
+
+function getAdminClient() {
+	return createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+}
+
+const defaultSeedSlides = [
+	{
+		title: 'Sunset Catamaran Sailing',
+		caption: 'Watch the legendary Key West sunset from the water without paying for an entire private yacht alone.',
+		image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1600&q=80',
+		link_url: '/browse?type=Sunset%20Cruise',
+		link_text: 'Explore Sunset Cruises',
+		display_order: 1,
+		active: true
+	},
+	{
+		title: 'Offshore Sportfishing',
+		caption: 'Target mahi-mahi, sailfish, and blackfin tuna in the Gulf Stream. Split the boat 50/50 with another crew.',
+		image_url: 'https://images.unsplash.com/photo-1544551763-77ef2d0cfc6c?auto=format&fit=crop&w=1600&q=80',
+		link_url: '/browse?type=Offshore%20Fishing',
+		link_text: 'Find Fishing Splits',
+		display_order: 2,
+		active: true
+	},
+	{
+		title: 'Sandbar & Eco Adventures',
+		caption: 'Anchor in waist-deep turquoise shallows at Islamorada or Key West sandbars with friends and family.',
+		image_url: 'https://images.unsplash.com/photo-1510414842594-a61752afb394?auto=format&fit=crop&w=1600&q=80',
+		link_url: '/browse?type=Sandbar%20Charter',
+		link_text: 'Browse Sandbar Trips',
+		display_order: 3,
+		active: true
+	},
+	{
+		title: 'Coral Reef & Wreck Diving',
+		caption: 'Explore world-renowned living coral reefs and historic shipwrecks with certified local captains.',
+		image_url: 'https://images.unsplash.com/photo-1544551763-92ab472cad5d?auto=format&fit=crop&w=1600&q=80',
+		link_url: '/browse?type=Reef%20Snorkeling',
+		link_text: 'View Snorkel & Dive Trips',
+		display_order: 4,
+		active: true
+	}
+];
 
 const defaultSeedReviews = [
 	{
@@ -108,7 +154,7 @@ const defaultSeedReviews = [
 ];
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-	const [settingsRes, tripTypesRes, reviewsRes] = await Promise.all([
+	const [settingsRes, tripTypesRes, reviewsRes, slidesRes] = await Promise.all([
 		supabase
 			.from('admin_notification_settings')
 			.select('*')
@@ -119,6 +165,11 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			.order('name', { ascending: true }),
 		supabase
 			.from('landing_reviews')
+			.select('*')
+			.order('display_order', { ascending: true })
+			.order('created_at', { ascending: true }),
+		supabase
+			.from('landing_carousel_slides')
 			.select('*')
 			.order('display_order', { ascending: true })
 			.order('created_at', { ascending: true })
@@ -154,6 +205,26 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		reviews = defaultSeedReviews.map((r, i) => ({ id: `default-${i+1}`, ...r }));
 	}
 
+	let carouselSlides = slidesRes.data || [];
+
+	// Auto-seed default slides into database if table is empty or error occurs
+	if (!slidesRes.error && carouselSlides.length === 0) {
+		console.log('landing_carousel_slides table is empty, auto-seeding starter slides...');
+		const { data: insertedSlides, error: seedSlideErr } = await supabase
+			.from('landing_carousel_slides')
+			.insert(defaultSeedSlides)
+			.select('*');
+
+		if (!seedSlideErr && insertedSlides) {
+			carouselSlides = insertedSlides;
+		} else if (seedSlideErr) {
+			console.error('Error auto-seeding carousel slides:', seedSlideErr);
+		}
+	} else if (slidesRes.error) {
+		console.warn('Could not query landing_carousel_slides table, using static fallbacks:', slidesRes.error.message);
+		carouselSlides = defaultSeedSlides.map((s, i) => ({ id: `default-slide-${i+1}`, ...s }));
+	}
+
 	let changelogRaw = rawChangelog || '';
 	if (!changelogRaw) {
 		try {
@@ -170,6 +241,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		settings: settingsRes.data || [],
 		tripTypes: tripTypesRes.data || [],
 		reviews,
+		carouselSlides,
 		changelogRaw
 	};
 };
@@ -370,6 +442,245 @@ export const actions: Actions = {
 		if (deleteErr) {
 			console.error('Error deleting review:', deleteErr);
 			return fail(500, { reviewMessage: deleteErr.message || 'Failed to delete review' });
+		}
+
+		return { success: true };
+	},
+	addCarouselSlide: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const title = (formData.get('title') as string)?.trim();
+		const caption = (formData.get('caption') as string)?.trim();
+		const linkUrl = (formData.get('link_url') as string)?.trim() || null;
+		const linkText = (formData.get('link_text') as string)?.trim() || null;
+		const displayOrder = parseInt((formData.get('display_order') as string) || '0', 10);
+		const active = formData.get('active') !== 'false';
+
+		let imageUrl = (formData.get('image_url') as string)?.trim() || '';
+		const imageFile = formData.get('image_file') as File | null;
+
+		if (!title || !caption) {
+			return fail(400, { carouselMessage: 'Title and caption are required.' });
+		}
+
+		if (imageFile && imageFile.size > 0) {
+			const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/jpg'];
+			if (!allowedTypes.includes(imageFile.type)) {
+				return fail(400, { carouselMessage: 'Invalid image format. Allowed formats: JPEG, PNG, WEBP, AVIF.' });
+			}
+
+			const MAX_SIZE = 5 * 1024 * 1024;
+			if (imageFile.size > MAX_SIZE) {
+				return fail(400, { carouselMessage: 'Image file size exceeds the 5MB limit.' });
+			}
+
+			try {
+				const supabaseAdmin = getAdminClient();
+				await supabaseAdmin.storage.createBucket('carousel-images', { public: true }).catch(() => {});
+
+				const ext = imageFile.name.split('.').pop() || 'jpg';
+				const fileName = `carousel-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+
+				const arrayBuffer = await imageFile.arrayBuffer();
+				const buffer = Buffer.from(arrayBuffer);
+
+				const { error: uploadErr } = await supabaseAdmin.storage
+					.from('carousel-images')
+					.upload(fileName, buffer, {
+						contentType: imageFile.type,
+						upsert: true
+					});
+
+				if (uploadErr) {
+					console.error('Error uploading carousel image to Supabase Storage:', uploadErr);
+					return fail(500, { carouselMessage: `Storage upload failed: ${uploadErr.message}` });
+				}
+
+				const { data: publicUrlData } = supabaseAdmin.storage
+					.from('carousel-images')
+					.getPublicUrl(fileName);
+
+				imageUrl = publicUrlData.publicUrl;
+			} catch (err: any) {
+				console.error('Upload exception:', err);
+				return fail(500, { carouselMessage: `Failed to upload image: ${err.message}` });
+			}
+		}
+
+		if (!imageUrl) {
+			return fail(400, { carouselMessage: 'Please upload an image file or provide an image URL.' });
+		}
+
+		const { error: insertErr } = await supabase
+			.from('landing_carousel_slides')
+			.insert({
+				title,
+				caption,
+				image_url: imageUrl,
+				link_url: linkUrl,
+				link_text: linkText,
+				display_order: displayOrder,
+				active
+			});
+
+		if (insertErr) {
+			console.error('Error adding carousel slide:', insertErr);
+			return fail(500, { carouselMessage: insertErr.message || 'Failed to create slide.' });
+		}
+
+		return { success: true };
+	},
+	updateCarouselSlide: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+		const title = (formData.get('title') as string)?.trim();
+		const caption = (formData.get('caption') as string)?.trim();
+		const linkUrl = (formData.get('link_url') as string)?.trim() || null;
+		const linkText = (formData.get('link_text') as string)?.trim() || null;
+		const displayOrder = parseInt((formData.get('display_order') as string) || '0', 10);
+		const active = formData.get('active') === 'true';
+
+		let imageUrl = (formData.get('image_url') as string)?.trim() || '';
+		const imageFile = formData.get('image_file') as File | null;
+
+		if (!id || !title || !caption) {
+			return fail(400, { carouselMessage: 'Slide ID, title, and caption are required.' });
+		}
+
+		if (imageFile && imageFile.size > 0) {
+			const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/jpg'];
+			if (!allowedTypes.includes(imageFile.type)) {
+				return fail(400, { carouselMessage: 'Invalid image format. Allowed formats: JPEG, PNG, WEBP, AVIF.' });
+			}
+
+			const MAX_SIZE = 5 * 1024 * 1024;
+			if (imageFile.size > MAX_SIZE) {
+				return fail(400, { carouselMessage: 'Image file size exceeds the 5MB limit.' });
+			}
+
+			try {
+				const supabaseAdmin = getAdminClient();
+				await supabaseAdmin.storage.createBucket('carousel-images', { public: true }).catch(() => {});
+
+				const ext = imageFile.name.split('.').pop() || 'jpg';
+				const fileName = `carousel-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+
+				const arrayBuffer = await imageFile.arrayBuffer();
+				const buffer = Buffer.from(arrayBuffer);
+
+				const { error: uploadErr } = await supabaseAdmin.storage
+					.from('carousel-images')
+					.upload(fileName, buffer, {
+						contentType: imageFile.type,
+						upsert: true
+					});
+
+				if (uploadErr) {
+					console.error('Error uploading replacement carousel image:', uploadErr);
+					return fail(500, { carouselMessage: `Storage upload failed: ${uploadErr.message}` });
+				}
+
+				const { data: publicUrlData } = supabaseAdmin.storage
+					.from('carousel-images')
+					.getPublicUrl(fileName);
+
+				imageUrl = publicUrlData.publicUrl;
+			} catch (err: any) {
+				return fail(500, { carouselMessage: `Failed to upload image: ${err.message}` });
+			}
+		}
+
+		if (!imageUrl) {
+			return fail(400, { carouselMessage: 'Slide must have an image.' });
+		}
+
+		const { error: updateErr } = await supabase
+			.from('landing_carousel_slides')
+			.update({
+				title,
+				caption,
+				image_url: imageUrl,
+				link_url: linkUrl,
+				link_text: linkText,
+				display_order: displayOrder,
+				active
+			})
+			.eq('id', id);
+
+		if (updateErr) {
+			console.error('Error updating carousel slide:', updateErr);
+			return fail(500, { carouselMessage: updateErr.message || 'Failed to update slide.' });
+		}
+
+		return { success: true };
+	},
+	toggleCarouselActive: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+		const active = formData.get('active') === 'true';
+
+		if (!id) {
+			return fail(400, { carouselMessage: 'Slide ID is required.' });
+		}
+
+		const { error: updateErr } = await supabase
+			.from('landing_carousel_slides')
+			.update({ active })
+			.eq('id', id);
+
+		if (updateErr) {
+			console.error('Error toggling carousel slide active state:', updateErr);
+			return fail(500, { carouselMessage: updateErr.message || 'Failed to toggle status.' });
+		}
+
+		return { success: true };
+	},
+	deleteCarouselSlide: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+
+		if (!id) {
+			return fail(400, { carouselMessage: 'Slide ID is required.' });
+		}
+
+		const { data: slide } = await supabase
+			.from('landing_carousel_slides')
+			.select('image_url')
+			.eq('id', id)
+			.maybeSingle();
+
+		if (slide?.image_url && slide.image_url.includes('carousel-images/')) {
+			try {
+				const parts = slide.image_url.split('carousel-images/');
+				const fileName = parts[parts.length - 1];
+				if (fileName) {
+					const supabaseAdmin = getAdminClient();
+					await supabaseAdmin.storage.from('carousel-images').remove([fileName]);
+				}
+			} catch (cleanupErr) {
+				console.warn('Could not delete storage image file:', cleanupErr);
+			}
+		}
+
+		const { error: deleteErr } = await supabase
+			.from('landing_carousel_slides')
+			.delete()
+			.eq('id', id);
+
+		if (deleteErr) {
+			console.error('Error deleting carousel slide:', deleteErr);
+			return fail(500, { carouselMessage: deleteErr.message || 'Failed to delete slide.' });
+		}
+
+		return { success: true };
+	},
+	seedCarouselSlides: async ({ locals: { supabase } }) => {
+		const { error: seedErr } = await supabase
+			.from('landing_carousel_slides')
+			.insert(defaultSeedSlides);
+
+		if (seedErr) {
+			console.error('Error seeding carousel slides:', seedErr);
+			return fail(500, { carouselMessage: seedErr.message || 'Failed to seed default carousel slides.' });
 		}
 
 		return { success: true };

@@ -11,21 +11,79 @@ const defaultSeedReviews = [
 	{ name: 'Derek & Tom N.', location: 'Fort Lauderdale, FL', trip: 'Bahia Honda Reef Dive', stars: 5, avatar: 'DT', quote: 'Found a spot on short notice. Reconfirmed right from my phone and met incredible dive buddies. Highly recommend SplitACharter!', display_order: 10, active: true }
 ];
 
+const defaultSeedSlides = [
+	{
+		id: 'default-slide-1',
+		title: 'Sunset Catamaran Sailing',
+		caption: 'Watch the legendary Key West sunset from the water without paying for an entire private yacht alone.',
+		image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1600&q=80',
+		link_url: '/browse?type=Sunset%20Cruise',
+		link_text: 'Explore Sunset Cruises',
+		display_order: 1,
+		active: true
+	},
+	{
+		id: 'default-slide-2',
+		title: 'Offshore Sportfishing',
+		caption: 'Target mahi-mahi, sailfish, and blackfin tuna in the Gulf Stream. Split the boat 50/50 with another crew.',
+		image_url: 'https://images.unsplash.com/photo-1544551763-77ef2d0cfc6c?auto=format&fit=crop&w=1600&q=80',
+		link_url: '/browse?type=Offshore%20Fishing',
+		link_text: 'Find Fishing Splits',
+		display_order: 2,
+		active: true
+	},
+	{
+		id: 'default-slide-3',
+		title: 'Sandbar & Eco Adventures',
+		caption: 'Anchor in waist-deep turquoise shallows at Islamorada or Key West sandbars with friends and family.',
+		image_url: 'https://images.unsplash.com/photo-1510414842594-a61752afb394?auto=format&fit=crop&w=1600&q=80',
+		link_url: '/browse?type=Sandbar%20Charter',
+		link_text: 'Browse Sandbar Trips',
+		display_order: 3,
+		active: true
+	},
+	{
+		id: 'default-slide-4',
+		title: 'Coral Reef & Wreck Diving',
+		caption: 'Explore world-renowned living coral reefs and historic shipwrecks with certified local captains.',
+		image_url: 'https://images.unsplash.com/photo-1544551763-92ab472cad5d?auto=format&fit=crop&w=1600&q=80',
+		link_url: '/browse?type=Reef%20Snorkeling',
+		link_text: 'View Snorkel & Dive Trips',
+		display_order: 4,
+		active: true
+	}
+];
+
 export const load = async ({ locals }: any) => {
 	const supabase = locals.supabase;
-	const { data: reviews, error } = await supabase
-		.from('landing_reviews')
-		.select('*')
-		.eq('active', true)
-		.order('display_order', { ascending: true })
-		.order('created_at', { ascending: true });
 
-	if (error || !reviews || reviews.length === 0) {
-		console.warn('landing_reviews empty or errored, returning default examples:', error?.message);
-		return { reviews: defaultSeedReviews };
+	const [reviewsRes, slidesRes] = await Promise.all([
+		supabase
+			.from('landing_reviews')
+			.select('*')
+			.eq('active', true)
+			.order('display_order', { ascending: true })
+			.order('created_at', { ascending: true }),
+		supabase
+			.from('landing_carousel_slides')
+			.select('*')
+			.eq('active', true)
+			.order('display_order', { ascending: true })
+			.order('created_at', { ascending: true })
+	]);
+
+	let reviews = reviewsRes.data;
+	if (reviewsRes.error || !reviews || reviews.length === 0) {
+		reviews = defaultSeedReviews;
+	}
+
+	let carouselSlides = slidesRes.data;
+	if (slidesRes.error || !carouselSlides || carouselSlides.length === 0) {
+		carouselSlides = defaultSeedSlides;
 	}
 
 	return {
-		reviews: reviews || []
+		reviews,
+		carouselSlides
 	};
 };
