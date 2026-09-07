@@ -158,7 +158,7 @@
 		position: absolute;
 		border-radius: 50%;
 		filter: blur(150px);
-		z-index: 1;
+		z-index: 0;
 		pointer-events: none;
 		opacity: 0.15;
 	}
@@ -422,7 +422,6 @@
 		width: calc(100% - 280px) !important;
 		padding: 2.5rem;
 		position: relative;
-		z-index: 2;
 		overflow-y: auto;
 		height: 100vh;
 		transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);

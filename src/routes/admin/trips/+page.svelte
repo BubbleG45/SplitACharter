@@ -1362,7 +1362,7 @@
 		background: var(--bg-surface);
 		border: 1px solid var(--border-light);
 		border-radius: 12px;
-		z-index: 220;
+		z-index: 300;
 		display: flex;
 		flex-direction: column;
 		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);

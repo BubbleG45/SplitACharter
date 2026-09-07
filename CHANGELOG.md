@@ -6,6 +6,15 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### 🛠️ Admin Modal Stacking Layering & Twilio SMS Dispatch Diagnostics (`/admin`, `/admin/trips`) — 2026-09-07 16:05 UTC
+
+- **Eliminated Menu Overlap on Admin Modals**: Resolved a CSS stacking context bug where opening any modal in the administration portal (such as the "Cancel Trip Instance" double-confirmation modal, the Captain's Log audit view, or the Status Guide) was partially covered by the dark navigation sidebar menu on the left. Modals, drawers, and backdrops now sit cleanly above the entire screen.
+- **Twilio SMS Environment Variable Sanitization**: Added automatic sanitization for all SMS credentials to trim trailing whitespace and strip accidental quotation marks (e.g. `"AC..."` or `'AC...'`) often introduced when pasting credentials into deployment dashboards like Vercel.
+- **Robust Twilio Credential Pairing**: Upgraded the SMS dispatch engine to validate and pair credentials intelligently. It automatically pairs API Key SIDs (`SK...`) with API Key Secrets, or Account SIDs (`AC...`) with master Auth Tokens, and gracefully handles swapped environment variables.
+- **E.164 Recipient Phone Normalization**: Integrated automatic phone number formatting into the SMS delivery pipeline. Unformatted 10-digit US phone numbers (e.g. `3309903216`) are automatically converted to standard international E.164 format (`+13309903216`) prior to sending, ensuring smooth Twilio delivery.
+- **Clear, Actionable Configuration Diagnostics**: When Twilio credentials in the environment are invalid or misconfigured, the dispatch engine now detects the issue before sending and logs a friendly, plain-English diagnostic into the communication history (e.g. explaining that the Account SID must start with `AC` or API Key with `SK`), replacing the previous generic `failed: Authentication Error - invalid username` message.
+- **New Twilio Health Diagnostic Endpoint (`/api/debug/twilio`)**: Added a secure diagnostic endpoint for administrators that inspects and reports Twilio environment status (credential prefixes, lengths, mock status, and sender types) with sensitive values masked.
+
 ### 🛡️ Administrator Access Management & Role Revocation (`/admin/settings?tab=sec-admin-access`) — 2026-09-07 15:37 UTC
 
 - **Dedicated Admin Access Settings Hub**: Added a new "Admin Access" tab to the Admin Settings dashboard (`/admin/settings?tab=sec-admin-access`). Existing platform administrators can view all currently authorized administrators, check account status, grant administrator privileges to new users, and revoke access.
