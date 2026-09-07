@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import PhotoCarousel from '$lib/components/PhotoCarousel.svelte';
+	import { DEFAULT_NOTIFICATION_TEMPLATES } from '$lib/notificationTemplates';
 
 	let { data, form }: { data: any; form: any } = $props();
 
@@ -132,6 +133,29 @@
 		}
 		editSlidePreview = URL.createObjectURL(file);
 	}
+
+	// Admin Access States
+	let revokingAdmin = $state<any | null>(null);
+	let revokeConfirmInput = $state('');
+	let isRevokeModalOpen = $state(false);
+
+	function openRevokeModal(admin: any) {
+		revokingAdmin = admin;
+		revokeConfirmInput = '';
+		isRevokeModalOpen = true;
+	}
+
+	function closeRevokeModal() {
+		revokingAdmin = null;
+		revokeConfirmInput = '';
+		isRevokeModalOpen = false;
+	}
+
+	const isRevokeConfirmed = $derived(
+		revokingAdmin &&
+			(revokeConfirmInput.trim().toLowerCase() === revokingAdmin.email.toLowerCase() ||
+				revokeConfirmInput.trim().toUpperCase() === 'REVOKE')
+	);
 
 	let activeNavSection = $state('sec-notifications');
 	let highlightedSection = $state<string | null>(null);
@@ -409,14 +433,14 @@
 		match_detected: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
 		match_auto_reconfirmed: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
 		reconfirm_reminder: ['{customer_name}', '{trip_date}', '{trip_type}', '{deadline_time}', '{dashboard_url}'],
-		reconfirm_forfeited: ['{customer_name}', '{trip_date}', '{trip_type}'],
-		counterpart_forfeited: ['{customer_name}', '{trip_date}', '{trip_type}'],
+		reconfirm_forfeited: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
+		counterpart_forfeited: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
 		captain_blast: ['{trip_type}', '{trip_date}', '{location}', '{accept_url}'],
-		captain_confirmed: ['{customer_name}', '{captain_name}', '{meeting_area}', '{trip_date}', '{trip_type}'],
+		captain_confirmed: ['{customer_name}', '{captain_name}', '{captain_phone}', '{meeting_area}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
 		captain_secured: ['{captain_name}', '{trip_date}', '{trip_type}', '{passenger_list}'],
 		captain_details_link: ['{trip_type}', '{trip_date}', '{location}', '{details_url}'],
-		matching_timeout: ['{customer_name}', '{trip_date}', '{trip_type}'],
-		unmatched_trip_timeout: ['{customer_name}', '{trip_date}', '{trip_type}']
+		matching_timeout: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}'],
+		unmatched_trip_timeout: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}']
 	};
 
 	function formatTriggerName(name: string) {
@@ -499,6 +523,14 @@
 		<button 
 			type="button" 
 			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-admin-access'} 
+			onclick={() => navigateToSection('sec-admin-access')}
+		>
+			🛡️ Admin Access
+		</button>
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
 			class:active={activeNavSection === 'sec-changelog'} 
 			onclick={() => navigateToSection('sec-changelog')}
 		>
@@ -519,7 +551,18 @@
 		<!-- Left Sidebar List -->
 		<div class="template-sidebar glass">
 			<div class="sidebar-header">
-				<h3>Select Template</h3>
+				<div class="sidebar-header-flex">
+					<h3>Select Template</h3>
+					<form method="POST" action="?/populateAllDefaultTemplates" use:enhance>
+						<button 
+							type="submit" 
+							class="btn-outline-primary" 
+							title="Populate any missing templates with default copy across all 13 triggers"
+						>
+							Fill Defaults
+						</button>
+					</form>
+				</div>
 			</div>
 			<div class="sidebar-list">
 				{#each settings as setting}
@@ -544,7 +587,12 @@
 			{#if selectedSetting}
 				<div class="template-card glass">
 					<div class="card-header">
-						<h2>{formatTriggerName(selectedSetting.trigger_name)}</h2>
+						<div>
+							<h2>{formatTriggerName(selectedSetting.trigger_name)}</h2>
+							{#if DEFAULT_NOTIFICATION_TEMPLATES[selectedSetting.trigger_name]?.description}
+								<p class="trigger-desc">{DEFAULT_NOTIFICATION_TEMPLATES[selectedSetting.trigger_name].description}</p>
+							{/if}
+						</div>
 						<span class="code-ref">{selectedSetting.trigger_name}</span>
 					</div>
 					
@@ -599,27 +647,61 @@
 						<div class="divider"></div>
 
 						<!-- Email Template Editor -->
-						<div class="form-group" class:disabled={!selectedSetting.email_enabled}>
-							<label for="email-template-{selectedSetting.id}">Email Body Template</label>
+						<div class="form-group" class:channel-inactive={!selectedSetting.email_enabled}>
+							<div class="form-group-header">
+								<label for="email-template-{selectedSetting.id}">
+									Email Body Template
+									{#if !selectedSetting.email_enabled}
+										<span class="badge-inactive">Channel Inactive</span>
+									{/if}
+								</label>
+								<button 
+									type="button" 
+									class="btn-restore-default"
+									title="Reset email template to standard default"
+									onclick={() => {
+										const def = DEFAULT_NOTIFICATION_TEMPLATES[selectedSetting.trigger_name];
+										if (def) selectedSetting.email_template = def.email_template;
+									}}
+								>
+									↺ Restore Default
+								</button>
+							</div>
 							<textarea 
 								id="email-template-{selectedSetting.id}" 
 								name="email_template" 
-								disabled={!selectedSetting.email_enabled}
 								rows="5"
-								placeholder="Disabled (toggled off)"
+								placeholder="Enter email template..."
 								bind:value={selectedSetting.email_template}
 							></textarea>
 						</div>
 
 						<!-- SMS Template Editor -->
-						<div class="form-group" class:disabled={!selectedSetting.sms_enabled}>
-							<label for="sms-template-{selectedSetting.id}">SMS Text Template</label>
+						<div class="form-group" class:channel-inactive={!selectedSetting.sms_enabled}>
+							<div class="form-group-header">
+								<label for="sms-template-{selectedSetting.id}">
+									SMS Text Template
+									{#if !selectedSetting.sms_enabled}
+										<span class="badge-inactive">Channel Inactive</span>
+									{/if}
+								</label>
+								<button 
+									type="button" 
+									class="btn-restore-default"
+									title="Reset SMS template to standard default"
+									onclick={() => {
+										const def = DEFAULT_NOTIFICATION_TEMPLATES[selectedSetting.trigger_name];
+										if (def) selectedSetting.sms_template = def.sms_template;
+									}}
+								>
+									↺ Restore Default
+								</button>
+							</div>
 							<textarea 
 								id="sms-template-{selectedSetting.id}" 
 								name="sms_template" 
-								disabled={!selectedSetting.sms_enabled}
 								rows="4"
-								placeholder="Disabled (toggled off)"
+								placeholder="Enter SMS template..."
 								bind:value={selectedSetting.sms_template}
 							></textarea>
 						</div>
@@ -1855,6 +1937,202 @@
 			></iframe>
 		</div>
 	</div>
+{:else if activeNavSection === 'sec-admin-access'}
+	<div id="sec-admin-access" class="admin-header section-header">
+		<div>
+			<span class="subtitle">Security & Permissions</span>
+			<h2>Administrator Access</h2>
+			<p class="section-desc">Manage authorized system administrators with full dashboard, operational, and data access.</p>
+		</div>
+	</div>
+
+	{#if form?.adminActionError}
+		<div class="alert alert-error glass">
+			<p>⚠️ {form.adminActionError}</p>
+		</div>
+	{/if}
+	{#if form?.adminActionSuccess}
+		<div class="alert alert-success glass">
+			<p>✅ {form.adminActionSuccess}</p>
+		</div>
+	{/if}
+
+	<div class="admin-access-container glass">
+		<div class="admin-access-grid">
+			<!-- Add Admin Form -->
+			<div class="add-admin-panel">
+				<h3>Grant Administrator Access</h3>
+				<p class="panel-subtitle">
+					Grant full administrator privileges to any user by email. If they have an existing account, privileges activate immediately. If not yet registered, privileges will activate automatically upon their first sign-in.
+				</p>
+				<form method="POST" action="?/grantAdminAccess" use:enhance class="admin-grant-form">
+					<div class="form-group">
+						<label for="new-admin-email">Administrator Email Address</label>
+						<input 
+							id="new-admin-email" 
+							type="email" 
+							name="email" 
+							placeholder="colleague@splitacharter.boats" 
+							required 
+							class="text-input"
+						/>
+					</div>
+					<button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; align-self: flex-start;">
+						➕ Grant Admin Access
+					</button>
+				</form>
+
+				<div class="admin-notice-box glass">
+					<div class="notice-icon">ℹ️</div>
+					<div class="notice-text">
+						<strong>Security Rule:</strong> Only existing administrators can access this section or modify administrative privileges. All admin actions take effect instantly across active sessions.
+					</div>
+				</div>
+			</div>
+
+			<!-- Active Admins List -->
+			<div class="admins-list-panel">
+				<div class="admins-list-header">
+					<h3>Current Administrators</h3>
+					<span class="admin-count-pill">{data.adminUsers?.length || 0} Authorized</span>
+				</div>
+
+				{#if !data.adminUsers || data.adminUsers.length === 0}
+					<p class="empty-msg">No administrators registered.</p>
+				{:else}
+					<div class="admin-cards-list">
+						{#each data.adminUsers as admin}
+							<div class="admin-user-card glass" class:is-self={admin.is_current_user}>
+								<div class="admin-avatar">
+									{#if admin.name}
+										{admin.name.substring(0, 2).toUpperCase()}
+									{:else}
+										{admin.email.substring(0, 2).toUpperCase()}
+									{/if}
+								</div>
+
+								<div class="admin-user-info">
+									<div class="admin-email-line">
+										<span class="admin-email">{admin.email}</span>
+										{#if admin.is_current_user}
+											<span class="badge-you">You (Current Admin)</span>
+										{/if}
+									</div>
+
+									<div class="admin-meta-row">
+										{#if admin.name}
+											<span class="admin-name">👤 {admin.name}</span>
+										{/if}
+										{#if admin.status === 'active'}
+											<span class="badge-active">Active</span>
+										{:else}
+											<span class="badge-pending">Pending Sign-in</span>
+										{/if}
+										{#if admin.created_at}
+											<span class="admin-date">Added {new Date(admin.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+										{/if}
+									</div>
+								</div>
+
+								<div class="admin-card-actions">
+									{#if admin.is_current_user}
+										<button 
+											type="button" 
+											class="btn-disabled-action" 
+											disabled 
+											title="You cannot revoke your own administrator access while logged in."
+										>
+											🔒 Active Session
+										</button>
+									{:else if data.adminUsers.length <= 1}
+										<button 
+											type="button" 
+											class="btn-disabled-action" 
+											disabled 
+											title="Cannot revoke the only administrator account."
+										>
+											🔒 Sole Admin
+										</button>
+									{:else}
+										<button 
+											type="button" 
+											class="btn-danger-action" 
+											onclick={() => openRevokeModal(admin)}
+										>
+											Revoke Access
+										</button>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+
+	<!-- Double Confirmation Revocation Modal -->
+	{#if isRevokeModalOpen && revokingAdmin}
+		<button type="button" class="modal-backdrop" onclick={closeRevokeModal} aria-label="Close revocation dialog"></button>
+		<div 
+			class="modal-card glass glow-danger" 
+			role="dialog" 
+			aria-modal="true" 
+			tabindex="-1"
+			aria-labelledby="revoke-modal-title"
+		>
+			<div class="modal-header">
+				<span class="modal-badge step-2">Double Confirmation Required</span>
+				<h2 id="revoke-modal-title" class="danger-title">Revoke Administrator Access</h2>
+			</div>
+
+			<div class="modal-body">
+				<p>Are you sure you want to revoke administrator access for <strong>{revokingAdmin.email}</strong>?</p>
+
+					<div class="modal-alert-box">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 alert-warning-icon">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+						</svg>
+						<span><strong>Warning:</strong> This user will immediately lose all access to the administrative dashboard, trip management, customer lists, and system settings.</span>
+					</div>
+
+					<div class="form-group" style="display: flex; flex-direction: column; gap: 8px; margin-top: 1rem;">
+						<label for="confirm-revoke-input" style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">
+							To confirm revocation, type <strong style="color: var(--danger);">{revokingAdmin.email}</strong> or <strong style="color: var(--danger);">REVOKE</strong> in the box below:
+						</label>
+						<input
+							type="text"
+							id="confirm-revoke-input"
+							name="confirmText"
+							bind:value={revokeConfirmInput}
+							placeholder="Type email or REVOKE to confirm"
+							class="text-input"
+							autocomplete="off"
+						/>
+					</div>
+				</div>
+
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" onclick={closeRevokeModal}>Cancel</button>
+					<form method="POST" action="?/revokeAdminAccess" use:enhance={() => {
+						return async ({ update }) => {
+							closeRevokeModal();
+							await update();
+						};
+					}}>
+						<input type="hidden" name="email" value={revokingAdmin.email} />
+						<input type="hidden" name="confirm_text" value={revokeConfirmInput} />
+						<button
+							type="submit"
+							class="btn btn-danger-solid"
+							disabled={!isRevokeConfirmed}
+						>
+							Confirm & Revoke Access
+						</button>
+					</form>
+				</div>
+			</div>
+		{/if}
 {/if}
 
 <!-- Section 7: Site Updates & Plain English Change Log -->
@@ -2983,13 +3261,77 @@
 		gap: 8px;
 		transition: opacity 0.2s ease;
 	}
+	.form-group.channel-inactive {
+		opacity: 0.85;
+	}
 	.form-group.disabled {
 		opacity: 0.4;
+	}
+	.form-group-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 8px;
 	}
 	.form-group label {
 		font-size: 0.85rem;
 		font-weight: 600;
 		color: var(--text-secondary);
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.badge-inactive {
+		font-size: 0.7rem;
+		font-weight: 500;
+		color: var(--text-muted, #94a3b8);
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid var(--border-light);
+		padding: 1px 6px;
+		border-radius: 4px;
+	}
+	.btn-restore-default {
+		background: none;
+		border: 1px solid transparent;
+		color: var(--primary, #06b6d4);
+		font-size: 0.75rem;
+		cursor: pointer;
+		padding: 2px 8px;
+		border-radius: 4px;
+		transition: all 0.15s ease;
+	}
+	.btn-restore-default:hover {
+		background: rgba(6, 182, 212, 0.1);
+		border-color: rgba(6, 182, 212, 0.2);
+	}
+	.trigger-desc {
+		font-size: 0.82rem;
+		color: var(--text-secondary);
+		margin: 4px 0 0 0;
+		line-height: 1.4;
+	}
+	.sidebar-header-flex {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		width: 100%;
+		gap: 8px;
+	}
+	.btn-outline-primary {
+		background: transparent;
+		border: 1px solid var(--border-light);
+		color: var(--text-secondary);
+		font-size: 0.72rem;
+		padding: 3px 8px;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		white-space: nowrap;
+	}
+	.btn-outline-primary:hover {
+		color: var(--primary);
+		border-color: var(--primary);
+		background: rgba(6, 182, 212, 0.08);
 	}
 	.form-group textarea {
 		width: 100%;
@@ -3628,6 +3970,311 @@
 		}
 		.changelog-categories-grid {
 			grid-template-columns: 1fr;
+		}
+	}
+
+	/* Admin Access & Role Management */
+	.alert-success {
+		padding: 1rem;
+		margin-bottom: 2rem;
+		border-radius: 6px;
+		border: 1px solid rgba(34, 197, 94, 0.3);
+		color: var(--success);
+		background: rgba(34, 197, 94, 0.08);
+	}
+	.admin-access-container {
+		padding: 2rem;
+		border-radius: 12px;
+		border: 1px solid var(--border-light);
+		background: var(--bg-surface);
+		margin-top: 1rem;
+	}
+	.admin-access-grid {
+		display: grid;
+		grid-template-columns: 1fr 1.6fr;
+		gap: 2.5rem;
+		align-items: start;
+	}
+	.add-admin-panel {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.add-admin-panel h3 {
+		font-size: 1.2rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin: 0;
+	}
+	.panel-subtitle {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+		margin: 0;
+	}
+	.admin-grant-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		margin-top: 0.5rem;
+	}
+	.admin-notice-box {
+		display: flex;
+		gap: 0.75rem;
+		padding: 1rem;
+		border-radius: 8px;
+		border: 1px solid var(--border-light);
+		background: var(--bg-base);
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		line-height: 1.45;
+		margin-top: 1.25rem;
+	}
+	.notice-icon {
+		font-size: 1.1rem;
+		flex-shrink: 0;
+	}
+	.admins-list-panel {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.admins-list-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.admins-list-header h3 {
+		font-size: 1.2rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin: 0;
+	}
+	.admin-count-pill {
+		padding: 3px 10px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		border-radius: 20px;
+		background: rgba(59, 130, 246, 0.15);
+		color: var(--primary);
+		border: 1px solid rgba(59, 130, 246, 0.3);
+	}
+	.admin-cards-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
+	}
+	.admin-user-card {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1.1rem 1.25rem;
+		border-radius: 8px;
+		border: 1px solid var(--border-light);
+		background: var(--bg-base);
+		transition: border-color 0.2s, box-shadow 0.2s;
+	}
+	.admin-user-card:hover {
+		border-color: var(--border-strong, var(--border-light));
+	}
+	.admin-user-card.is-self {
+		border-color: rgba(59, 130, 246, 0.4);
+		background: rgba(59, 130, 246, 0.04);
+	}
+	.admin-avatar {
+		width: 42px;
+		height: 42px;
+		border-radius: 50%;
+		background: var(--primary);
+		color: #ffffff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 700;
+		font-size: 0.95rem;
+		flex-shrink: 0;
+		letter-spacing: 0.5px;
+	}
+	.admin-user-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+		flex: 1;
+		min-width: 0;
+	}
+	.admin-email-line {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		flex-wrap: wrap;
+	}
+	.admin-email {
+		font-weight: 600;
+		color: var(--text-primary);
+		font-size: 0.95rem;
+		word-break: break-all;
+	}
+	.badge-you {
+		font-size: 0.75rem;
+		font-weight: 700;
+		padding: 2px 8px;
+		border-radius: 4px;
+		background: rgba(59, 130, 246, 0.2);
+		color: var(--primary);
+		border: 1px solid rgba(59, 130, 246, 0.4);
+	}
+	.badge-active {
+		font-size: 0.75rem;
+		font-weight: 600;
+		padding: 2px 6px;
+		border-radius: 4px;
+		background: rgba(34, 197, 94, 0.15);
+		color: #22c55e;
+		border: 1px solid rgba(34, 197, 94, 0.3);
+	}
+	.badge-pending {
+		font-size: 0.75rem;
+		font-weight: 600;
+		padding: 2px 6px;
+		border-radius: 4px;
+		background: rgba(234, 179, 8, 0.15);
+		color: #eab308;
+		border: 1px solid rgba(234, 179, 8, 0.3);
+	}
+	.admin-meta-row {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		flex-wrap: wrap;
+	}
+	.admin-card-actions {
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+	}
+	.btn-disabled-action {
+		padding: 6px 12px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		border-radius: 6px;
+		border: 1px solid var(--border-light);
+		background: transparent;
+		color: var(--text-secondary);
+		cursor: not-allowed;
+		opacity: 0.65;
+	}
+	/* Modal Styles for Settings */
+	.modal-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.75);
+		backdrop-filter: blur(8px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		padding: 1.5rem;
+	}
+	.modal-card {
+		max-width: 520px;
+		width: 100%;
+		border-radius: 12px;
+		border: 1px solid var(--border-light);
+		background: var(--bg-surface);
+		padding: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+	}
+	.glow-danger {
+		border-color: rgba(239, 68, 68, 0.4);
+		box-shadow: 0 0 30px rgba(239, 68, 68, 0.15);
+	}
+	.modal-header {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	.modal-badge {
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		padding: 2px 8px;
+		border-radius: 4px;
+		width: fit-content;
+		background: rgba(239, 68, 68, 0.15);
+		color: var(--danger);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+	}
+	.danger-title {
+		font-size: 1.4rem;
+		font-weight: 700;
+		margin: 0;
+		color: var(--danger);
+	}
+	.modal-body {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		font-size: 0.95rem;
+		color: var(--text-primary);
+		line-height: 1.5;
+	}
+	.modal-alert-box {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		padding: 12px 14px;
+		border-radius: 6px;
+		background: rgba(239, 68, 68, 0.08);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		color: var(--danger);
+		font-size: 0.85rem;
+		line-height: 1.4;
+	}
+	.alert-warning-icon {
+		flex-shrink: 0;
+		width: 1.25rem;
+		height: 1.25rem;
+		margin-top: 1px;
+	}
+	.modal-footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 12px;
+		margin-top: 0.5rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--border-light);
+	}
+	.btn-danger-solid {
+		background: var(--danger);
+		color: #ffffff;
+		border: none;
+		border-radius: 6px;
+		padding: 10px 18px;
+		font-weight: 600;
+		cursor: pointer;
+		font-size: 0.9rem;
+		transition: opacity 0.2s, background-color 0.2s;
+	}
+	.btn-danger-solid:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+	.btn-danger-solid:not(:disabled):hover {
+		opacity: 0.9;
+	}
+	@media (max-width: 900px) {
+		.admin-access-grid {
+			grid-template-columns: 1fr;
+			gap: 2rem;
 		}
 	}
 </style>

@@ -87,10 +87,20 @@ export const actions: Actions = {
 
 	signInWithPhone: async ({ request, locals: { supabase } }) => {
 		const formData = await request.formData();
-		const phone = formData.get('phone') as string;
+		const rawPhone = (formData.get('phone') as string)?.trim();
 
-		if (!phone) {
+		if (!rawPhone) {
 			return fail(400, { message: 'Phone number is required.' });
+		}
+
+		// Normalize phone to E.164 format
+		let phone = rawPhone.replace(/[^\d+]/g, '');
+		if (!phone.startsWith('+')) {
+			if (phone.length === 10) {
+				phone = `+1${phone}`;
+			} else if (phone.length === 11 && phone.startsWith('1')) {
+				phone = `+${phone}`;
+			}
 		}
 
 		const { error } = await supabase.auth.signInWithOtp({
@@ -99,6 +109,12 @@ export const actions: Actions = {
 
 		if (error) {
 			console.error('Phone OTP sign in error:', error);
+			if (error.message?.toLowerCase().includes('unsupported phone provider')) {
+				return fail(500, {
+					message:
+						'SMS login is not enabled in the Supabase authentication settings yet. Please use the Email Magic Link or Google sign-in option above, or configure the Phone Provider in your Supabase dashboard.'
+				});
+			}
 			return fail(500, { message: error.message || 'Failed to send verification SMS.' });
 		}
 
@@ -107,11 +123,21 @@ export const actions: Actions = {
 
 	verifyOtp: async ({ request, locals: { supabase } }) => {
 		const formData = await request.formData();
-		const phone = formData.get('phone') as string;
-		const token = formData.get('token') as string;
+		let phone = (formData.get('phone') as string)?.trim();
+		const token = (formData.get('token') as string)?.trim();
 
 		if (!phone || !token) {
 			return fail(400, { message: 'Phone and verification code are required.' });
+		}
+
+		// Normalize phone to E.164 format
+		phone = phone.replace(/[^\d+]/g, '');
+		if (!phone.startsWith('+')) {
+			if (phone.length === 10) {
+				phone = `+1${phone}`;
+			} else if (phone.length === 11 && phone.startsWith('1')) {
+				phone = `+${phone}`;
+			}
 		}
 
 		const { data, error } = await supabase.auth.verifyOtp({

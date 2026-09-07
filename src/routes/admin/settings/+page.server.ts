@@ -6,6 +6,7 @@ import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import type { PageServerLoad, Actions } from './$types';
 import rawChangelog from '../../../../CHANGELOG.md?raw';
+import { DEFAULT_NOTIFICATION_TEMPLATES, getDefaultTemplate } from '$lib/notificationTemplates';
 
 function getAdminClient() {
 	return createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -157,8 +158,11 @@ const defaultSeedReviews = [
 	}
 ];
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-	const [settingsRes, tripTypesRes, reviewsRes, slidesRes] = await Promise.all([
+export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
+	const { user } = await safeGetSession();
+	const supabaseAdmin = getAdminClient();
+
+	const [settingsRes, tripTypesRes, reviewsRes, slidesRes, adminEmailsRes, customersRes, authUsersRes] = await Promise.all([
 		supabase
 			.from('admin_notification_settings')
 			.select('*')
@@ -176,7 +180,18 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			.from('landing_carousel_slides')
 			.select('*')
 			.order('display_order', { ascending: true })
-			.order('created_at', { ascending: true })
+			.order('created_at', { ascending: true }),
+		supabaseAdmin
+			.from('admin_emails')
+			.select('*')
+			.order('created_at', { ascending: true }),
+		supabaseAdmin
+			.from('customers')
+			.select('id, email, name, phone, created_at'),
+		supabaseAdmin.auth.admin.listUsers().catch((err) => {
+			console.warn('Could not list auth users in settings load:', err);
+			return { data: { users: [] }, error: err };
+		})
 	]);
 
 	if (settingsRes.error) {
@@ -241,12 +256,38 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		}
 	}
 
+	const adminEmailsList = adminEmailsRes.data || [];
+	const customersList = customersRes.data || [];
+	const authUsersList = authUsersRes?.data?.users || [];
+
+	const adminUsers = adminEmailsList.map((ae) => {
+		const emailLower = (ae.email || '').toLowerCase().trim();
+		const matchedCustomer = customersList.find((c) => (c.email || '').toLowerCase().trim() === emailLower);
+		const matchedAuthUser = authUsersList.find((u) => (u.email || '').toLowerCase().trim() === emailLower);
+		const isCurrentUser = !!(
+			(user?.email && user.email.toLowerCase().trim() === emailLower) ||
+			(user?.id && (user.id === matchedCustomer?.id || user.id === matchedAuthUser?.id))
+		);
+
+		return {
+			email: ae.email,
+			created_at: ae.created_at,
+			name: matchedCustomer?.name || matchedAuthUser?.user_metadata?.name || null,
+			phone: matchedCustomer?.phone || matchedAuthUser?.phone || null,
+			status: matchedAuthUser || matchedCustomer ? 'active' : 'pending',
+			is_current_user: isCurrentUser,
+			user_id: matchedCustomer?.id || matchedAuthUser?.id || null
+		};
+	});
+
 	return {
 		settings: settingsRes.data || [],
 		tripTypes: tripTypesRes.data || [],
 		reviews,
 		carouselSlides,
-		changelogRaw
+		changelogRaw,
+		adminUsers,
+		currentUserEmail: user?.email || null
 	};
 };
 
@@ -256,21 +297,29 @@ export const actions: Actions = {
 		const id = formData.get('id') as string;
 		const emailEnabled = formData.get('email_enabled') === 'true';
 		const smsEnabled = formData.get('sms_enabled') === 'true';
-		const emailTemplate = formData.get('email_template') as string;
-		const smsTemplate = formData.get('sms_template') as string;
 
 		if (!id) {
 			return fail(400, { message: 'Missing setting ID' });
 		}
 
+		const updatePayload: Record<string, any> = {
+			email_enabled: emailEnabled,
+			sms_enabled: smsEnabled
+		};
+
+		if (formData.has('email_template')) {
+			const rawEmail = (formData.get('email_template') as string)?.trim();
+			updatePayload.email_template = rawEmail || null;
+		}
+
+		if (formData.has('sms_template')) {
+			const rawSms = (formData.get('sms_template') as string)?.trim();
+			updatePayload.sms_template = rawSms || null;
+		}
+
 		const { error: updateErr } = await supabase
 			.from('admin_notification_settings')
-			.update({
-				email_enabled: emailEnabled,
-				sms_enabled: smsEnabled,
-				email_template: emailTemplate || null,
-				sms_template: smsTemplate || null
-			})
+			.update(updatePayload)
 			.eq('id', id);
 
 		if (updateErr) {
@@ -279,6 +328,92 @@ export const actions: Actions = {
 		}
 
 		return { success: true };
+	},
+	resetTemplateToDefault: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+		const triggerName = formData.get('trigger_name') as string;
+		const channel = formData.get('channel') as 'email' | 'sms' | 'all';
+
+		if (!id || !triggerName) {
+			return fail(400, { message: 'Missing setting ID or trigger name' });
+		}
+
+		const defaultDef = getDefaultTemplate(triggerName);
+		if (!defaultDef) {
+			return fail(404, { message: `No default template found for trigger: ${triggerName}` });
+		}
+
+		const updatePayload: Record<string, any> = {};
+		if (channel === 'email' || channel === 'all' || !channel) {
+			updatePayload.email_template = defaultDef.email_template;
+		}
+		if (channel === 'sms' || channel === 'all' || !channel) {
+			updatePayload.sms_template = defaultDef.sms_template;
+		}
+
+		const { error: updateErr } = await supabase
+			.from('admin_notification_settings')
+			.update(updatePayload)
+			.eq('id', id);
+
+		if (updateErr) {
+			console.error('Error resetting notification template to default:', updateErr);
+			return fail(500, { message: updateErr.message || 'Failed to reset template' });
+		}
+
+		return { success: true, resetId: id };
+	},
+	populateAllDefaultTemplates: async ({ locals: { supabase } }) => {
+		const { data: currentSettings, error: fetchErr } = await supabase
+			.from('admin_notification_settings')
+			.select('*');
+
+		if (fetchErr || !currentSettings) {
+			console.error('Error fetching notification settings:', fetchErr);
+			return fail(500, { message: fetchErr?.message || 'Failed to fetch existing settings' });
+		}
+
+		let populatedCount = 0;
+
+		for (const setting of currentSettings) {
+			const defaultDef = getDefaultTemplate(setting.trigger_name);
+			if (!defaultDef) continue;
+
+			const updatePayload: Record<string, any> = {};
+			if (!setting.email_template && defaultDef.email_template) {
+				updatePayload.email_template = defaultDef.email_template;
+			}
+			if (!setting.sms_template && defaultDef.sms_template) {
+				updatePayload.sms_template = defaultDef.sms_template;
+			}
+
+			if (Object.keys(updatePayload).length > 0) {
+				await supabase
+					.from('admin_notification_settings')
+					.update(updatePayload)
+					.eq('id', setting.id);
+				populatedCount++;
+			}
+		}
+
+		const existingTriggerNames = new Set(currentSettings.map((s) => s.trigger_name));
+		const missingInserts = Object.values(DEFAULT_NOTIFICATION_TEMPLATES)
+			.filter((def) => !existingTriggerNames.has(def.trigger_name))
+			.map((def) => ({
+				trigger_name: def.trigger_name,
+				email_enabled: true,
+				sms_enabled: true,
+				email_template: def.email_template,
+				sms_template: def.sms_template
+			}));
+
+		if (missingInserts.length > 0) {
+			await supabase.from('admin_notification_settings').insert(missingInserts);
+			populatedCount += missingInserts.length;
+		}
+
+		return { success: true, populatedCount };
 	},
 	addTripType: async ({ request, locals: { supabase } }) => {
 		const formData = await request.formData();
@@ -693,5 +828,142 @@ export const actions: Actions = {
 		}
 
 		return { success: true };
+	},
+	grantAdminAccess: async ({ request, locals: { safeGetSession } }) => {
+		const { user, isAdmin } = await safeGetSession();
+		if (!user || !isAdmin) {
+			return fail(403, { adminActionError: 'Unauthorized: Only existing administrators can manage admin access.' });
+		}
+
+		const formData = await request.formData();
+		const rawEmail = formData.get('email') as string;
+		if (!rawEmail) {
+			return fail(400, { adminActionError: 'Email address is required.' });
+		}
+
+		const email = rawEmail.trim().toLowerCase();
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+			return fail(400, { adminActionError: 'Please provide a valid email address.' });
+		}
+
+		const supabaseAdmin = getAdminClient();
+
+		// Check if already in admin_emails
+		const { data: existingAdminEmail } = await supabaseAdmin
+			.from('admin_emails')
+			.select('email')
+			.ilike('email', email)
+			.maybeSingle();
+
+		if (existingAdminEmail) {
+			return fail(400, { adminActionError: `"${email}" is already an authorized administrator.` });
+		}
+
+		// Insert into admin_emails
+		const { error: insertErr } = await supabaseAdmin
+			.from('admin_emails')
+			.insert({ email });
+
+		if (insertErr) {
+			console.error('Error granting admin access:', insertErr);
+			return fail(500, { adminActionError: insertErr.message || 'Failed to grant admin access.' });
+		}
+
+		// If user is already registered in auth.users, immediately link into admin_users
+		try {
+			const { data: authData } = await supabaseAdmin.auth.admin.listUsers();
+			const matchingUser = authData?.users?.find((u) => u.email?.toLowerCase().trim() === email);
+			if (matchingUser) {
+				await supabaseAdmin
+					.from('admin_users')
+					.upsert({ id: matchingUser.id });
+			}
+		} catch (err) {
+			console.warn('Could not sync user to admin_users immediately:', err);
+		}
+
+		return {
+			success: true,
+			adminActionSuccess: `Administrator access successfully granted to ${email}.`
+		};
+	},
+	revokeAdminAccess: async ({ request, locals: { safeGetSession } }) => {
+		const { user, isAdmin } = await safeGetSession();
+		if (!user || !isAdmin) {
+			return fail(403, { adminActionError: 'Unauthorized: Only existing administrators can manage admin access.' });
+		}
+
+		const formData = await request.formData();
+		const rawEmail = formData.get('email') as string;
+		const confirmText = (formData.get('confirm_text') as string)?.trim();
+
+		if (!rawEmail) {
+			return fail(400, { adminActionError: 'Email address is required.' });
+		}
+
+		const email = rawEmail.trim().toLowerCase();
+
+		// Double confirmation check: must match the target email or 'REVOKE'
+		if (!confirmText || (confirmText.toLowerCase() !== email && confirmText.toUpperCase() !== 'REVOKE')) {
+			return fail(400, {
+				adminActionError: `Revocation cancelled: Confirmation phrase must match "${email}" or "REVOKE".`
+			});
+		}
+
+		// Safeguard 1: Cannot revoke your own administrator privileges
+		if (user.email && user.email.trim().toLowerCase() === email) {
+			return fail(400, {
+				adminActionError: 'Action blocked: You cannot revoke your own administrator access.'
+			});
+		}
+
+		const supabaseAdmin = getAdminClient();
+
+		// Safeguard 2: Cannot delete the last remaining administrator
+		const { data: allAdminEmails, error: countErr } = await supabaseAdmin
+			.from('admin_emails')
+			.select('email');
+
+		if (countErr) {
+			console.error('Error counting admins:', countErr);
+			return fail(500, { adminActionError: 'Failed to verify admin count.' });
+		}
+
+		if (!allAdminEmails || allAdminEmails.length <= 1) {
+			return fail(400, {
+				adminActionError: 'Action blocked: Cannot revoke access for the last remaining administrator.'
+			});
+		}
+
+		// Execute revocation from admin_emails
+		const { error: deleteErr } = await supabaseAdmin
+			.from('admin_emails')
+			.delete()
+			.ilike('email', email);
+
+		if (deleteErr) {
+			console.error('Error deleting from admin_emails:', deleteErr);
+			return fail(500, { adminActionError: deleteErr.message || 'Failed to revoke admin access.' });
+		}
+
+		// Also remove from admin_users if matching user exists
+		try {
+			const { data: authData } = await supabaseAdmin.auth.admin.listUsers();
+			const matchingUsers = authData?.users?.filter((u) => u.email?.toLowerCase().trim() === email) || [];
+			for (const u of matchingUsers) {
+				await supabaseAdmin
+					.from('admin_users')
+					.delete()
+					.eq('id', u.id);
+			}
+		} catch (err) {
+			console.warn('Could not remove user from admin_users:', err);
+		}
+
+		return {
+			success: true,
+			adminActionSuccess: `Administrator access successfully revoked for ${email}.`
+		};
 	}
 };

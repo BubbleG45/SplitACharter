@@ -6,6 +6,30 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### 🛡️ Administrator Access Management & Role Revocation (`/admin/settings?tab=sec-admin-access`) — 2026-09-07 15:37 UTC
+
+- **Dedicated Admin Access Settings Hub**: Added a new "Admin Access" tab to the Admin Settings dashboard (`/admin/settings?tab=sec-admin-access`). Existing platform administrators can view all currently authorized administrators, check account status, grant administrator privileges to new users, and revoke access.
+- **Grant Privileges by Email**: Administrators can grant full administrative rights to any email address. If the individual already has an account, their privileges activate immediately. If they have not registered yet, administrative rights stage securely in the database and activate automatically upon their first sign-in via Google, Email Magic Link, or SMS OTP.
+- **Strict Double Confirmation on Revocation**: Added a mandatory two-step double confirmation flow when revoking administrator access. Clicking "Revoke Access" opens a modal explaining the security impact and requires the administrator to explicitly type the target email address (or `REVOKE`) before the final revocation button unlocks, preventing accidental clicks.
+- **Self-Lockout Prevention**: Built-in safeguards prevent administrators from accidentally revoking their own access while currently logged in, displaying a clear "You (Current Admin)" status badge.
+- **Last-Admin Protection**: The system enforces that at least one administrator account must remain active at all times, preventing accidental platform lockout.
+- **Instant Live Synchronization**: Revoking administrator access immediately purges privileges from active database tables, cutting off administrative access on the very next page request.
+
+### 📱 SMS Authentication Error Handling & Phone Number Normalization (`/login`) — 2026-09-07 15:25 UTC
+
+- **Friendly SMS Provider Guidance**: Updated the login flow to detect when Supabase Auth returns the "Unsupported phone provider" error. Instead of displaying a cryptic technical error, the platform now explains that SMS authentication requires the Phone provider to be configured in Supabase Auth settings, and suggests using Email Magic Link or Google sign-in in the meantime.
+- **Automatic Phone Format Normalization**: Added automatic phone number sanitization and E.164 normalization on both OTP request and verification forms. Standard 10-digit US phone numbers or numbers with punctuation/spaces are automatically formatted with the appropriate country code before submission.
+
+### 🔔 Admin Notification Settings & Complete Template Population (`/admin/settings?tab=sec-notifications`) — 2026-09-07 15:20 UTC
+
+- **Complete Template Population for All 13 Triggers**: Fully populated both Email and SMS message templates for all 13 notification triggers across the platform (such as Match Detected, Reconfirm Reminder, Captain Blast, Captain Confirmed, Captain Secured, and Trip Cancellations). No notification template in Admin Settings is blank.
+- **Fixed Inadvertent Template Deletion Bug**: Resolved an issue in the Admin Settings template editor where disabling an Email or SMS channel toggle added an HTML `disabled` attribute to the text area. Because web browsers do not submit disabled form inputs, saving any setting previously transmitted blank data that unintentionally wiped existing templates to `null` in the database.
+- **Always-Accessible Template Editing**: Template text areas now remain permanently visible and editable even when a channel is toggled off, labeled with an intuitive "Channel Inactive" indicator. Administrators can draft and polish message copy at any time before enabling a communication channel.
+- **One-Click "Restore Default" Actions**: Added a quick "Restore Default" action next to both Email and SMS editors, allowing administrators to restore the standard system template with a single click if copy is ever accidentally deleted or needs a fresh baseline.
+- **Bulk "Fill Defaults" Header Action**: Added a "Fill Defaults" button to the template list sidebar, enabling administrators to bulk-populate any blank or missing templates across all 13 triggers simultaneously.
+- **Dispatch Engine Fallback Safeguard**: Enhanced the automated notification delivery engine to automatically fall back to standard built-in templates if a database setting ever lacks message text, preventing lost or dropped customer and captain communications.
+- **Database Migration & Seeding**: Added migration `20260907120000_populate_all_notification_templates.sql` to permanently persist all complete notification templates in Supabase.
+
 ### 🕒 Change Log Timestamps & Live Admin UI Badges (`/admin/settings?tab=sec-changelog`) — 2026-09-06 19:35 UTC
 
 - **Live Local-Time Badges with UTC Hover Tooltips**: Added timestamp badges with clock icons to the Admin Settings Change Log view. Timestamps automatically format to the viewing administrator's local browser timezone and show the exact UTC timestamp on hover.

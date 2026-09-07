@@ -3,6 +3,7 @@ import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY } from '$env/static/private';
 import { env } from '$env/dynamic/private';
 import { sendSMS } from './sms';
+import { getDefaultTemplate } from './notificationTemplates';
 
 const RESEND_FROM_EMAIL = env.RESEND_FROM_EMAIL;
 
@@ -327,11 +328,15 @@ export async function sendNotification(
 			return { emailSent, smsSent };
 		}
 
+		const fallbackDef = getDefaultTemplate(trigger);
+		const emailTemplate = setting.email_template || fallbackDef?.email_template;
+		const smsTemplate = setting.sms_template || fallbackDef?.sms_template;
+
 		// 2. Process Email Channel
-		if (recipient.email && setting.email_template) {
+		if (recipient.email && emailTemplate) {
 			if (setting.email_enabled) {
 				const subject = `SplitACharter Alert: ${trigger.replace(/_/g, ' ').toUpperCase()}`;
-				const body = compileTemplate(setting.email_template, fullData);
+				const body = compileTemplate(emailTemplate, fullData);
 				const res = await sendEmail(recipient.email, subject, body, trigger);
 				emailSent = res.success;
 			} else {
@@ -340,16 +345,16 @@ export async function sendNotification(
 					recipient: recipient.email,
 					channel: 'email',
 					template: trigger,
-					content: compileTemplate(setting.email_template, fullData),
+					content: compileTemplate(emailTemplate, fullData),
 					status: 'suppressed'
 				});
 			}
 		}
 
 		// 3. Process SMS Channel
-		if (recipient.phone && setting.sms_template) {
+		if (recipient.phone && smsTemplate) {
 			if (setting.sms_enabled) {
-				const body = compileTemplate(setting.sms_template, fullData);
+				const body = compileTemplate(smsTemplate, fullData);
 				const res = await sendSMS(recipient.phone, body, trigger);
 				smsSent = res.success;
 			} else {
@@ -358,7 +363,7 @@ export async function sendNotification(
 					recipient: recipient.phone,
 					channel: 'sms',
 					template: trigger,
-					content: compileTemplate(setting.sms_template, fullData),
+					content: compileTemplate(smsTemplate, fullData),
 					status: 'suppressed'
 				});
 			}
