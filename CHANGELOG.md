@@ -348,3 +348,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-07 15:38 UTC (f140098)
 - feat(admin): add admin access management with double confirmation revocation
+
+### Push Update — 2026-09-07 16:01 UTC (76a209a)
+- fix: resolve admin modal sidebar menu overlap and improve Twilio SMS auth error handling
