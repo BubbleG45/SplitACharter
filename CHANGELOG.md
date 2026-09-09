@@ -372,3 +372,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-07 16:01 UTC (76a209a)
 - fix: resolve admin modal sidebar menu overlap and improve Twilio SMS auth error handling
+
+### Push Update — 2026-09-09 02:43 UTC (d57886a)
+- feat: add collaborative manual QA test plan checklist page (/admin/test)
