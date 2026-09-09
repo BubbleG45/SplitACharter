@@ -6,6 +6,27 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### ✅ Collaborative Manual QA Test Plan & Verification Checklist (`/admin/test`) — 2026-09-09 02:42 UTC
+
+- **Dedicated Interactive QA Testing Page (`/admin/test`)**: Launched a collaborative, real-time testing dashboard designed specifically for TJ (the owner) and BG to manually test, verify, and check off every feature across the entire SplitACharter platform.
+- **Shared Real-Time Database Persistence**: Built on a dedicated `admin_test_items` database table in Supabase so both TJ and BG can test simultaneously on separate devices (mobile, laptop, tablet) and see each other's checkmarks, notes, and progress in real time.
+- **Comprehensive 16-Domain Master Test Catalog**: Pre-populated with 43 exhaustive, step-by-step test cases covering every area of the application:
+  - **Public & Discovery**: Browse filters, date pickers, pricing splits, open split visibility, and landing hero slides.
+  - **Booking & Stripe Checkout**: Group 1 reservation creation, Group 2 joining, capacity restrictions, and concurrency protections.
+  - **Authentication & Customer Dashboard**: Google OAuth, Email Magic Link, SMS OTP, persistent sessions, self-service reconfirmations, and held fee refunds.
+  - **Reconfirmation State Machine**: Automated window calculations (24h, 12h, 2h tiers), 2-of-2 confirmation flow, and forfeit/strike/reset rules.
+  - **Captain Referral Codes & Priority Head-Start**: Exclusive priority SMS alert dispatch to referring captains before the general blast, dual-captain priority race handling, and fallback to open captain blast upon window expiration.
+  - **Captain Matching & Twilio SMS**: Simultaneous captain blast, atomic first-wins claim resolution, winning details manifest links, and STOP opt-out handling.
+  - **Notifications & Conditions**: Complete coverage of all 13 email & SMS triggers, placeholder rendering, and suppression conditions.
+  - **Complete Admin Functions**: Full testing suites for Trips, Captains, Templates, Customers, Strikes, Payments Ledger, Reports/Ad-Hoc queries, and Settings.
+  - **Payment Gateways, Webhooks & Edge Cases**: Stripe webhook signature checks, idempotency guarantees, payment failure simulations, dive certification validations, and account lockout protections.
+  - **UI Themes & Responsiveness**: Dark/Light mode toggling, anti-FOUC verification, and mobile drawer layouts.
+- **Interactive Checklists & Tester Attribution**: Each test case features an instant checkmark toggle, quick tester attribution pills (`[TJ]` / `[BG]`), and a built-in "Testing as" selector that automatically attributes new checkmarks.
+- **Inline Observations & Bug Reporting**: Every test item includes an expandable step-by-step instructions drawer and a free-form notes textarea for testers to document feedback, bug reports, or booking IDs tested.
+- **Ad-Hoc Custom Test Creation**: Testers can add custom test cases on the fly with custom categories, titles, and step-by-step instructions.
+- **Progress Tracking & Filtering**: Real-time progress bar, percentage completion indicator, tester breakdown counters (TJ vs BG), search bar, and multi-facet filtering (by category, tester, or completion status).
+- **Navigation Integration**: Added a prominent "QA Test Plan" navigation link with a checkmark badge to the administrator sidebar menu for quick access.
+
 ### 🛠️ Admin Modal Stacking Layering & Twilio SMS Dispatch Diagnostics (`/admin`, `/admin/trips`) — 2026-09-07 16:05 UTC
 
 - **Eliminated Menu Overlap on Admin Modals**: Resolved a CSS stacking context bug where opening any modal in the administration portal (such as the "Cancel Trip Instance" double-confirmation modal, the Captain's Log audit view, or the Status Guide) was partially covered by the dark navigation sidebar menu on the left. Modals, drawers, and backdrops now sit cleanly above the entire screen.
