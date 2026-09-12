@@ -526,6 +526,24 @@ export const actions: Actions = {
 				return fail(500, { message: 'Failed to update profile.' });
 			}
 
+			if (phone) {
+				let normPhone = phone.replace(/\D/g, '');
+				if (normPhone.length === 10) normPhone = `+1${normPhone}`;
+				else if (normPhone.length === 11 && normPhone.startsWith('1')) normPhone = `+${normPhone}`;
+				else if (normPhone) normPhone = `+${normPhone}`;
+
+				if (normPhone) {
+					try {
+						await supabaseAdmin.auth.admin.updateUserById(user.id, {
+							phone: normPhone,
+							phone_confirm: true
+						});
+					} catch (authPhoneErr) {
+						console.error('Non-fatal error syncing checkout phone to auth.users:', authPhoneErr);
+					}
+				}
+			}
+
 			// Validate group size does not exceed max allowed group size (capped at 4 per group signup)
 			let maxAllowedGroupSize = Math.min(4, Math.max(1, listing.max_passengers - 1));
 

@@ -6,6 +6,12 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### 🔗 Automatic Phone Number Sync & Account Linking with Supabase Auth — 2026-09-12 16:54 UTC
+
+- **Linked Existing Accounts to Phone Auth**: Fixed an issue where signing in via SMS OTP created a new unlinked account for users who had already signed up using email or Google OAuth. Existing phone numbers in customer profiles are now linked directly to their primary authentication identities in Supabase Auth.
+- **Continuous Phone Number Synchronization**: Updated customer profile editing in the dashboard and reservation checkout to automatically synchronize customer phone numbers with their Supabase authentication record, ensuring future SMS OTP sign-ins immediately match their existing account.
+- **Admin & Dashboard Auto-Routing**: Enhanced the SMS OTP verification flow to verify administrative status and route platform administrators to `/admin` and customers to `/dashboard` immediately upon SMS sign-in.
+
 ### 📱 Resilient SMS OTP Verification & Auto-Formatting (`/login`) — 2026-09-12 16:47 UTC
 
 - **Automatic Whitespace & Non-Digit Stripping**: Enhanced the SMS verification code input to automatically strip accidental spaces, trailing line breaks, or dashes when users type or paste their 6-digit code.

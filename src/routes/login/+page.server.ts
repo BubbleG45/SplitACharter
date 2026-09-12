@@ -163,10 +163,24 @@ export const actions: Actions = {
 			.eq('id', data.user?.id)
 			.maybeSingle();
 
-		if (adminRecord) {
+		let isAdmin = !!adminRecord;
+		if (!isAdmin && data.user?.email) {
+			const { data: adminEmailMatch } = await supabase
+				.from('admin_emails')
+				.select('email')
+				.ilike('email', data.user.email)
+				.maybeSingle();
+
+			if (adminEmailMatch) {
+				isAdmin = true;
+				await supabase.from('admin_users').upsert({ id: data.user.id });
+			}
+		}
+
+		if (isAdmin) {
 			throw redirect(303, '/admin');
 		} else {
-			throw redirect(303, '/');
+			throw redirect(303, '/dashboard');
 		}
 	},
 

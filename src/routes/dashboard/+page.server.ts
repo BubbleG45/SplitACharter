@@ -311,6 +311,24 @@ export const actions: Actions = {
 			return fail(500, { message: `Failed to update name: ${updateErr.message || updateErr.details || 'Database error'}` });
 		}
 
+		if (phone) {
+			let normPhone = phone.replace(/\D/g, '');
+			if (normPhone.length === 10) normPhone = `+1${normPhone}`;
+			else if (normPhone.length === 11 && normPhone.startsWith('1')) normPhone = `+${normPhone}`;
+			else if (normPhone) normPhone = `+${normPhone}`;
+
+			if (normPhone) {
+				try {
+					await supabaseAdmin.auth.admin.updateUserById(user.id, {
+						phone: normPhone,
+						phone_confirm: true
+					});
+				} catch (authPhoneErr) {
+					console.error('Non-fatal error syncing customer phone to auth.users:', authPhoneErr);
+				}
+			}
+		}
+
 		return {
 			success: true,
 			nameUpdated: true,
