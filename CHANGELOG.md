@@ -382,3 +382,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-09 02:43 UTC (d57886a)
 - feat: add collaborative manual QA test plan checklist page (/admin/test)
+
+### Push Update — 2026-09-12 16:48 UTC (49e0c15)
+- fix(auth): sanitize sms otp input and strip whitespace to prevent validation error
