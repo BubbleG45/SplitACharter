@@ -401,3 +401,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-12 16:54 UTC (c2b7f1c)
 - feat(auth): auto-sync customer phone numbers to auth.users and fix sms otp account linking
+
+### Push Update — 2026-09-12 16:59 UTC (78835c4)
+- feat(auth): allow 3 attempts on sms verification code before resetting
