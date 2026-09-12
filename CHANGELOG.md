@@ -409,3 +409,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-12 16:59 UTC (78835c4)
 - feat(auth): allow 3 attempts on sms verification code before resetting
+
+### Push Update — 2026-09-12 17:05 UTC (20e5324)
+- feat: link SplitACharter logo in admin navigation to homepage
