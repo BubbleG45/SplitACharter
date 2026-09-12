@@ -391,3 +391,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-12 16:48 UTC (49e0c15)
 - fix(auth): sanitize sms otp input and strip whitespace to prevent validation error
+
+### Push Update — 2026-09-12 16:54 UTC (c2b7f1c)
+- feat(auth): auto-sync customer phone numbers to auth.users and fix sms otp account linking
