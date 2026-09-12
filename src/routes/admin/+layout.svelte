@@ -64,7 +64,7 @@
 				<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
 			</svg>
 		</button>
-		<span class="logo">SplitACharter <span class="badge">Admin</span></span>
+		<a href="/" class="logo" title="Back to SplitACharter Homepage">SplitACharter <span class="badge">Admin</span></a>
 		<div style="display: flex; align-items: center; gap: 8px;">
 			<ThemeToggle />
 			<div class="user-avatar" title={data.user?.email}>
@@ -76,13 +76,13 @@
 	<!-- Sidebar -->
 	<aside class="admin-sidebar glass {sidebarOpen ? 'sidebar-open' : ''} {isCondensed ? 'sidebar-condensed' : ''}">
 		<div class="sidebar-header">
-			<span class="logo">
+			<a href="/" class="logo" title="Back to SplitACharter Homepage">
 				{#if isCondensed}
-					<span class="logo-short" title="SplitACharter Admin">SAC</span>
+					<span class="logo-short" title="Back to SplitACharter Homepage">SAC</span>
 				{:else}
 					SplitACharter <span class="badge">Admin</span>
 				{/if}
-			</span>
+			</a>
 			<div style="display: flex; align-items: center; gap: 6px;">
 				<ThemeToggle />
 				<button class="collapse-btn" onclick={toggleCondensed} title={isCondensed ? "Expand Navigation Menu" : "Collapse Navigation Menu"} aria-label="Toggle Condensed Mode">
@@ -253,6 +253,15 @@
 		font-size: 1.2rem;
 		color: var(--text-primary);
 		letter-spacing: -0.5px;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		transition: opacity 0.2s ease, transform 0.2s ease;
+		cursor: pointer;
+	}
+	.logo:hover {
+		opacity: 0.85;
+		transform: scale(1.02);
 	}
 	.logo-short {
 		font-family: var(--font-heading);

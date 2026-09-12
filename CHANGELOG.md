@@ -6,6 +6,11 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### 🏠 Admin Navigation to Homepage (`/admin`) — 2026-09-12 17:05 UTC
+
+- **Clickable SplitACharter Brand in Admin Panel**: Updated the SplitACharter logo in the admin navigation sidebar and mobile top bar to link directly back to the public homepage (`/`), providing an easy way for platform administrators to return to the public site without needing to manually edit the URL.
+- **Micro-Interactions & Styling**: Added smooth hover transition effects and clean pointer styling while preserving the admin badge and condensed menu indicator.
+
 ### 🔢 3-Attempt SMS OTP Retry & Code State Preservation (`/login`) — 2026-09-12 16:59 UTC
 
 - **Three Attempt Allowance on Verification**: Users now get up to 3 attempts to enter the correct 6-digit SMS verification code before being prompted to request a new one, preventing accidental kicks back to the phone number entry screen on typographical errors.
