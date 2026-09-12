@@ -418,3 +418,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-12 17:05 UTC (20e5324)
 - feat: link SplitACharter logo in admin navigation to homepage
+
+### Push Update — 2026-09-12 17:18 UTC (b5df2e5)
+- refactor: streamline footer layout, remove duplicate legal links, and integrate copyright into brand column
