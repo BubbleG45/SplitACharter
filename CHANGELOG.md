@@ -6,6 +6,12 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### ⚓ Streamlined Footer Layout & Redundancy Removal — 2026-09-12 17:16 UTC
+
+- **Removed Duplicate Legal Links**: Cleaned up the footer by eliminating the duplicate "Terms • Privacy" links at the bottom right, relying on the prominent "Legal & Policies" column for full access to Terms & Conditions, Privacy Policy, SMS Program, and Cancellation policies.
+- **Unified Brand & Copyright Column**: Moved the copyright statement directly beneath the company description in the brand column on desktop, eliminating the unnecessary bottom horizontal divider line and creating a cleaner, modern layout with reduced vertical clutter.
+- **Mobile & Tablet Adaptability**: Positioned the copyright notice smoothly at the base of the footer on mobile and tablet screens for natural vertical reading flow.
+
 ### 🏠 Admin Navigation to Homepage (`/admin`) — 2026-09-12 17:05 UTC
 
 - **Clickable SplitACharter Brand in Admin Panel**: Updated the SplitACharter logo in the admin navigation sidebar and mobile top bar to link directly back to the public homepage (`/`), providing an easy way for platform administrators to return to the public site without needing to manually edit the URL.

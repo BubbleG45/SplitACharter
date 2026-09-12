@@ -11,6 +11,9 @@
 				<p class="brand-tagline">
 					Split the cost of private boat charters. Connect with another small group and share unforgettable fishing, diving, and sunset charters.
 				</p>
+				<p class="brand-copyright desktop-copyright">
+					&copy; {new Date().getFullYear()} SplitACharter. All rights reserved.
+				</p>
 			</div>
 
 			<div class="footer-nav-col">
@@ -47,14 +50,9 @@
 			</div>
 		</div>
 
-		<div class="footer-bottom">
-			<p>&copy; {new Date().getFullYear()} SplitACharter. All rights reserved.</p>
-			<div class="footer-bottom-links">
-				<a href="/terms">Terms</a>
-				<span class="dot">&bull;</span>
-				<a href="/privacy">Privacy</a>
-			</div>
-		</div>
+		<p class="brand-copyright mobile-copyright">
+			&copy; {new Date().getFullYear()} SplitACharter. All rights reserved.
+		</p>
 	</div>
 </footer>
 
@@ -63,7 +61,7 @@
 		background: var(--bg-surface);
 		border-top: 1px solid var(--border-light);
 		color: var(--text-primary);
-		padding: 4rem 2rem 2rem 2rem;
+		padding: 4rem 2rem 3.5rem 2rem;
 		position: relative;
 		z-index: 10;
 	}
@@ -77,7 +75,7 @@
 		display: grid;
 		grid-template-columns: 2fr 1fr 1fr 1.5fr;
 		gap: 3rem;
-		margin-bottom: 3.5rem;
+		margin-bottom: 0;
 	}
 
 	.brand-logo {
@@ -97,6 +95,19 @@
 		font-size: 0.9rem;
 		line-height: 1.6;
 		max-width: 340px;
+	}
+	.brand-copyright {
+		color: var(--text-muted);
+		font-size: 0.85rem;
+		line-height: 1.5;
+	}
+	.desktop-copyright {
+		margin-top: 2rem;
+	}
+	.mobile-copyright {
+		display: none;
+		margin-top: 2.5rem;
+		text-align: center;
 	}
 
 	.footer-nav-col h3 {
@@ -150,32 +161,6 @@
 		border-color: var(--primary);
 	}
 
-	.footer-bottom {
-		border-top: 1px solid var(--border-light);
-		padding-top: 2rem;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		font-size: 0.85rem;
-		color: var(--text-muted);
-	}
-	.footer-bottom-links {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-	.footer-bottom-links a {
-		color: var(--text-muted);
-		text-decoration: none;
-		transition: color 0.2s ease;
-	}
-	.footer-bottom-links a:hover {
-		color: var(--text-primary);
-	}
-	.dot {
-		color: var(--border-light);
-	}
-
 	@media (max-width: 900px) {
 		.footer-grid {
 			grid-template-columns: 1fr 1fr;
@@ -184,15 +169,16 @@
 		.footer-brand {
 			grid-column: 1 / -1;
 		}
+		.desktop-copyright {
+			display: none;
+		}
+		.mobile-copyright {
+			display: block;
+		}
 	}
 	@media (max-width: 600px) {
 		.footer-grid {
 			grid-template-columns: 1fr;
-		}
-		.footer-bottom {
-			flex-direction: column;
-			gap: 1rem;
-			text-align: center;
 		}
 	}
 </style>
