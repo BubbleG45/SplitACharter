@@ -140,13 +140,17 @@
 							id="token"
 							name="token"
 							placeholder="123456"
-							pattern="[0-9]{6}"
-							maxlength="6"
+							inputmode="numeric"
+							autocomplete="one-time-code"
+							maxlength="8"
 							bind:value={verificationCode}
+							oninput={(e) => {
+								verificationCode = (e.currentTarget as HTMLInputElement).value.replace(/\D/g, '').slice(0, 6);
+							}}
 							required
 							autofocus
 						/>
-						<span class="input-helper">We sent a verification text to {phoneVal}</span>
+						<span class="input-helper">We sent a 6-digit verification text to {phoneVal}</span>
 					</div>
 					<button type="submit" class="btn btn-primary w-full">Verify Code</button>
 					<a href="/login" class="btn btn-secondary w-full text-center mt-2">Back to login</a>

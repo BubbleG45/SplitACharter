@@ -124,10 +124,15 @@ export const actions: Actions = {
 	verifyOtp: async ({ request, locals: { supabase } }) => {
 		const formData = await request.formData();
 		let phone = (formData.get('phone') as string)?.trim();
-		const token = (formData.get('token') as string)?.trim();
+		const rawToken = (formData.get('token') as string)?.trim();
+		const token = rawToken?.replace(/\D/g, '');
 
 		if (!phone || !token) {
 			return fail(400, { message: 'Phone and verification code are required.' });
+		}
+
+		if (token.length !== 6) {
+			return fail(400, { message: 'Verification code must be 6 digits.' });
 		}
 
 		// Normalize phone to E.164 format

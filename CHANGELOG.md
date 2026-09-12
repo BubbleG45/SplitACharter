@@ -6,6 +6,13 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### 📱 Resilient SMS OTP Verification & Auto-Formatting (`/login`) — 2026-09-12 16:47 UTC
+
+- **Automatic Whitespace & Non-Digit Stripping**: Enhanced the SMS verification code input to automatically strip accidental spaces, trailing line breaks, or dashes when users type or paste their 6-digit code.
+- **Removed Brittle HTML Pattern Constraint**: Eliminated the restrictive native browser pattern validation that triggered the generic "Please match the requested format" popup whenever a pasted code contained an accidental trailing space.
+- **Mobile Number Pad & One-Time-Code Autofill**: Added numeric input mode and one-time code autocomplete hints (`autocomplete="one-time-code"` and `inputmode="numeric"`), enabling iOS and Android devices to display the numeric keypad and autofill the SMS code directly from the keyboard with one tap.
+- **Server-Side Token Cleansing**: Strengthened the backend verification action to sanitize incoming verification tokens, ensuring clean numerical codes are passed to Supabase Auth.
+
 ### ✅ Collaborative Manual QA Test Plan & Verification Checklist (`/admin/test`) — 2026-09-09 02:42 UTC
 
 - **Dedicated Interactive QA Testing Page (`/admin/test`)**: Launched a collaborative, real-time testing dashboard designed specifically for TJ (the owner) and BG to manually test, verify, and check off every feature across the entire SplitACharter platform.
