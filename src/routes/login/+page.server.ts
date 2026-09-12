@@ -118,21 +118,56 @@ export const actions: Actions = {
 			return fail(500, { message: error.message || 'Failed to send verification SMS.' });
 		}
 
-		return { success: true, method: 'phone', phone, message: 'SMS code sent! Please check your phone.' };
+		return {
+			success: true,
+			method: 'phone',
+			step: 'otp',
+			phone,
+			attemptsLeft: 3,
+			message: 'SMS code sent! Please check your phone.'
+		};
 	},
 
 	verifyOtp: async ({ request, locals: { supabase } }) => {
 		const formData = await request.formData();
 		let phone = (formData.get('phone') as string)?.trim();
 		const rawToken = (formData.get('token') as string)?.trim();
+		const rawAttempts = (formData.get('attemptsLeft') as string)?.trim();
+		let attemptsLeft = rawAttempts ? parseInt(rawAttempts, 10) : 3;
+		if (isNaN(attemptsLeft) || attemptsLeft < 1) attemptsLeft = 3;
+
 		const token = rawToken?.replace(/\D/g, '');
 
 		if (!phone || !token) {
-			return fail(400, { message: 'Phone and verification code are required.' });
+			return fail(400, {
+				success: false,
+				method: 'phone',
+				step: 'otp',
+				phone,
+				attemptsLeft,
+				message: 'Phone and verification code are required.'
+			});
 		}
 
 		if (token.length !== 6) {
-			return fail(400, { message: 'Verification code must be 6 digits.' });
+			const remaining = attemptsLeft - 1;
+			if (remaining <= 0) {
+				return fail(400, {
+					success: false,
+					method: 'phone',
+					step: 'phone',
+					phone,
+					message: 'Too many incorrect attempts. Please request a new verification code.'
+				});
+			}
+			return fail(400, {
+				success: false,
+				method: 'phone',
+				step: 'otp',
+				phone,
+				attemptsLeft: remaining,
+				message: `Verification code must be 6 digits. You have ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.`
+			});
 		}
 
 		// Normalize phone to E.164 format
@@ -153,7 +188,24 @@ export const actions: Actions = {
 
 		if (error) {
 			console.error('OTP verification error:', error);
-			return fail(400, { message: error.message || 'Invalid or expired verification code.' });
+			const remaining = attemptsLeft - 1;
+			if (remaining <= 0) {
+				return fail(400, {
+					success: false,
+					method: 'phone',
+					step: 'phone',
+					phone,
+					message: 'Too many incorrect attempts. Please request a new verification code.'
+				});
+			}
+			return fail(400, {
+				success: false,
+				method: 'phone',
+				step: 'otp',
+				phone,
+				attemptsLeft: remaining,
+				message: `Invalid verification code. You have ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.`
+			});
 		}
 
 		// Success! Redirect based on whether they are admin

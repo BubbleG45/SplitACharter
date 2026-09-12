@@ -8,18 +8,31 @@
 	let { form } = $props();
 
 	let activeTab = $state('email'); // 'email' | 'phone'
+	let currentStep = $state('phone'); // 'phone' | 'otp'
 	let emailVal = $state('');
 	let phoneVal = $state('');
 	let verificationCode = $state('');
+	let attemptsLeft = $state(3);
 
 	// Access url query parameters for error alerts
 	const authError = $page.url.searchParams.get('error');
 
-	// Automatically focus the active tab if form returns with phone state
+	// Synchronize phone step and attempts left from server action responses
 	$effect(() => {
-		if (form?.success && form?.method === 'phone') {
+		if (form?.method === 'phone') {
 			activeTab = 'phone';
-			phoneVal = form.phone || '';
+			if (form.phone) phoneVal = form.phone;
+			if (form.step === 'otp') {
+				currentStep = 'otp';
+				if (typeof form.attemptsLeft === 'number') {
+					attemptsLeft = form.attemptsLeft;
+				}
+				verificationCode = '';
+			} else if (form.step === 'phone') {
+				currentStep = 'phone';
+				verificationCode = '';
+				attemptsLeft = 3;
+			}
 		}
 	});
 </script>
@@ -69,7 +82,7 @@
 		{/if}
 
 		<!-- Google Sign-In -->
-		{#if !(form?.success && form?.method === 'phone')}
+		{#if !(activeTab === 'phone' && currentStep === 'otp')}
 			<form method="POST" action="?/signInWithGoogle" class="oauth-form">
 				<button type="submit" class="btn btn-google w-full">
 					<svg class="google-icon" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
@@ -90,12 +103,12 @@
 		{/if}
 
 		<!-- Tabs -->
-		{#if !(form?.success && form?.method === 'phone')}
+		{#if !(activeTab === 'phone' && currentStep === 'otp')}
 			<div class="tabs-header">
 				<button
 					type="button"
 					class="tab-btn {activeTab === 'email' ? 'active' : ''}"
-					onclick={() => activeTab = 'email'}
+					onclick={() => { activeTab = 'email'; currentStep = 'phone'; }}
 				>
 					Email Link
 				</button>
@@ -110,7 +123,7 @@
 		{/if}
 
 		<!-- Email Form -->
-		{#if activeTab === 'email' && !(form?.success && form?.method === 'phone')}
+		{#if activeTab === 'email'}
 			<form method="POST" action="?/signInWithEmail" use:enhance class="login-form">
 				<div class="form-group">
 					<label for="email">Email Address</label>
@@ -129,10 +142,11 @@
 
 		<!-- Phone Form -->
 		{#if activeTab === 'phone'}
-			{#if form?.success && form?.method === 'phone'}
+			{#if currentStep === 'otp'}
 				<!-- OTP Code Entry Step -->
 				<form method="POST" action="?/verifyOtp" use:enhance class="login-form">
 					<input type="hidden" name="phone" value={phoneVal} />
+					<input type="hidden" name="attemptsLeft" value={attemptsLeft} />
 					<div class="form-group">
 						<label for="token">6-Digit Verification Code</label>
 						<input
@@ -150,10 +164,23 @@
 							required
 							autofocus
 						/>
-						<span class="input-helper">We sent a 6-digit verification text to {phoneVal}</span>
+						<span class="input-helper">
+							We sent a 6-digit verification text to {phoneVal} &bull; 
+							<strong>{attemptsLeft} {attemptsLeft === 1 ? 'attempt' : 'attempts'} remaining</strong>
+						</span>
 					</div>
 					<button type="submit" class="btn btn-primary w-full">Verify Code</button>
-					<a href="/login" class="btn btn-secondary w-full text-center mt-2">Back to login</a>
+					<button
+						type="button"
+						class="btn btn-secondary w-full text-center mt-2"
+						onclick={() => {
+							currentStep = 'phone';
+							verificationCode = '';
+							attemptsLeft = 3;
+						}}
+					>
+						Change phone number
+					</button>
 				</form>
 			{:else}
 				<!-- Phone Number Request Step -->

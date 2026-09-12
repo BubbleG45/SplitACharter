@@ -6,6 +6,13 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### 🔢 3-Attempt SMS OTP Retry & Code State Preservation (`/login`) — 2026-09-12 16:59 UTC
+
+- **Three Attempt Allowance on Verification**: Users now get up to 3 attempts to enter the correct 6-digit SMS verification code before being prompted to request a new one, preventing accidental kicks back to the phone number entry screen on typographical errors.
+- **Dynamic Attempts Remaining Badge**: The code verification screen clearly displays how many attempts remain (e.g. "2 attempts remaining", "1 attempt remaining") on every incorrect submission.
+- **Graceful Lockout Protection**: If a user exhausts all 3 attempts, the interface cleanly routes back to the phone number entry screen with an informative message asking them to request a fresh verification code.
+- **One-Click Phone Number Correction**: Added a dedicated "Change phone number" option on the verification screen, allowing users to return to the phone input screen at any time if they realize they typed the wrong phone number.
+
 ### 🔗 Automatic Phone Number Sync & Account Linking with Supabase Auth — 2026-09-12 16:54 UTC
 
 - **Linked Existing Accounts to Phone Auth**: Fixed an issue where signing in via SMS OTP created a new unlinked account for users who had already signed up using email or Google OAuth. Existing phone numbers in customer profiles are now linked directly to their primary authentication identities in Supabase Auth.
