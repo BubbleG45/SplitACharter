@@ -62,7 +62,9 @@
 		transform: scale(1.02);
 	}
 	.header-logo {
-		height: 72px;
+		height: 76px;
+		width: auto;
+		max-width: 140px;
 		display: block;
 	}
 	:root[data-theme="light"] .logo-dark-theme {
@@ -140,7 +142,9 @@
 			padding: 1.25rem 1rem;
 		}
 		.header-logo {
-			height: 56px;
+			height: 64px;
+			width: auto;
+			max-width: 120px;
 		}
 		.nav-links {
 			flex-wrap: wrap;

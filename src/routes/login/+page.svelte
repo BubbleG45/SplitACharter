@@ -49,8 +49,8 @@
 	<main class="login-container glass glow-primary">
 		<div class="login-header">
 			<a href="/" class="logo-link" style="margin: 0 auto 1.5rem auto; display: inline-block;">
-				<img src={logoWhite} alt="SplitACharter Logo" class="header-logo logo-dark-theme" style="height: 60px;" />
-				<img src={logoDark} alt="SplitACharter Logo" class="header-logo logo-light-theme" style="height: 60px;" />
+				<img src={logoWhite} alt="SplitACharter Logo" class="header-logo logo-dark-theme" style="height: 84px; width: auto;" />
+				<img src={logoDark} alt="SplitACharter Logo" class="header-logo logo-light-theme" style="height: 84px; width: auto;" />
 			</a>
 			<h2>Welcome back</h2>
 			<p class="subtitle">Sign in to manage or book your shared charters</p>

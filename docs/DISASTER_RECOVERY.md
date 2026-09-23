@@ -126,7 +126,7 @@ SplitACharter's webhook handler (`src/routes/api/webhooks/stripe/+server.ts`) is
 
 **To replay payments from Stripe:**
 1. Open the [Stripe Dashboard](https://dashboard.stripe.com) → **Developers** → **Webhooks**.
-2. Select your production endpoint (`https://splitacharter.boats/api/webhooks/stripe`).
+2. Select your production endpoint (`https://www.splitacharter.boats/api/webhooks/stripe`).
 3. Filter events between the backup timestamp and the current time.
 4. For all `payment_intent.succeeded` or `charge.refunded` events, click **Resend** to send them to the restored application.
 

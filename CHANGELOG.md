@@ -6,6 +6,19 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 September 2026
 
+### 🛥️ Brand Logo, Favicon & PWA Visual Identity Update — 2026-09-23 21:20 UTC
+
+- **New Split-Boat Brand Logo Integration**: Replaced the previous boat-and-waves graphic with the official vertically stacked split-boat vector logo from `logofiles/`. The new mark depicts a center console boat viewed from above, cleanly divided down the middle into two colors (representing two groups splitting a charter) with four outboards at the stern and the "SplitACharter" wordmark beneath.
+- **Theme-Adaptive Color Switching**: Created dedicated Dark Mode and Light Mode vector assets (`logo-white.svg` and `logo.svg`). In Dark Mode, the left hull and "SplitA" text adapt to crisp white for maximum clarity against dark navy backgrounds, while preserving the vibrant brand blue on the right half. In Light Mode, the original grey and blue palette is preserved.
+- **Browser Tab Favicon Redesign**: Designed an uncluttered, high-visibility tab icon focused strictly on the iconic split-boat emblem (removing tiny unreadable text). The SVG favicon features automatic browser color scheme adaptation (`@media (prefers-color-scheme: dark)`), supported by a high-resolution 48x48 PNG fallback.
+- **PWA Mobile App & Home Screen Icons**: Generated crisp 192x192 (`icon-192.png`) and 512x512 (`icon-512.png`) app icons with the split-boat emblem centered on a branded dark navy canvas (`#0b1120`) and framed with safe-area margins for Android and iOS maskable home-screen shortcuts.
+- **Social Sharing Banner (Open Graph)**: Upgraded `og-banner.png` to a standard 1200x630 social preview card featuring the centered split-boat brand against a dark nautical backdrop for links shared across Facebook, X, iMessage, and WhatsApp.
+- **Email Notification Branding**: Updated transactional email templates and `static/logo-white.svg` to proudly display the new logo in all automated customer and captain email updates.
+
+### 💳 Stripe Webhook Endpoint Domain Alignment — 2026-09-15 00:45 UTC
+
+- **Corrected Webhook Endpoint URL in Disaster Recovery Documentation**: Updated the reference URL in the recovery runbook to `https://www.splitacharter.boats/api/webhooks/stripe` (including the `www.` subdomain). This aligns with Vercel's canonical domain routing where root domain requests redirect with an HTTP 308, preventing Stripe delivery failures since Stripe webhooks do not follow HTTP redirects.
+
 ### ⚓ Streamlined Footer Layout & Redundancy Removal — 2026-09-12 17:16 UTC
 
 - **Removed Duplicate Legal Links**: Cleaned up the footer by eliminating the duplicate "Terms • Privacy" links at the bottom right, relying on the prominent "Legal & Policies" column for full access to Terms & Conditions, Privacy Policy, SMS Program, and Cancellation policies.
