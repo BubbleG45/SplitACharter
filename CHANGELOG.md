@@ -456,3 +456,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-21 13:35 UTC (16f932d)
 - feat: add date range charter search and filtering on /browse
+
+### Push Update — 2026-10-21 13:44 UTC (2e7801a)
+- feat: default /browse to date range search mode
