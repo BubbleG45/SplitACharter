@@ -452,3 +452,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-09-23 21:24 UTC (7fbabb0)
 - Update site logo, tab favicon, and PWA assets with new split-boat visual identity
+
+### Push Update — 2026-10-21 13:35 UTC (16f932d)
+- feat: add date range charter search and filtering on /browse
