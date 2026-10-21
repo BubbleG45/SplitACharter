@@ -4,6 +4,21 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ---
 
+## 🚀 October 2026
+
+### 📅 Date Range Charter Search & Filtering on /browse — 2026-10-21 13:30 UTC
+
+- **Date Range Selection on /browse**: Added the ability for customers to search and view charters across a range of travel dates (e.g. for vacations or multi-day stays in the Florida Keys).
+- **Exact Date vs. Date Range Mode Switcher**: Customers can toggle seamlessly between "Exact Date" (single date picker) and "Date Range" (Start Date and End Date pickers) right inside the filter panel.
+- **One-Click Quick Presets**: Added instant preset buttons for "This Weekend", "Next 7 Days", "Next 14 Days", and "Next 30 Days" that calculate and set the exact date bounds in a single click.
+- **Dedicated Dual-Section Range View**:
+  - **Charters Ready to Join**: Highlights half-booked charters with 1 of 2 spots filled during the chosen dates, showing specific departure dates, remaining seats, and instant "Join Group" buttons.
+  - **Start a New Charter**: Lists all available charter templates with flexible date booking so customers can initiate a new shared trip on any date within their vacation window.
+- **Sub-View Filter Tabs**: Added quick tabs ("All Options", "Ready to Join", and "Start New") allowing travelers to isolate only ready-to-join trips or open templates with one tap.
+- **URL Synchronization & Deep Linking**: Query parameters smoothly reflect `startDate` and `endDate` (while remaining fully backwards-compatible with `date`), enabling travelers to bookmark or share date-range links.
+
+---
+
 ## 🚀 September 2026
 
 ### 🛥️ Brand Logo, Favicon & PWA Visual Identity Update — 2026-09-23 21:20 UTC
