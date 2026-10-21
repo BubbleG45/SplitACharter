@@ -9,6 +9,7 @@ This change log keeps the site owner up to date on all updates, new features, de
 ### 📅 Date Range Charter Search & Filtering on /browse — 2026-10-21 13:30 UTC
 
 - **Date Range Selection on /browse**: Added the ability for customers to search and view charters across a range of travel dates (e.g. for vacations or multi-day stays in the Florida Keys).
+- **Default to Date Range Mode**: Configured "Date Range" as the default view on /browse (unless a single date is explicitly specified via URL parameter), presenting the Start Date and End Date inputs and quick preset buttons immediately upon arrival.
 - **Exact Date vs. Date Range Mode Switcher**: Customers can toggle seamlessly between "Exact Date" (single date picker) and "Date Range" (Start Date and End Date pickers) right inside the filter panel.
 - **One-Click Quick Presets**: Added instant preset buttons for "This Weekend", "Next 7 Days", "Next 14 Days", and "Next 30 Days" that calculate and set the exact date bounds in a single click.
 - **Dedicated Dual-Section Range View**:

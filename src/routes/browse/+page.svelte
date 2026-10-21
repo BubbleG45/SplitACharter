@@ -20,7 +20,9 @@
 		page.url.searchParams.get('endDate') || page.url.searchParams.get('date_to') || '';
 	const initialSingleDate = page.url.searchParams.get('date') || '';
 
-	let dateMode = $state<'single' | 'range'>(initialStart || initialEnd ? 'range' : 'single');
+	let dateMode = $state<'single' | 'range'>(
+		initialSingleDate && !initialStart && !initialEnd ? 'single' : 'range'
+	);
 	let searchDate = $state(initialSingleDate || initialStart || '');
 	let startDate = $state(initialStart || initialSingleDate || '');
 	let endDate = $state(initialEnd || '');
@@ -48,16 +50,16 @@
 			const pStart = urlParams.get('startDate') || urlParams.get('date_from') || '';
 			const pEnd = urlParams.get('endDate') || urlParams.get('date_to') || '';
 
-			if (pStart || pEnd) {
-				dateMode = 'range';
-				startDate = pStart;
-				endDate = pEnd;
-				searchDate = pStart;
-			} else {
+			if (pDate && !pStart && !pEnd) {
 				dateMode = 'single';
 				searchDate = pDate;
 				startDate = pDate;
 				endDate = '';
+			} else {
+				dateMode = 'range';
+				startDate = pStart;
+				endDate = pEnd;
+				searchDate = pStart;
 			}
 
 			filterLocation = urlParams.get('location') || 'all';
@@ -429,6 +431,7 @@
 		filterTripTypes = [];
 		filterGroupSize = '1';
 		rangeViewTab = 'all';
+		dateMode = 'range';
 	}
 
 	function getListingHref(listing: any) {
@@ -500,18 +503,18 @@
 						<button
 							type="button"
 							class="mode-pill"
-							class:active={dateMode === 'single'}
-							onclick={() => setDateMode('single')}
-						>
-							Exact Date
-						</button>
-						<button
-							type="button"
-							class="mode-pill"
 							class:active={dateMode === 'range'}
 							onclick={() => setDateMode('range')}
 						>
 							Date Range
+						</button>
+						<button
+							type="button"
+							class="mode-pill"
+							class:active={dateMode === 'single'}
+							onclick={() => setDateMode('single')}
+						>
+							Exact Date
 						</button>
 					</div>
 				</div>
