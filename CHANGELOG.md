@@ -6,6 +6,11 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 📅 Simplified Charter Details to Required Departure Date Picker — 2026-10-25 17:52 UTC
+
+- **Clean Date Picker Interface**: Replaced the multi-day departure chip grid on `/browse/[id]` with a clean, standard date picker for selecting the departure date.
+- **Enforced Date Requirement for Checkout**: Made date selection strictly mandatory before proceeding to checkout. When no date is selected, an inactive "Select a Date to Proceed to Checkout" button is clearly displayed, enabling into the active "Proceed to Checkout" action as soon as a departure date is chosen.
+
 ### 🛠️ Fixed Active Listing Template Queries on /browse and Charter Details — 2026-10-25 17:48 UTC
 
 - **Resolved Missing Listing Templates**: Fixed a database query error where non-existent columns (`description` and `mapbox_region` on the `areas` table) were causing the active listing templates query on `/browse` to fail silently, resulting in an empty list of charters.

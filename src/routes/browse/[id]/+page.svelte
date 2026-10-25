@@ -18,45 +18,6 @@
 		minDate = `${yyyy}-${mm}-${dd}`;
 	});
 
-	// Trip window range day list (when user arrived with a date range)
-	const rangeDates = $derived.by(() => {
-		if (!data.startDate) return [];
-		const start = new Date(data.startDate + 'T00:00:00');
-		const end = data.endDate ? new Date(data.endDate + 'T00:00:00') : start;
-		if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return [];
-
-		const dates: Array<{
-			date: string;
-			weekday: string;
-			formatted: string;
-			hasHalfBooked: boolean;
-			tripInstance: any;
-		}> = [];
-
-		const cur = new Date(start);
-		while (cur <= end) {
-			const yyyy = cur.getFullYear();
-			const mm = String(cur.getMonth() + 1).padStart(2, '0');
-			const dd = String(cur.getDate()).padStart(2, '0');
-			const dateStr = `${yyyy}-${mm}-${dd}`;
-
-			const weekday = cur.toLocaleDateString('en-US', { weekday: 'short' });
-			const formatted = cur.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-			const trip = (data.tripInstances || []).find((t: any) => t.date === dateStr);
-
-			dates.push({
-				date: dateStr,
-				weekday,
-				formatted,
-				hasHalfBooked: Boolean(trip),
-				tripInstance: trip
-			});
-
-			cur.setDate(cur.getDate() + 1);
-		}
-		return dates;
-	});
 
 	// Find if there is an existing trip instance on the selected date
 	let matchedInstance = $derived(
@@ -369,102 +330,25 @@
 					</div>
 				</div>
 
-				{#if data.startDate}
-					<!-- Trip Window Range Day Selector -->
-					<div class="vacation-range-card glass">
-						<div class="vacation-range-header">
-							<div class="range-tag-group">
-								<span class="range-tag">Your Trip Window</span>
-								<h3>Choose Departure Day</h3>
-							</div>
-							<span class="range-dates-badge">
-								{formatDateDisplay(data.startDate)} – {formatDateDisplay(data.endDate || data.startDate)} ({rangeDates.length} days)
-							</span>
-						</div>
-						<p class="range-hint">
-							Select the day you'd like to set sail. Days marked <strong class="badge-ready-text">⚡ Group Ready</strong> already have a 1st group waiting for you to join and confirm instantly!
-						</p>
+				<h2>Select Departure Date</h2>
+				<p class="panel-desc">Choose when you want to set sail. Shared charters require two groups to book and reconfirm.</p>
 
-						{#if rangeDates.length <= 14}
-							<div class="day-chips-grid">
-								{#each rangeDates as d}
-									{@const isCurrent = selectedDate === d.date}
-									<button
-										type="button"
-										class="day-chip-btn"
-										class:selected={isCurrent}
-										class:is-ready={d.hasHalfBooked}
-										onclick={() => (selectedDate = d.date)}
-									>
-										<div class="chip-date-header">
-											<span class="chip-weekday">{d.weekday}</span>
-											<span class="chip-day">{d.formatted}</span>
-										</div>
-										<div class="chip-availability">
-											{#if d.hasHalfBooked}
-												<span class="status-pill ready">⚡ Group Ready</span>
-											{:else}
-												<span class="status-pill fresh">Start Boat</span>
-											{/if}
-										</div>
-									</button>
-								{/each}
-							</div>
-						{:else}
-							<!-- Long stay (> 14 days): highlight half-booked days + bounded date input -->
-							{#if rangeDates.some(d => d.hasHalfBooked)}
-								<div class="long-stay-ready-section">
-									<span class="section-micro-title">⚡ Charters Ready to Join During Your Dates:</span>
-									<div class="day-chips-grid">
-										{#each rangeDates.filter(d => d.hasHalfBooked) as d}
-											{@const isCurrent = selectedDate === d.date}
-											<button
-												type="button"
-												class="day-chip-btn is-ready"
-												class:selected={isCurrent}
-												onclick={() => (selectedDate = d.date)}
-											>
-												<div class="chip-date-header">
-													<span class="chip-weekday">{d.weekday}</span>
-													<span class="chip-day">{d.formatted}</span>
-												</div>
-												<span class="status-pill ready">⚡ Group Ready</span>
-											</button>
-										{/each}
-									</div>
-								</div>
-							{/if}
+				<div class="date-selector-wrapper">
+					<label for="trip-date">
+						Departure Date <span class="required-star" aria-hidden="true">*</span>
+						{#if data.startDate && data.endDate}
+							<span class="range-context">({formatDateDisplay(data.startDate)} – {formatDateDisplay(data.endDate)})</span>
 						{/if}
-
-						<div class="manual-date-row">
-							<label for="trip-date">
-								Or pick a specific departure date ({formatDateDisplay(data.startDate)} – {formatDateDisplay(data.endDate || data.startDate)}):
-							</label>
-							<input
-								type="date"
-								id="trip-date"
-								min={data.startDate || minDate}
-								max={data.endDate || undefined}
-								bind:value={selectedDate}
-								class="date-input"
-							/>
-						</div>
-					</div>
-				{:else}
-					<h2>Select a Date</h2>
-					<p class="panel-desc">Choose when you want to set sail. Shared charters require two groups to book and reconfirm.</p>
-
-					<div class="date-selector-wrapper">
-						<label for="trip-date">Departure Date</label>
-						<input
-							type="date"
-							id="trip-date"
-							min={minDate}
-							bind:value={selectedDate}
-							class="date-input"
-						/>
-					</div>
-				{/if}
+					</label>
+					<input
+						type="date"
+						id="trip-date"
+						min={minDate}
+						bind:value={selectedDate}
+						class="date-input"
+						required
+					/>
+				</div>
 
 				{#if selectedDate}
 					<!-- Date status info -->
@@ -516,6 +400,16 @@
 							<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
 						</svg>
 						<p>Please select a date above to check availability and lock in your reservation.</p>
+					</div>
+					<div class="action-row">
+						<button
+							type="button"
+							class="btn btn-primary w-full btn-large btn-disabled-cta"
+							disabled
+							title="Please select a departure date above to proceed"
+						>
+							Select a Date to Proceed to Checkout
+						</button>
 					</div>
 				{/if}
 			</div>
@@ -1030,181 +924,31 @@
 	}
 
 
-	/* Trip Window Range Card & Day Chips */
-	.vacation-range-card {
-		padding: 1.5rem;
-		border-radius: var(--radius-lg, 0.75rem);
-		border: 1px solid var(--border-light);
-		background: var(--bg-surface);
-		margin-bottom: 1.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.vacation-range-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.range-tag-group {
-		display: flex;
-		align-items: center;
-		gap: 0.65rem;
-	}
-
-	.range-tag {
-		font-size: 0.75rem;
+	/* Required date indicator & disabled CTA */
+	.required-star {
+		color: #ef4444;
 		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		background: var(--primary-glow, rgba(14, 165, 233, 0.15));
-		color: var(--primary, #0ea5e9);
-		padding: 0.2rem 0.55rem;
-		border-radius: 9999px;
-		border: 1px solid rgba(14, 165, 233, 0.3);
+		margin-left: 2px;
 	}
 
-	.vacation-range-header h3 {
-		font-size: 1.15rem;
-		font-weight: 700;
-		color: var(--text-primary);
-		margin: 0;
-	}
-
-	.range-dates-badge {
-		font-size: 0.85rem;
-		font-weight: 600;
+	.range-context {
+		font-size: 0.8rem;
+		font-weight: 500;
 		color: var(--text-secondary);
+		margin-left: 0.5rem;
+	}
+
+	.btn-disabled-cta {
+		opacity: 0.5;
+		cursor: not-allowed;
 		background: var(--input-bg);
-		padding: 0.25rem 0.65rem;
-		border-radius: var(--radius-sm, 0.375rem);
 		border: 1px solid var(--border-light);
-	}
-
-	.range-hint {
-		font-size: 0.9rem;
-		color: var(--text-secondary);
-		line-height: 1.45;
-		margin: 0;
-	}
-
-	.badge-ready-text {
-		color: #22c55e;
-	}
-
-	.day-chips-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
-		gap: 0.65rem;
-	}
-
-	.day-chip-btn {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.45rem;
-		padding: 0.75rem 0.5rem;
-		border-radius: var(--radius-md, 0.5rem);
-		border: 1px solid var(--border-light);
-		background: var(--input-bg);
-		cursor: pointer;
-		transition: all 0.15s ease;
-		text-align: center;
-	}
-
-	.day-chip-btn:hover {
-		border-color: var(--primary, #0ea5e9);
-		transform: translateY(-2px);
-		background: var(--glass-bg);
-	}
-
-	.day-chip-btn.selected {
-		background: rgba(14, 165, 233, 0.15);
-		border-color: var(--primary, #0ea5e9);
-		box-shadow: 0 0 12px rgba(14, 165, 233, 0.25);
-	}
-
-	.day-chip-btn.is-ready {
-		border-color: rgba(34, 197, 94, 0.45);
-	}
-
-	.day-chip-btn.is-ready.selected {
-		background: rgba(34, 197, 94, 0.15);
-		border-color: #22c55e;
-		box-shadow: 0 0 12px rgba(34, 197, 94, 0.25);
-	}
-
-	.chip-date-header {
-		display: flex;
-		flex-direction: column;
-		gap: 0.1rem;
-	}
-
-	.chip-weekday {
-		font-size: 0.75rem;
-		font-weight: 700;
-		text-transform: uppercase;
 		color: var(--text-secondary);
 	}
 
-	.chip-day {
-		font-size: 0.95rem;
-		font-weight: 700;
-		color: var(--text-primary);
-	}
-
-	.chip-availability {
-		width: 100%;
-	}
-
-	.status-pill {
-		display: block;
-		font-size: 0.7rem;
-		font-weight: 600;
-		padding: 0.15rem 0.4rem;
-		border-radius: 9999px;
-		white-space: nowrap;
-	}
-
-	.status-pill.ready {
-		background: rgba(34, 197, 94, 0.2);
-		color: #22c55e;
-		border: 1px solid rgba(34, 197, 94, 0.3);
-	}
-
-	.status-pill.fresh {
-		background: var(--border-light);
-		color: var(--text-secondary);
-	}
-
-	.long-stay-ready-section {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.section-micro-title {
-		font-size: 0.85rem;
-		font-weight: 700;
-		color: #22c55e;
-	}
-
-	.manual-date-row {
-		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-		margin-top: 0.5rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--border-light);
-	}
-
-	.manual-date-row label {
-		font-size: 0.85rem;
-		color: var(--text-secondary);
+	.btn-disabled-cta:hover {
+		transform: none;
+		box-shadow: none;
 	}
 
 </style>
