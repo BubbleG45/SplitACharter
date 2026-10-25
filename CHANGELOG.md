@@ -589,3 +589,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 19:03 UTC (1ea8711)
 - Inline booking button next to price and expand description to 4 lines on /browse
+
+### Push Update — 2026-10-25 20:45 UTC (43ca2ef)
+- Optimize mobile touch targets and add card header wrap safety on /browse
