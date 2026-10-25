@@ -545,3 +545,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 18:18 UTC (563b2a1)
 - Fix scroll locking and scroll target to keep filters visible on /browse
+
+### Push Update — 2026-10-25 18:24 UTC (5a9733d)
+- Scroll directly to top of charter listings when location selected in Step 2
