@@ -6,6 +6,12 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 🛠️ Fixed Active Listing Template Queries on /browse and Charter Details — 2026-10-25 17:48 UTC
+
+- **Resolved Missing Listing Templates**: Fixed a database query error where non-existent columns (`description` and `mapbox_region` on the `areas` table) were causing the active listing templates query on `/browse` to fail silently, resulting in an empty list of charters.
+- **Fixed Charter Details 404s**: Updated the listing query on `/browse/[id]` to match the exact schema columns, ensuring all charter pages load properly without throwing 404 errors.
+- **Fixed Admin Location Management**: Removed references to non-existent area columns from `/admin/locations` server actions to prevent area creation and update errors.
+
 ### 🧭 Trip Window Verbiage Refinement on Charter Details — 2026-10-25 17:40 UTC
 
 - **Refined Date Range Heading**: Updated the date range container badge on `/browse/[id]` from "Vacation Stay" to **"Your Trip Window"**, providing cleaner, charter-specific phrasing that naturally fits all travelers.

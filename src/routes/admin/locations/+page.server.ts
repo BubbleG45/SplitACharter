@@ -69,8 +69,6 @@ export const actions: Actions = {
 		const { error: insertErr } = await supabase.from('areas').insert({
 			name,
 			slug,
-			description,
-			mapbox_region: mapboxRegion,
 			center_lat: centerLat,
 			center_lng: centerLng,
 			active
@@ -111,9 +109,7 @@ export const actions: Actions = {
 			.update({
 				name,
 				slug,
-				description,
-				mapbox_region: mapboxRegion,
-				center_lat: centerLat,
+					center_lat: centerLat,
 				center_lng: centerLng,
 				active
 			})

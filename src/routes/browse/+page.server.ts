@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 				.from('listing_templates')
 				.select(`
 					*,
-					areas (id, name, slug, description, mapbox_region),
+					areas (id, name, slug, center_lat, center_lng),
 					durations (id, name, label, hours)
 				`)
 				.eq('active', true)
