@@ -6,6 +6,10 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 🛠️ Fixed Meeting Icon Sizing on /browse Cards — 2026-10-25 18:52 UTC
+
+- **Meeting Icon Dimensions**: Fixed an issue where the departure marina map-pin SVG expanded without constraint by adding explicit `width="14"` and `height="14"` attributes and CSS constraints (`width: 14px; height: 14px`), rendering a sleek 14px inline pin icon alongside departure marina text.
+
 ### 📋 Optimized Card Meta Layout & 3-Line Descriptions on /browse — 2026-10-25 18:45 UTC
 
 - **Combined Duration & Capacity in Card Header**: Moved charter duration (`4 hr`, `6 hr`, `8 hr`) up into the header badge beside passenger capacity (e.g. `4 hr • 4 Max Pax` or `4 hr • 2 seats left`), consolidating key metrics at a glance and freeing up space in the card body.
