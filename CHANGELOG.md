@@ -520,3 +520,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 17:44 UTC (d87fda2)
 - Fix active listing templates query on /browse and /browse/[id] by removing nonexistent area columns
+
+### Push Update — 2026-10-25 17:50 UTC (ddf8b97)
+- Replace multi-day chips with clean required date picker on /browse/[id]
