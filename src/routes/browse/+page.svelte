@@ -38,10 +38,6 @@
 		parseLocationsParam(page.url.searchParams.get('location'))
 	);
 
-	const upperSlugs = ['key-largo', 'tavernier', 'islamorada'];
-	const middleSlugs = ['long-key', 'duck-key', 'marathon'];
-	const lowerSlugs = ['big-pine-key', 'summerland-key', 'cudjoe-key', 'sugarloaf-key', 'stock-island', 'key-west'];
-
 	function toggleLocation(slug: string) {
 		const s = slug.toLowerCase();
 		if (filterLocations.includes(s)) {
@@ -51,19 +47,12 @@
 		}
 	}
 
-	function toggleCluster(cluster: 'upper' | 'middle' | 'lower') {
-		const slugs = cluster === 'upper' ? upperSlugs : cluster === 'middle' ? middleSlugs : lowerSlugs;
-		const allIn = slugs.every((s) => filterLocations.includes(s));
-		if (allIn) {
-			filterLocations = filterLocations.filter((s) => !slugs.includes(s));
-		} else {
-			filterLocations = Array.from(new Set([...filterLocations, ...slugs]));
-		}
+	function selectAllLocations() {
+		filterLocations = (data.areas || []).map((a: any) => a.slug);
 	}
 
-	function isClusterSelected(cluster: 'upper' | 'middle' | 'lower'): boolean {
-		const slugs = cluster === 'upper' ? upperSlugs : cluster === 'middle' ? middleSlugs : lowerSlugs;
-		return slugs.every((s) => filterLocations.includes(s));
+	function clearAllLocations() {
+		filterLocations = [];
 	}
 
 	function toggleSelectAllKeys() {
@@ -710,14 +699,7 @@
 					options={groupSizeOptions}
 				/>
 
-				<CustomMultiSelect
-					id="location"
-					label="Locations"
-					bind:values={filterLocations}
-					options={locationOptions}
-					placeholder="Select Location(s)"
-					itemLabel="Locations Selected"
-				/>
+
 
 				<CustomSelect
 					id="duration"
@@ -732,6 +714,45 @@
 					bind:values={filterTripTypes}
 					options={tripTypeOptions}
 				/>
+			</div>
+
+			<!-- Full Visible Locations Selector (12 Florida Keys) -->
+			<div class="locations-bar-card">
+				<div class="locations-bar-header">
+					<div class="locations-bar-title-group">
+						<span class="locations-bar-title">Departure Locations</span>
+						<span class="locations-bar-count">
+							{#if filterLocations.length === 0}
+								(Select 1 or more Keys to view charters)
+							{:else}
+								({filterLocations.length} of {data.areas?.length || 12} Selected)
+							{/if}
+						</span>
+					</div>
+					<div class="locations-bar-actions">
+						<button type="button" class="btn-loc-action" onclick={selectAllLocations}>
+							Select All
+						</button>
+						<button type="button" class="btn-loc-action" onclick={clearAllLocations}>
+							Clear
+						</button>
+					</div>
+				</div>
+
+				<div class="locations-full-list">
+					{#each (data.areas || []) as area}
+						{@const isSelected = filterLocations.includes(area.slug)}
+						<button
+							type="button"
+							class="loc-chip"
+							class:selected={isSelected}
+							onclick={() => toggleLocation(area.slug)}
+						>
+							<span class="loc-chip-icon">{isSelected ? '✓' : '+'}</span>
+							<span class="loc-chip-name">{area.name}</span>
+						</button>
+					{/each}
+				</div>
 			</div>
 
 			{#if dateMode === 'range'}
@@ -805,19 +826,13 @@
 					<div class="step-badge">Step 2</div>
 					<div class="step-content">
 						<div class="keys-section-header">
-							<span class="step-title">Select One or More Departure Keys</span>
+							<span class="step-title">Full Florida Keys Location List</span>
 							<div class="cluster-actions">
-								<button type="button" class="btn-cluster-quick" onclick={() => toggleCluster('upper')}>
-									{isClusterSelected('upper') ? '✓ Upper Keys' : '+ Upper Keys'}
+								<button type="button" class="btn-cluster-quick btn-all-keys" onclick={selectAllLocations}>
+									Select All 12 Keys
 								</button>
-								<button type="button" class="btn-cluster-quick" onclick={() => toggleCluster('middle')}>
-									{isClusterSelected('middle') ? '✓ Middle Keys' : '+ Middle Keys'}
-								</button>
-								<button type="button" class="btn-cluster-quick" onclick={() => toggleCluster('lower')}>
-									{isClusterSelected('lower') ? '✓ Lower Keys' : '+ Lower Keys'}
-								</button>
-								<button type="button" class="btn-cluster-quick btn-all-keys" onclick={toggleSelectAllKeys}>
-									{filterLocations.length === (data.areas?.length || 12) ? 'Clear All' : 'Select All 12 Keys'}
+								<button type="button" class="btn-cluster-quick" onclick={clearAllLocations}>
+									Clear All
 								</button>
 							</div>
 						</div>
@@ -2582,6 +2597,123 @@
 			flex-direction: column;
 			align-items: flex-start;
 		}
+	}
+
+
+	/* Locations Full Visible Bar */
+	.locations-bar-card {
+		margin-top: 1.25rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--border-light);
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
+	}
+
+	.locations-bar-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.locations-bar-title-group {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+	}
+
+	.locations-bar-title {
+		font-size: 0.95rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		letter-spacing: -0.01em;
+	}
+
+	.locations-bar-count {
+		font-size: 0.825rem;
+		color: var(--text-secondary);
+	}
+
+	.locations-bar-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.btn-loc-action {
+		font-size: 0.775rem;
+		font-weight: 600;
+		padding: 0.3rem 0.65rem;
+		border-radius: var(--radius-sm, 0.375rem);
+		border: 1px solid var(--border-light);
+		background: var(--input-bg);
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.btn-loc-action:hover {
+		color: var(--text-primary);
+		border-color: var(--primary, #0ea5e9);
+		background: var(--glass-bg);
+	}
+
+	.locations-full-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.loc-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		padding: 0.5rem 0.85rem;
+		background: var(--input-bg);
+		border: 1px solid var(--border-light);
+		border-radius: 9999px;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		user-select: none;
+	}
+
+	.loc-chip:hover {
+		border-color: var(--primary, #0ea5e9);
+		color: var(--text-primary);
+		transform: translateY(-1px);
+	}
+
+	.loc-chip.selected {
+		background: rgba(14, 165, 233, 0.15);
+		border-color: var(--primary, #0ea5e9);
+		color: var(--text-primary);
+		font-weight: 600;
+	}
+
+	.loc-chip-icon {
+		font-size: 0.8rem;
+		font-weight: 700;
+		width: 1.1rem;
+		height: 1.1rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		background: var(--border-light);
+		color: var(--text-secondary);
+	}
+
+	.loc-chip.selected .loc-chip-icon {
+		background: var(--primary, #0ea5e9);
+		color: #ffffff;
+	}
+
+	.loc-chip-name {
+		white-space: nowrap;
 	}
 
 </style>

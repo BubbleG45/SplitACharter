@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 				.eq('active', true)
 				.order('trip_type', { ascending: true }),
 			supabase.from('trip_types').select('*').order('name', { ascending: true }),
-			supabase.from('areas').select('*').eq('active', true).order('name', { ascending: true }),
+			supabase.from('areas').select('*').eq('active', true).order('display_order', { ascending: true }),
 			supabase.from('durations').select('*').order('hours', { ascending: true }),
 			supabase.from('marinas').select('id, name, address, latitude, longitude, active').eq('active', true),
 			supabaseAdmin

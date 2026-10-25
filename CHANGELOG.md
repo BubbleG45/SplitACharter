@@ -14,7 +14,7 @@ This change log keeps the site owner up to date on all updates, new features, de
 - **Passenger Capacity Standardization**: Standardized all Backcountry charters to a maximum of 4 passengers and Fly Fishing charters to a maximum of 2 passengers (skiff capacity), while all other 11 charter types support up to 6 passengers.
 - **Location-Based Captain Matching**: Shifted captain matching logic to evaluate captains' directly selected serviced locations rather than physical marina boundaries, ensuring seamless captain matching even in keys without dedicated marina facilities.
 - **Updated Captain Roster & Admin Forms**: Automatically mapped all active captains to their corresponding individual Keys and enabled the new 6-hour duration. Upgraded the Add/Edit Captain and Add/Edit Listing admin forms to support the 12 Keys dynamically.
-- **Browse Page Location & Date Nudges**: Redesigned the `/browse` charter explorer to only show charter listings after the user selects one or more departure locations. Added an interactive onboarding card with quick-select destination pills, cluster shortcuts (Upper, Middle, Lower Keys), and clear guidance nudging travelers to select both their departure location(s) and trip date.
+- **Browse Page Full Location List & Date Nudges**: Redesigned the `/browse` charter explorer to display the full, visible list of all 12 Florida Keys directly in the filter interface (removing the Upper/Middle/Lower grouping shortcuts). Listings only display once one or more Keys are chosen. Also remapped all existing active trip instances to specific Key templates so historical and active trips cleanly reflect individual Keys.
 
 ### 📍 Scalable Locations, Road Drive-Time Matching & Needs-Captain Operations — 2026-10-22 00:35 UTC
 
