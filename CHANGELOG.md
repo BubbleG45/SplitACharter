@@ -512,3 +512,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 17:37 UTC (9886ab5)
 - Update date range verbiage to 'Your Trip Window' on charter details page
+
+### Push Update — 2026-10-25 17:44 UTC (d87fda2)
+- Fix active listing templates query on /browse and /browse/[id] by removing nonexistent area columns
