@@ -482,3 +482,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-21 13:44 UTC (2e7801a)
 - feat: default /browse to date range search mode
+
+### Push Update — 2026-10-25 17:15 UTC (f4c59ab)
+- Update locations to 12 Florida Keys, add 6-hour duration, update listing templates & location-based captain matching
