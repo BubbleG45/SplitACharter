@@ -485,3 +485,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 17:15 UTC (f4c59ab)
 - Update locations to 12 Florida Keys, add 6-hour duration, update listing templates & location-based captain matching
+
+### Push Update — 2026-10-25 17:20 UTC (1fdde71)
+- Display full 12-location list on /browse, remove Upper/Middle/Lower groupings, and remap trip instances
