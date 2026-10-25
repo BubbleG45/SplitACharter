@@ -28,9 +28,14 @@
 	function scrollToResults() {
 		if (typeof window === 'undefined') return;
 		setTimeout(() => {
-			const el = document.getElementById('browse-listings-start');
-			if (el) {
-				el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			const controls = document.querySelector('.controls-card');
+			if (controls) {
+				const rect = controls.getBoundingClientRect();
+				const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+				const targetY = Math.max(0, rect.top + scrollTop - 24);
+				window.scrollTo({ top: targetY, behavior: 'smooth' });
+			} else {
+				window.scrollTo({ top: 0, behavior: 'smooth' });
 			}
 		}, 80);
 	}
@@ -2033,7 +2038,7 @@
 	.browse-wrapper {
 		min-height: 100vh;
 		position: relative;
-		overflow: hidden;
+		overflow-x: clip;
 		background: var(--bg-base);
 		color: var(--text-primary);
 		padding: 4rem 2rem;

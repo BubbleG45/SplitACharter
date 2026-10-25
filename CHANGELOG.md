@@ -6,6 +6,11 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 🧭 Fixed Page Scroll & Preserved Top Filter Selections on /browse — 2026-10-25 18:20 UTC
+
+- **Fixed Trapped Scroll Container**: Replaced an internal `overflow: hidden` on `.browse-wrapper` with `overflow-x: clip`, resolving an issue where internal container scrolling prevented users from scrolling their mouse wheel or touch gesture back up to the top of the page.
+- **Scroll Directly to Filter Selections**: Updated the smooth-scroll target upon selecting a Key in Step 2 to target the top of the `.controls-card` Filter panel, ensuring the date picker, group size, presets, and departure locations stay immediately accessible at the top of the viewport alongside the loaded charter listings.
+
 ### 🎯 Unified Date Filter, Step 2 Scroll Focus & Simplified Checkout Label — 2026-10-25 18:15 UTC
 
 - **Simplified Checkout Payment Label**: Replaced `Due Now (Stripe Deposit):` with a clean `Due Now:` on the checkout summary card (`/checkout`), keeping pricing clear, standard, and clutter-free for customers.
