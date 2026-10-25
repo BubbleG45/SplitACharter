@@ -530,3 +530,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 17:50 UTC (ddf8b97)
 - Replace multi-day chips with clean required date picker on /browse/[id]
+
+### Push Update — 2026-10-25 18:12 UTC (e429ea0)
+- Unify date selection on /browse, add Step 2 scroll-to-results, and simplify /checkout Due Now label
