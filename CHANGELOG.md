@@ -553,3 +553,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 18:24 UTC (5a9733d)
 - Scroll directly to top of charter listings when location selected in Step 2
+
+### Push Update — 2026-10-25 18:34 UTC (a481b33)
+- Compact date range badges and add wrap safety on /browse cards
