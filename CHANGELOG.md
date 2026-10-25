@@ -6,6 +6,13 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 📅 Vacation Date Range Navigation & Exact Charter Day Selection — 2026-10-25 17:35 UTC
+
+- **Intelligent Vacation Range Navigation**: When customers browse charters using a date range (e.g. Nov 1 to Nov 7) and click "Book Charter" on an open template, the system now forwards their full vacation window (`startDate` and `endDate`) to the listing details page without locking them into an arbitrary day.
+- **Vacation Window Day Selector on Listing Details**: On `/browse/[id]`, travelers arriving with a date range are presented with an interactive day selector displaying every day of their stay (up to 14 days) with live availability indicators.
+- **Instant Match Badges**: Days within the traveler's window that already have an active half-booked charter are prominently badged with `⚡ Group Ready`, allowing travelers to join an instantly confirmable trip or start a brand new boat on another day with a single tap.
+- **Guaranteed Single Departure Date at Checkout**: The "Proceed to Checkout" flow activates only after an exact departure day is chosen, guaranteeing full data integrity and schedule clarity before Stripe payment.
+
 ### 🏝️ 12 Florida Keys Locations, 6-Hour Duration, Listing Templates & Location-Based Captain Matching — 2026-10-25 17:15 UTC
 
 - **Expanded to 12 Distinct Florida Keys**: Transitioned operating areas from three broad regional clusters to 12 distinct Florida Keys: Key Largo, Tavernier, Islamorada, Long Key, Duck Key, Marathon, Big Pine Key, Summerland Key, Cudjoe Key, Sugarloaf Key, Stock Island, and Key West. Each location includes accurate GPS coordinates and geographic north-to-south ordering.

@@ -552,10 +552,16 @@
 
 	function getListingHref(listing: any) {
 		const params = new URLSearchParams();
-		const effectiveDate =
-			listing.matchedInstance?.date || (dateMode === 'single' ? searchDate : startDate || minDate);
-		if (effectiveDate) {
-			params.set('date', effectiveDate);
+		if (listing.matchedInstance?.date) {
+			// Ready-to-join trip has an exact departure date
+			params.set('date', listing.matchedInstance.date);
+		} else if (dateMode === 'single' && searchDate) {
+			// Single date search has an exact departure date
+			params.set('date', searchDate);
+		} else if (dateMode === 'range' && (startDate || endDate)) {
+			// Vacation range search passes range so user intentionally confirms departure day on details page
+			if (startDate) params.set('startDate', startDate);
+			if (endDate) params.set('endDate', endDate);
 		}
 		if (filterGroupSize && filterGroupSize !== '1') {
 			params.set('groupSize', filterGroupSize);
