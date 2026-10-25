@@ -1979,6 +1979,8 @@
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
+		white-space: nowrap;
+		flex-shrink: 0;
 	}
 	.btn-disabled {
 		background: var(--input-bg) !important;
@@ -2001,6 +2003,8 @@
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
+		white-space: nowrap;
+		flex-shrink: 0;
 	}
 	.date-badge {
 		background: rgba(6, 182, 212, 0.16);
@@ -2165,6 +2169,8 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px 10px;
 		margin-bottom: 0.75rem;
 	}
 	.location-badge {
@@ -2300,7 +2306,8 @@
 		text-transform: uppercase;
 		font-size: 0.76rem;
 		letter-spacing: 0.4px;
-		padding: 8px 14px;
+		padding: 9px 15px;
+		min-height: 38px;
 		border-radius: 30px;
 		white-space: nowrap;
 		flex-shrink: 0;
@@ -2308,6 +2315,9 @@
 		border: 1px solid rgba(255, 255, 255, 0.15);
 		box-shadow: 0 0 12px rgba(99, 102, 241, 0.35);
 		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 	}
 	.btn-join:hover {
 		transform: translateY(-2px) scale(1.02);
@@ -2321,17 +2331,37 @@
 		text-transform: uppercase;
 		font-size: 0.76rem;
 		letter-spacing: 0.4px;
-		padding: 8px 14px;
+		padding: 9px 15px;
+		min-height: 38px;
 		border-radius: 30px;
 		white-space: nowrap;
 		flex-shrink: 0;
 		text-align: center;
 		box-shadow: 0 3px 12px rgba(6, 182, 212, 0.25);
 		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 	}
 	.btn-book:hover {
 		transform: translateY(-2px) scale(1.02);
 		box-shadow: 0 4px 16px rgba(6, 182, 212, 0.4);
+	}
+
+	.card-footer .btn-disabled {
+		font-weight: 700;
+		text-transform: uppercase;
+		font-size: 0.76rem;
+		letter-spacing: 0.4px;
+		padding: 9px 14px;
+		min-height: 38px;
+		border-radius: 30px;
+		white-space: nowrap;
+		flex-shrink: 0;
+		text-align: center;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.empty-state {
@@ -2388,6 +2418,12 @@
 		}
 		.card-footer {
 			gap: 0.5rem;
+		}
+		.card-footer .btn-book,
+		.card-footer .btn-join,
+		.card-footer .btn-disabled {
+			min-height: 40px;
+			padding: 9px 16px;
 		}
 		.filters-group {
 			grid-template-columns: 1fr;

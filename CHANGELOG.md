@@ -6,6 +6,11 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 📱 Mobile Tap Target Optimization & Header Wrap Safety on /browse — 2026-10-25 20:45 UTC
+
+- **Enhanced Mobile Touch Targets**: Increased button padding and height on charter card action pills (`Book Charter`, `Join Group`, `Exceeds Capacity`) with a minimum 40px touch target on mobile viewports and centered vertical alignment for seamless thumb tapping.
+- **Card Header Wrap Protection**: Added wrapping capability (`flex-wrap: wrap; gap: 6px 10px;`) and flexible sizing to `.card-header` and status badges so that longer location names and capacity badges stay clean and never collide or overflow on narrow screens.
+
 ### 🔘 Inlined Booking Button with Price & 4-Line Description on /browse — 2026-10-25 19:02 UTC
 
 - **Side-by-Side Price and Action Button**: Styled the card footer so that the booking button (`Book Charter` / `Join Group`) sits on the exact same row directly beside the group price and total cost, eliminating a full row of vertical button space.
