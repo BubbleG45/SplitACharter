@@ -581,3 +581,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 18:52 UTC (681b67d)
 - Fix meeting icon sizing on /browse listing cards
+
+### Push Update — 2026-10-25 19:03 UTC (1ea8711)
+- Inline booking button next to price and expand description to 4 lines on /browse
