@@ -538,3 +538,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 18:12 UTC (e429ea0)
 - Unify date selection on /browse, add Step 2 scroll-to-results, and simplify /checkout Due Now label
+
+### Push Update — 2026-10-25 18:18 UTC (563b2a1)
+- Fix scroll locking and scroll target to keep filters visible on /browse
