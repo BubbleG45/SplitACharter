@@ -6,6 +6,10 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 🎯 Tuned Step 2 Scroll Target to Top of Charter Listings on /browse — 2026-10-25 18:25 UTC
+
+- **Accurate Top-of-Listings Scroll Target**: Updated the smooth-scroll behavior when selecting a location in Step 2 to target the top of the charter listings results directly, bringing the available boat cards immediately into full focus while keeping standard upward scrolling completely open and natural to return to filter options at any time.
+
 ### 🧭 Fixed Page Scroll & Preserved Top Filter Selections on /browse — 2026-10-25 18:20 UTC
 
 - **Fixed Trapped Scroll Container**: Replaced an internal `overflow: hidden` on `.browse-wrapper` with `overflow-x: clip`, resolving an issue where internal container scrolling prevented users from scrolling their mouse wheel or touch gesture back up to the top of the page.

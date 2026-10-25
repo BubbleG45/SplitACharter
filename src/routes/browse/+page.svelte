@@ -28,14 +28,12 @@
 	function scrollToResults() {
 		if (typeof window === 'undefined') return;
 		setTimeout(() => {
-			const controls = document.querySelector('.controls-card');
-			if (controls) {
-				const rect = controls.getBoundingClientRect();
+			const el = document.getElementById('browse-listings-start');
+			if (el) {
+				const rect = el.getBoundingClientRect();
 				const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-				const targetY = Math.max(0, rect.top + scrollTop - 24);
+				const targetY = Math.max(0, rect.top + scrollTop - 16);
 				window.scrollTo({ top: targetY, behavior: 'smooth' });
-			} else {
-				window.scrollTo({ top: 0, behavior: 'smooth' });
 			}
 		}, 80);
 	}
