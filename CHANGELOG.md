@@ -6,6 +6,29 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 🏝️ 12 Florida Keys Locations, 6-Hour Duration, Listing Templates & Location-Based Captain Matching — 2026-10-25 17:15 UTC
+
+- **Expanded to 12 Distinct Florida Keys**: Transitioned operating areas from three broad regional clusters to 12 distinct Florida Keys: Key Largo, Tavernier, Islamorada, Long Key, Duck Key, Marathon, Big Pine Key, Summerland Key, Cudjoe Key, Sugarloaf Key, Stock Island, and Key West. Each location includes accurate GPS coordinates and geographic north-to-south ordering.
+- **Added 6-Hour Duration Option**: Added a brand new "6 Hours" charter duration option alongside Half Day (4 hr), Full Day (8 hr), and Sunset Cruise (2 hr) across the database and user interfaces.
+- **444 Clean Listing Templates with Updated Pricing**: Generated 444 active listing templates reflecting the complete pricing matrix across all 12 Keys and 13 charter types. Deactivated legacy templates to maintain full historical integrity for past trip records.
+- **Passenger Capacity Standardization**: Standardized all Backcountry charters to a maximum of 4 passengers and Fly Fishing charters to a maximum of 2 passengers (skiff capacity), while all other 11 charter types support up to 6 passengers.
+- **Location-Based Captain Matching**: Shifted captain matching logic to evaluate captains' directly selected serviced locations rather than physical marina boundaries, ensuring seamless captain matching even in keys without dedicated marina facilities.
+- **Updated Captain Roster & Admin Forms**: Automatically mapped all active captains to their corresponding individual Keys and enabled the new 6-hour duration. Upgraded the Add/Edit Captain and Add/Edit Listing admin forms to support the 12 Keys dynamically.
+- **Browse Page Location & Date Nudges**: Redesigned the `/browse` charter explorer to only show charter listings after the user selects one or more departure locations. Added an interactive onboarding card with quick-select destination pills, cluster shortcuts (Upper, Middle, Lower Keys), and clear guidance nudging travelers to select both their departure location(s) and trip date.
+
+### 📍 Scalable Locations, Road Drive-Time Matching & Needs-Captain Operations — 2026-10-22 00:35 UTC
+
+- **Scalable Locations Architecture**: Replaced hardcoded Keys regions with dynamic, admin-managed Operating Areas (`areas`), Physical Marinas (`marinas`), and Marina-Area links (`marina_areas`), allowing the business to expand into new markets (such as Miami Biscayne Bay) with zero code changes.
+- **Admin Location Manager (`/admin/locations`)**: Built a dedicated admin tool to create and edit operating areas, manage physical marina coordinates and dockmaster contact info, assign multi-area serving boundaries, and automatically generate missing listing catalog combinations.
+- **Customer Road Drive-Time Engine (Mapbox & Road Physics)**: Customers can now enter where they are staying (such as a resort, hotel, or rental address) on `/browse`, `/browse/[id]`, and `/checkout`. The system calculates real road network driving times (accounting for coastal island highways and bridges) showing an area drive-time range before a captain claims and the exact drive time once confirmed.
+- **Single-Marina Captain Home Port Architecture**: Captains are now assigned to exactly one physical home port and never travel. Captain matching strictly evaluates home marina area membership, charter types offered, and durations offered, ensuring captains only receive relevant notifications for their specific port.
+- **Incomplete Captain Profile Warnings**: Admin captains roster (`/admin/captains`) now highlights captains who are missing a home marina, durations, or charter types with warning badges and a quick-filter toggle to easily complete captain profiles.
+- **Listing Coverage Gaps Overview (`/admin/listings`)**: Added coverage gap metrics and an "Uncovered Gaps" filter to view which catalog listings currently lack active captain coverage, along with a one-click catalog sync button.
+- **Reassuring Customer Status for Uncovered Trips**: When customers book a charter in an area that doesn't yet have an active captain, they receive a reassuring confirmation status ("Split confirmed! We're coordinating final captain details") to maintain customer confidence.
+- **Immediate Operations Alerts for Uncovered Requests**: The moment an uncovered trip reaches 2-of-2 confirmed bookings, an immediate SMS and Email alert is dispatched to operations with trip details and an admin link.
+- **Needs-Captain Queue (`/admin/trips`)**: Added a dedicated "Needs Captain" queue tab in the admin trips dashboard sorting flagged trips by soonest departure date first, with automated coverage re-evaluation and manual captain assignment tools.
+- **Automatic Matching Release Engine**: When a new captain is onboarded or existing coverage is expanded, the system automatically checks pending uncovered requests and immediately releases matching charters to newly eligible captains.
+
 ### 📅 Date Range Charter Search & Filtering on /browse — 2026-10-21 13:30 UTC
 
 - **Date Range Selection on /browse**: Added the ability for customers to search and view charters across a range of travel dates (e.g. for vacations or multi-day stays in the Florida Keys).

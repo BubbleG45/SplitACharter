@@ -25,6 +25,8 @@
 	// Search & filtering state
 	let searchQuery = $state('');
 	let selectedStatus = $state('all');
+	let viewNeedsCaptainQueue = $state(false);
+	let needsCaptainCount = $derived(data.trips.filter((t: any) => t.needs_captain).length);
 	let selectedTripType = $state('all');
 	let selectedLocation = $state('all');
 
@@ -199,7 +201,9 @@
 	// Derived filtered trips based on status, trip type, location, hideFinished, and search query
 	let filteredTrips = $derived(
 		data.trips.filter((t: any) => {
-			if (filterNeedsAttentionOnly) {
+			if (viewNeedsCaptainQueue) {
+				if (!t.needs_captain) return false;
+			} else if (filterNeedsAttentionOnly) {
 				if (!isTripPastDue(t)) return false;
 			} else if (hideFinished) {
 				if (t.status === 'completed' || t.status === 'canceled') return false;
@@ -2515,5 +2519,72 @@
 			justify-content: space-between;
 		}
 	}
-</style>
 
+	.needs-captain-banner {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1rem 1.5rem;
+		margin-bottom: 1.5rem;
+		border-radius: 12px;
+		background: rgba(239, 68, 68, 0.08);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	.needs-captain-banner.is-active {
+		border-color: #ef4444;
+		box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+	}
+	.banner-left {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.badge-alert-icon {
+		font-size: 1.5rem;
+	}
+	.banner-left strong {
+		color: #ef4444;
+		font-size: 1.05rem;
+	}
+	.banner-left p {
+		margin: 0.2rem 0 0 0;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+	}
+	.banner-actions {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+	.btn-queue-toggle {
+		background: #ef4444;
+		color: #ffffff;
+		border: none;
+		padding: 0.45rem 0.9rem;
+		border-radius: 6px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.needs-captain-pill {
+		display: flex;
+		flex-direction: column;
+		margin-top: 0.35rem;
+		padding: 0.25rem 0.5rem;
+		border-radius: 6px;
+		background: rgba(239, 68, 68, 0.15);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		color: #ef4444;
+		font-weight: 700;
+		font-size: 0.75rem;
+	}
+	.needs-captain-pill small {
+		font-weight: 400;
+		opacity: 0.85;
+		font-size: 0.7rem;
+	}
+
+</style>

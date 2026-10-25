@@ -104,9 +104,9 @@
 						required
 					>
 						<option value="" disabled selected={!data.copiedTemplate}>Select a Location</option>
-						<option value="Lower Keys (Key West, Big Pine Key)" selected={data.copiedTemplate?.location === 'Lower Keys (Key West, Big Pine Key)'}>Lower Keys (Key West, Big Pine Key)</option>
-						<option value="Middle Keys (Marathon, Pigeon Key)" selected={data.copiedTemplate?.location === 'Middle Keys (Marathon, Pigeon Key)'}>Middle Keys (Marathon, Pigeon Key)</option>
-						<option value="Upper Keys (Key Largo, Islamorada)" selected={data.copiedTemplate?.location === 'Upper Keys (Key Largo, Islamorada)'}>Upper Keys (Key Largo, Islamorada)</option>
+						{#each (data.areas || []) as area}
+							<option value={area.name} selected={data.copiedTemplate?.location === area.name}>{area.name}</option>
+						{/each}
 					</select>
 				</div>
 			</div>

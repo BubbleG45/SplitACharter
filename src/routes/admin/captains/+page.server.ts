@@ -4,7 +4,14 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	const { data: captains, error: captainsErr } = await supabase
 		.from('captains')
-		.select('*')
+		.select(`
+			*,
+			marinas:home_marina_id (
+				id,
+				name,
+				address
+			)
+		`)
 		.order('created_at', { ascending: false });
 
 	if (captainsErr) {

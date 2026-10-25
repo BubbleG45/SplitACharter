@@ -6,6 +6,7 @@ import { calculateReconfirmSchedule, calculateCaptainPriorityHours } from '../re
 import { sendSMS } from '../sms';
 import { sendNotification, getSiteUrl } from '../notifications';
 import { refundStripePaymentIntent } from '../server/stripe';
+import { findMatchingCaptainsForTrip } from '../server/trips';
 import { env } from '$env/dynamic/private';
 
 const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -210,48 +211,24 @@ export const captainMatchingWorkflow = inngest.createFunction(
 
 		// 1. Fetch Trip details including referring captains and eligible captains
 		const matchData = await step.run('find-eligible-captains', async () => {
-			const { data: trip } = await supabaseAdmin
-				.from('trip_instances')
-				.select('id, date, listing_templates(trip_type, location, meeting_area)')
-				.eq('id', tripInstanceId)
-				.single();
+			const { trip, matchingCaptains, referringCaptains } = await findMatchingCaptainsForTrip(tripInstanceId);
 
 			if (!trip) {
 				return { trip: null, referringCaptains: [], captains: [] };
 			}
 
-			const tripDetails = (trip as any).listing_templates;
-			const tripType = tripDetails?.trip_type;
-			const location = tripDetails?.location;
-
-			// Fetch active captains
-			const { data: captains } = await supabaseAdmin
-				.from('captains')
-				.select('id, name, phone, email, trip_types, locations')
-				.eq('active', true);
-
-			if (!captains) {
-				return { trip, referringCaptains: [], captains: [] };
+			if (matchingCaptains.length === 0) {
+				console.log(`[Captain Matching] Trip ${tripInstanceId} has 0 matching captains. Flagging needs_captain.`);
+				await supabaseAdmin
+					.from('trip_instances')
+					.update({
+						needs_captain: true,
+						needs_captain_flagged_at: new Date().toISOString()
+					})
+					.eq('id', tripInstanceId);
 			}
 
-			// Filter eligible captains
-			const eligible = captains.filter((c) =>
-				c.trip_types?.includes(tripType) &&
-				c.locations?.includes(location)
-			);
-
-			// Collect all referring captain IDs (combining single referring_captain_id and referring_captain_ids array if present)
-			const refIds = new Set<string>();
-			if ((trip as any).referring_captain_id) refIds.add((trip as any).referring_captain_id);
-			if (Array.isArray((trip as any).referring_captain_ids)) {
-				for (const id of (trip as any).referring_captain_ids) {
-					if (id) refIds.add(id);
-				}
-			}
-
-			const referringCaptains = captains.filter((c) => refIds.has(c.id));
-
-			return { trip, referringCaptains, captains: eligible };
+			return { trip, referringCaptains, captains: matchingCaptains };
 		});
 
 		if (!matchData.trip) {

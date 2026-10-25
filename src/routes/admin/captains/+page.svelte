@@ -392,4 +392,46 @@
 		color: var(--text-primary);
 		border: 1px solid var(--border-light);
 	}
+
+	.btn-toggle-filter {
+		background: var(--glass-bg);
+		color: var(--text-primary);
+		border: 1px solid var(--border-light);
+		padding: 0.55rem 1rem;
+		border-radius: 8px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	.btn-toggle-filter.active {
+		background: rgba(245, 158, 11, 0.2);
+		border-color: #f59e0b;
+		color: #f59e0b;
+	}
+	.marina-cell strong {
+		display: block;
+		font-size: 0.85rem;
+		color: var(--text-primary);
+	}
+	.marina-sub {
+		display: block;
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+	}
+	.badge-incomplete {
+		display: inline-block;
+		font-size: 0.75rem;
+		padding: 0.2rem 0.5rem;
+		border-radius: 4px;
+		background: rgba(239, 68, 68, 0.15);
+		color: #ef4444;
+		font-weight: 600;
+	}
+	.chip-duration {
+		background: rgba(16, 185, 129, 0.15);
+		color: #10b981;
+		border: 1px solid rgba(16, 185, 129, 0.3);
+	}
+
 </style>

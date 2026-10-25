@@ -1,11 +1,20 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	let { id, label, values = $bindable([]), options } = $props<{
+	let {
+		id,
+		label,
+		values = $bindable([]),
+		options,
+		placeholder = 'Any Trip Type',
+		itemLabel = 'Trip Types Selected'
+	} = $props<{
 		id: string;
 		label: string;
 		values: string[];
 		options: Array<{ value: string; label: string }>;
+		placeholder?: string;
+		itemLabel?: string;
 	}>();
 
 	let isOpen = $state(false);
@@ -13,13 +22,13 @@
 
 	const selectedLabel = $derived.by(() => {
 		if (values.length === 0) {
-			return 'Any Trip Type';
+			return placeholder;
 		}
 		if (values.length === 1) {
 			const found = options.find((opt: { value: string; label: string }) => opt.value === values[0]);
 			return found ? found.label : values[0];
 		}
-		return `${values.length} Trip Types Selected`;
+		return `${values.length} ${itemLabel}`;
 	});
 
 	const selectableOptions = $derived(options.filter((opt: { value: string; label: string }) => opt.value !== 'all'));

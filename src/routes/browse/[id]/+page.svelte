@@ -98,6 +98,99 @@
 		const capped = Math.min(parsed, data.maxAvailablePassengers);
 		return capped > 0 ? String(capped) : '';
 	});
+	// Hotel & Drive Time State
+	let hotelName = $state(data.initialHotel?.name || '');
+	let hotelLat = $state<number | null>(data.initialHotel?.lat || null);
+	let hotelLng = $state<number | null>(data.initialHotel?.lng || null);
+	let hotelAddress = $state(data.initialHotel?.address || '');
+	let driveTimeInfo = $state('');
+	let isComputingDrive = $state(false);
+
+	let hotelQuery = $state(data.initialHotel?.name || '');
+	let hotelSuggestions = $state<Array<{ name: string; address: string; lat: number; lng: number }>>([]);
+	let isSearchingHotel = $state(false);
+	let searchTimer: any = null;
+
+	$effect(() => {
+		if (hotelLat && hotelLng && !driveTimeInfo && !isComputingDrive) {
+			calculateDriveTime(hotelLat, hotelLng);
+		}
+	});
+
+	async function calculateDriveTime(lat: number, lng: number) {
+		const areaId = data.listing?.area_id;
+		if (!areaId) return;
+		isComputingDrive = true;
+		try {
+			const res = await fetch('/api/locations/drive-time', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ lat, lng, areaId })
+			});
+			if (res.ok) {
+				const result = await res.json();
+				if (result.success && result.text) {
+					driveTimeInfo = result.text;
+				}
+			}
+		} catch (err) {
+			console.error('Error fetching drive time:', err);
+		} finally {
+			isComputingDrive = false;
+		}
+	}
+
+	function handleHotelInput() {
+		if (searchTimer) clearTimeout(searchTimer);
+		if (!hotelQuery || hotelQuery.trim().length < 2) {
+			hotelSuggestions = [];
+			return;
+		}
+		searchTimer = setTimeout(async () => {
+			isSearchingHotel = true;
+			try {
+				const res = await fetch(`/api/locations/search-places?q=${encodeURIComponent(hotelQuery)}`);
+				if (res.ok) {
+					const dataRes = await res.json();
+					hotelSuggestions = dataRes.results || [];
+				}
+			} catch (err) {
+				console.error('Error searching places:', err);
+			} finally {
+				isSearchingHotel = false;
+			}
+		}, 300);
+	}
+
+	function selectHotel(item: { name: string; address: string; lat: number; lng: number }) {
+		hotelName = item.name;
+		hotelAddress = item.address;
+		hotelLat = item.lat;
+		hotelLng = item.lng;
+		hotelQuery = item.name;
+		hotelSuggestions = [];
+		calculateDriveTime(item.lat, item.lng);
+	}
+
+	function clearHotel() {
+		hotelName = '';
+		hotelAddress = '';
+		hotelLat = null;
+		hotelLng = null;
+		hotelQuery = '';
+		hotelSuggestions = [];
+		driveTimeInfo = '';
+	}
+
+	let checkoutHotelParams = $derived.by(() => {
+		if (!hotelLat || !hotelLng) return '';
+		const params = new URLSearchParams();
+		if (hotelName) params.set('hotel', hotelName);
+		params.set('lat', String(hotelLat));
+		params.set('lng', String(hotelLng));
+		if (hotelAddress) params.set('address', hotelAddress);
+		return `&${params.toString()}`;
+	});
 </script>
 
 <svelte:head>
@@ -290,7 +383,7 @@
 					</div>
 
 					<div class="action-row">
-						<a href="/checkout?templateId={data.listing.id}&date={selectedDate}{effectiveGroupSizeParam ? `&groupSize=${effectiveGroupSizeParam}` : ''}{data.referralCode ? `&ref=${data.referralCode}` : ''}" class="btn btn-primary w-full btn-large">
+						<a href="/checkout?templateId={data.listing.id}&date={selectedDate}{effectiveGroupSizeParam ? `&groupSize=${effectiveGroupSizeParam}` : ''}{data.referralCode ? `&ref=${data.referralCode}` : ''}{checkoutHotelParams}" class="btn btn-primary w-full btn-large">
 							Proceed to Checkout
 						</a>
 					</div>
@@ -722,4 +815,95 @@
 			gap: 1.5rem;
 		}
 	}
+
+	.drive-time-detail-card {
+		padding: 1.25rem;
+		border-radius: 12px;
+		margin: 1.5rem 0;
+		border: 1px solid var(--border-light);
+	}
+	.drive-time-detail-card .card-head {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 0.75rem;
+	}
+	.car-badge-icon {
+		font-size: 1.4rem;
+	}
+	.drive-time-detail-card h4 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 700;
+	}
+	.drive-time-detail-card p {
+		margin: 0.2rem 0 0 0;
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+	}
+	.search-field-wrap {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+	.hotel-detail-input {
+		width: 100%;
+		padding: 0.65rem 0.85rem;
+		background: var(--input-bg, var(--bg-surface));
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		color: var(--text-primary);
+		font-size: 0.9rem;
+	}
+	.btn-clear-detail-hotel {
+		position: absolute;
+		right: 0.75rem;
+		background: none;
+		border: none;
+		color: var(--text-secondary);
+		cursor: pointer;
+	}
+	.detail-suggestions-dropdown {
+		list-style: none;
+		padding: 0.35rem 0;
+		margin: 0.35rem 0 0 0;
+		background: var(--bg-surface);
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		max-height: 200px;
+		overflow-y: auto;
+	}
+	.sugg-detail-item {
+		width: 100%;
+		text-align: left;
+		padding: 0.5rem 0.85rem;
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--text-primary);
+		display: flex;
+		flex-direction: column;
+	}
+	.sugg-detail-item:hover {
+		background: var(--glass-bg);
+	}
+	.sugg-detail-name {
+		font-weight: 600;
+		font-size: 0.85rem;
+	}
+	.sugg-detail-addr {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+	}
+	.drive-result-pill {
+		margin-top: 0.75rem;
+		padding: 0.5rem 0.85rem;
+		background: rgba(59, 130, 246, 0.15);
+		border: 1px solid rgba(59, 130, 246, 0.3);
+		border-radius: 8px;
+		color: #3b82f6;
+		font-size: 0.85rem;
+		font-weight: 500;
+	}
+
 </style>

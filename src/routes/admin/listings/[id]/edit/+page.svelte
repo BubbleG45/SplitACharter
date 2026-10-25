@@ -94,9 +94,9 @@
 						required
 					>
 						<option value="" disabled>Select a Location</option>
-						<option value="Lower Keys (Key West, Big Pine Key)" selected={data.listing.location === 'Lower Keys (Key West, Big Pine Key)' || data.listing.location?.includes('Lower') || data.listing.location?.includes('West')}>Lower Keys (Key West, Big Pine Key)</option>
-						<option value="Middle Keys (Marathon, Pigeon Key)" selected={data.listing.location === 'Middle Keys (Marathon, Pigeon Key)' || data.listing.location?.includes('Middle') || data.listing.location?.includes('Marathon')}>Middle Keys (Marathon, Pigeon Key)</option>
-						<option value="Upper Keys (Key Largo, Islamorada)" selected={data.listing.location === 'Upper Keys (Key Largo, Islamorada)' || data.listing.location?.includes('Upper') || data.listing.location?.includes('Islamorada') || data.listing.location?.includes('Largo')}>Upper Keys (Key Largo, Islamorada)</option>
+						{#each (data.areas || []) as area}
+							<option value={area.name} selected={data.listing.location === area.name}>{area.name}</option>
+						{/each}
 					</select>
 				</div>
 			</div>

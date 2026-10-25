@@ -6,11 +6,23 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, url, locals: { supabase } }) => {
 	const preselectedDate = url.searchParams.get('date') || '';
-	const refParam = url.searchParams.get('ref') || url.searchParams.get('promo') || url.searchParams.get('captain') || '';
+	const refParam =
+		url.searchParams.get('ref') ||
+		url.searchParams.get('promo') ||
+		url.searchParams.get('captain') ||
+		'';
+	const hotelParam = url.searchParams.get('hotel') || '';
+	const latParam = parseFloat(url.searchParams.get('lat') || '');
+	const lngParam = parseFloat(url.searchParams.get('lng') || '');
+	const addressParam = url.searchParams.get('address') || '';
 
 	const { data: listing, error: listingError } = await supabase
 		.from('listing_templates')
-		.select('*')
+		.select(`
+			*,
+			areas (id, name, slug, description, mapbox_region, center_lat, center_lng),
+			durations (id, name, label, hours)
+		`)
 		.eq('id', params.id)
 		.eq('active', true)
 		.maybeSingle();
@@ -22,7 +34,6 @@ export const load: PageServerLoad = async ({ params, url, locals: { supabase } }
 	const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 	// Fetch existing active trip instances for this listing template
-	// Only fetch instances that are 'half-booked' so the 2nd customer group can join them
 	const { data: tripInstances, error: tripsError } = await supabaseAdmin
 		.from('trip_instances')
 		.select('id, date, status, bookings(group_size, status)')
@@ -51,6 +62,12 @@ export const load: PageServerLoad = async ({ params, url, locals: { supabase } }
 		preselectedDate,
 		maxAvailablePassengers,
 		referralCode: refParam.trim().toUpperCase(),
+		initialHotel: {
+			name: hotelParam,
+			lat: isNaN(latParam) ? null : latParam,
+			lng: isNaN(lngParam) ? null : lngParam,
+			address: addressParam
+		},
 		origin: url.origin
 	};
 };

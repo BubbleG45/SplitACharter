@@ -52,6 +52,82 @@
 	let paymentOutcome = $state('success');
 	let submitting = $state(false);
 
+	// Staying / Hotel Location for Drive Time Calculation
+	let stayingQuery = $state(data.initialStaying?.name || data.initialStaying?.address || '');
+	let stayingAddress = $state(data.initialStaying?.address || data.initialStaying?.name || '');
+	let stayingLat = $state<number | null>(data.initialStaying?.lat || null);
+	let stayingLng = $state<number | null>(data.initialStaying?.lng || null);
+	let driveTimePreview = $state('');
+	let isSearchingStaying = $state(false);
+	let stayingSuggestions = $state<Array<{ name: string; address: string; lat: number; lng: number }>>([]);
+	let stayingSearchTimer: any = null;
+
+	onMount(() => {
+		if (stayingLat && stayingLng) {
+			previewCheckoutDriveTime(stayingLat, stayingLng);
+		}
+	});
+
+	function handleStayingSearchInput() {
+		if (stayingSearchTimer) clearTimeout(stayingSearchTimer);
+		if (!stayingQuery || stayingQuery.trim().length < 2) {
+			stayingSuggestions = [];
+			return;
+		}
+		stayingSearchTimer = setTimeout(async () => {
+			isSearchingStaying = true;
+			try {
+				const res = await fetch(`/api/locations/search-places?q=${encodeURIComponent(stayingQuery)}`);
+				if (res.ok) {
+					const dataRes = await res.json();
+					stayingSuggestions = dataRes.results || [];
+				}
+			} catch (err) {
+				console.error('Error searching places:', err);
+			} finally {
+				isSearchingStaying = false;
+			}
+		}, 300);
+	}
+
+	function selectStaying(sugg: { name: string; address: string; lat: number; lng: number }) {
+		stayingAddress = `${sugg.name}, ${sugg.address}`;
+		stayingQuery = sugg.name;
+		stayingLat = sugg.lat;
+		stayingLng = sugg.lng;
+		stayingSuggestions = [];
+		previewCheckoutDriveTime(sugg.lat, sugg.lng);
+	}
+
+	function clearStaying() {
+		stayingAddress = '';
+		stayingQuery = '';
+		stayingLat = null;
+		stayingLng = null;
+		stayingSuggestions = [];
+		driveTimePreview = '';
+	}
+
+	async function previewCheckoutDriveTime(lat: number, lng: number) {
+		const areaId = data.listing?.area_id;
+		if (!areaId) return;
+		try {
+			const res = await fetch('/api/locations/drive-time', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ lat, lng, areaId })
+			});
+			if (res.ok) {
+				const dataRes = await res.json();
+				if (dataRes.success && dataRes.text) {
+					driveTimePreview = dataRes.text;
+				}
+			}
+		} catch (err) {
+			console.error('Error previewing drive time:', err);
+		}
+	}
+
 	// Captain Promo Code interactive validation state
 	let validatingPromoCode = $state(false);
 	let promoCodeValidation = $state<{
@@ -1454,4 +1530,90 @@
 			padding: 1rem 0.75rem;
 		}
 	}
+
+	.staying-section {
+		position: relative;
+	}
+	.staying-input-wrap {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+	.staying-checkout-input {
+		width: 100%;
+		padding: 0.75rem 1rem;
+		background: var(--input-bg, var(--bg-surface));
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		color: var(--text-primary);
+		font-size: 0.95rem;
+	}
+	.btn-clear-staying {
+		position: absolute;
+		right: 0.75rem;
+		background: none;
+		border: none;
+		color: var(--text-secondary);
+		cursor: pointer;
+		font-size: 1rem;
+	}
+	.staying-dropdown {
+		position: absolute;
+		top: calc(100% + 4px);
+		left: 0;
+		right: 0;
+		background: var(--bg-surface);
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+		list-style: none;
+		padding: 0.35rem 0;
+		margin: 0;
+		max-height: 220px;
+		overflow-y: auto;
+		z-index: 50;
+		box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+	}
+	.sugg-row-btn {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		text-align: left;
+		padding: 0.5rem 0.85rem;
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--text-primary);
+		transition: background 0.15s;
+	}
+	.sugg-row-btn:hover {
+		background: var(--glass-bg);
+	}
+	.sugg-main {
+		font-weight: 600;
+		font-size: 0.85rem;
+	}
+	.sugg-addr {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+	}
+	.drive-time-checkout-preview {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+		padding: 0.45rem 0.75rem;
+		background: rgba(59, 130, 246, 0.1);
+		border: 1px solid rgba(59, 130, 246, 0.25);
+		border-radius: 6px;
+		color: #3b82f6;
+		font-size: 0.85rem;
+		font-weight: 500;
+	}
+	.searching-note {
+		display: block;
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		margin-top: 0.25rem;
+	}
+
 </style>

@@ -4,11 +4,16 @@ import type { PageServerLoad, Actions } from './$types';
 export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 	const copyFromId = url.searchParams.get('copyFrom');
 
-	const [tripTypesRes, copiedRes] = await Promise.all([
+	const [tripTypesRes, areasRes, copiedRes] = await Promise.all([
 		supabase
 			.from('trip_types')
 			.select('*')
 			.order('name', { ascending: true }),
+		supabase
+			.from('areas')
+			.select('*')
+			.eq('active', true)
+			.order('display_order', { ascending: true }),
 		copyFromId
 			? supabase
 					.from('listing_templates')
@@ -25,6 +30,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 
 	return {
 		tripTypes: tripTypesRes.data || [],
+		areas: areasRes.data || [],
 		copiedTemplate: copiedRes.data || null
 	};
 };

@@ -7,6 +7,7 @@ import { sendNotification } from '$lib/notifications';
 import { initiateAccountLinking } from '$lib/account_linking';
 import { createStripePaymentIntent, getStripeClient } from '$lib/server/stripe';
 import { confirmTripAndTriggerCaptainBlast } from '$lib/server/trips';
+import { calculateAreaDriveTimeRange } from '$lib/server/routing';
 import type { PageServerLoad, Actions } from './$types';
 
 async function findOrCreateTripInstanceForGroup(
@@ -252,6 +253,12 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
 		tripInstanceId: selectedTripInstanceId,
 		initialGroupSize,
 		initialPromoCode,
+		initialStaying: {
+			name: (url.searchParams.get('hotel') || '').trim(),
+			lat: isNaN(parseFloat(url.searchParams.get('lat') || '')) ? null : parseFloat(url.searchParams.get('lat') || ''),
+			lng: isNaN(parseFloat(url.searchParams.get('lng') || '')) ? null : parseFloat(url.searchParams.get('lng') || ''),
+			address: (url.searchParams.get('address') || '').trim()
+		},
 		userEmail: user?.email || '',
 		publishableKey: PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
 		isAuthenticated: !!(session && user)

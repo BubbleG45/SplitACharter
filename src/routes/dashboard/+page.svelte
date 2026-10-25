@@ -294,7 +294,19 @@
 					<div class="trip-meta">
 						<span class="trip-date">{formatDate(trip?.date)}</span>
 						<h3>{template?.trip_type || 'Charter Reservation'}</h3>
-						<span class="trip-loc">{template?.location || 'Florida Keys'} — {template?.meeting_area || 'Meeting details sent after confirmation'}</span>
+						<span class="trip-loc">
+							{#if trip?.marinas}
+								<strong>⚓ Departure: {trip.marinas.name}</strong> ({trip.marinas.address})
+							{:else}
+								<strong>📍 Area: {template?.areas?.name || template?.location || 'Florida Keys'}</strong> — {template?.meeting_area || 'Specific marina confirmed upon captain claim'}
+							{/if}
+						</span>
+						{#if booking.drive_time_text}
+							<div class="booking-drive-time">
+								<span class="drive-car-icon">🚗</span>
+								<span class="drive-car-text">{booking.drive_time_text}{booking.staying_address ? ` from ${booking.staying_address}` : ''}</span>
+							</div>
+						{/if}
 					</div>
 					
 					<div class="status-meta">
@@ -1548,5 +1560,24 @@
 		justify-content: center;
 		margin: 0 auto 1rem auto;
 	}
-</style>
 
+	.booking-drive-time {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin-top: 0.35rem;
+		padding: 0.25rem 0.6rem;
+		background: rgba(59, 130, 246, 0.1);
+		border: 1px solid rgba(59, 130, 246, 0.25);
+		border-radius: 6px;
+		font-size: 0.8rem;
+		color: #3b82f6;
+		font-weight: 500;
+	}
+	.badge-coordinating {
+		background: rgba(59, 130, 246, 0.15);
+		color: #3b82f6;
+		border: 1px solid rgba(59, 130, 246, 0.3);
+	}
+
+</style>

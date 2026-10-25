@@ -13,15 +13,23 @@
 	/* svelte-ignore state_referenced_locally */
 	let referralPromoCode = $state(data.captain.referral_promo_code || '');
 
-	const locationOptions = [
-		'Lower Keys (Key West, Big Pine Key)',
-		'Middle Keys (Marathon, Pigeon Key)',
-		'Upper Keys (Key Largo, Islamorada)'
+	const defaultLocationOptions = [
+		'Key Largo', 'Tavernier', 'Islamorada',
+		'Long Key', 'Duck Key', 'Marathon',
+		'Big Pine Key', 'Summerland Key', 'Cudjoe Key',
+		'Sugarloaf Key', 'Stock Island', 'Key West'
 	];
+	const locationOptions = $derived(
+		data.areas && data.areas.length > 0
+			? data.areas.map((a: { name: string }) => a.name)
+			: defaultLocationOptions
+	);
 	/* svelte-ignore state_referenced_locally */
 	let selectedTripTypes = $state<string[]>(data.captain.trip_types || []);
 	/* svelte-ignore state_referenced_locally */
 	let selectedLocations = $state<string[]>(data.captain.locations || []);
+	let homeMarinaId = $state(data.captain.home_marina_id || '');
+	let selectedDurations = $state<string[]>(data.captain.durations || []);
 
 	function handleCharterNameInput(e: Event) {
 		const target = e.target as HTMLInputElement;
@@ -159,7 +167,40 @@
 				<div class="form-group">
 					<div class="section-label-header">
 						<!-- svelte-ignore a11y_label_has_associated_control -->
-						<label>Trip Types Approved</label>
+						<div class="form-group">
+					<label for="home_marina_id">Home Marina (Single Departure Port) *</label>
+					<select id="home_marina_id" name="home_marina_id" bind:value={homeMarinaId} required>
+						<option value="" disabled>Select Captain's Home Marina...</option>
+						{#each data.marinas as marina}
+							<option value={marina.id}>⚓ {marina.name} — {marina.address}</option>
+						{/each}
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Charter Durations Offered *</label>
+					<div class="checkbox-grid">
+						{#each data.durations as dur}
+							<label class="checkbox-label">
+								<input
+									type="checkbox"
+									name="durations"
+									value={dur.name}
+									checked={selectedDurations.includes(dur.name)}
+									onchange={(e) => {
+										const checked = (e.target as HTMLInputElement).checked;
+										if (checked) {
+											selectedDurations = [...selectedDurations, dur.name];
+										} else {
+											selectedDurations = selectedDurations.filter(d => d !== dur.name);
+										}
+									}}
+								/>
+								<span>{dur.label} ({dur.hours} hrs)</span>
+							</label>
+						{/each}
+					</div>
+				</div>
+				<label>Trip Types Approved</label>
 						<button
 							type="button"
 							class="btn-select-all"
@@ -194,14 +235,16 @@
 				<div class="form-group">
 					<div class="section-label-header">
 						<!-- svelte-ignore a11y_label_has_associated_control -->
-						<label>Locations Serviced</label>
-						<button
-							type="button"
-							class="btn-select-all"
-							onclick={toggleAllLocations}
-						>
-							{selectedLocations.length === locationOptions.length ? 'Deselect All' : 'Select All'}
-						</button>
+						<label>Locations Serviced (12 Keys)</label>
+						<div class="header-action-group">
+							<button
+								type="button"
+								class="btn-select-all"
+								onclick={toggleAllLocations}
+							>
+								{selectedLocations.length === locationOptions.length ? 'Deselect All' : 'Select All'}
+							</button>
+						</div>
 					</div>
 					<div class="checkbox-grid">
 						{#each locationOptions as loc}

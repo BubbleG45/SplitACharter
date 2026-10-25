@@ -4,6 +4,9 @@
 	let { data } = $props();
 	let searchQuery = $state('');
 	let filterStatus = $state('all'); // 'all', 'active', 'inactive'
+	let filterCoverage = $state<'all' | 'uncovered' | 'covered'>('all');
+	let filterArea = $state<string>('all');
+	let isSyncing = $state(false);
 	let sortColumn = $state<'trip_type' | 'location' | 'duration' | 'low_price' | 'active'>('trip_type');
 	let sortDirection = $state<'asc' | 'desc'>('asc');
 
@@ -44,7 +47,17 @@
 					(filterStatus === 'active' && listing.active) ||
 					(filterStatus === 'inactive' && !listing.active);
 
-				return matchesSearch && matchesStatus;
+				const matchesCoverage =
+					filterCoverage === 'all' ||
+					(filterCoverage === 'uncovered' && listing.matchingCaptainCount === 0) ||
+					(filterCoverage === 'covered' && listing.matchingCaptainCount > 0);
+
+				const matchesArea =
+					filterArea === 'all' ||
+					(listing.area_id && listing.area_id === filterArea) ||
+					(listing.areas?.slug && listing.areas.slug === filterArea);
+
+				return matchesSearch && matchesStatus && matchesCoverage && matchesArea;
 			})
 			.sort((a, b) => {
 				let valA: any;
@@ -134,7 +147,62 @@
 </div>
 
 <!-- Controls Bar -->
+<div class="coverage-stats-bar glass">
+	<div class="stats-group">
+		<div class="stat-pill">
+			<span class="stat-num">{data.totalCount}</span>
+			<span class="stat-lbl">Total Listings</span>
+		</div>
+		<div class="stat-pill" class:has-gaps={data.uncoveredCount > 0}>
+			<span class="stat-num">{data.uncoveredCount}</span>
+			<span class="stat-lbl">Uncovered Gaps</span>
+		</div>
+		<div class="stat-pill">
+			<span class="stat-num">{data.totalCount - data.uncoveredCount}</span>
+			<span class="stat-lbl">Covered by Captains</span>
+		</div>
+	</div>
+
+	<div class="sync-actions">
+		<form method="POST" action="?/generateListings" use:enhance={() => {
+			isSyncing = true;
+			return async ({ update }) => {
+				await update();
+				isSyncing = false;
+			};
+		}}>
+			<button type="submit" class="btn btn-secondary btn-sm" disabled={isSyncing}>
+				{#if isSyncing}
+					⚡ Syncing...
+				{:else}
+					⚡ Generate Missing Combinations (Area × Type × Duration)
+				{/if}
+			</button>
+		</form>
+	</div>
+</div>
+
 <div class="controls-bar glass">
+	<div class="filter-wrapper">
+		<button
+			type="button"
+			class="btn-gap-filter"
+			class:active={filterCoverage === 'uncovered'}
+			onclick={() => (filterCoverage = filterCoverage === 'uncovered' ? 'all' : 'uncovered')}
+		>
+			⚠️ View Coverage Gaps ({data.uncoveredCount})
+		</button>
+	</div>
+
+	<div class="filter-wrapper">
+		<span class="filter-label">Area:</span>
+		<select bind:value={filterArea} class="filter-select">
+			<option value="all">All Operating Areas</option>
+			{#each data.areas as a}
+				<option value={a.id}>{a.name}</option>
+			{/each}
+		</select>
+	</div>
 	<div class="search-wrapper">
 		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="search-icon">
 			<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -190,6 +258,7 @@
 							<span class="sort-icon">{sortColumn === 'duration' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
 						</div>
 					</th>
+					<th>Matching Captains</th>
 					<th class="sortable-th" onclick={() => toggleSort('low_price')}>
 						<div class="th-content">
 							<span>Price Range</span>
@@ -214,8 +283,20 @@
 								<span class="trip-desc">{listing.description}</span>
 							</div>
 						</td>
-						<td>{listing.location}</td>
+						<td>
+							<strong>{listing.areas?.name || listing.location}</strong>
+							{#if listing.areas?.name && listing.location && listing.location !== listing.areas.name}
+								<span class="cell-sub">{listing.location}</span>
+							{/if}
+						</td>
 						<td>{formatDuration(listing.duration)}</td>
+						<td>
+							{#if listing.matchingCaptainCount === 0}
+								<span class="badge-gap">⚠️ 0 Captains (Uncovered)</span>
+							{:else}
+								<span class="badge-covered">✓ {listing.matchingCaptainCount} Captain{listing.matchingCaptainCount === 1 ? '' : 's'}</span>
+							{/if}
+						</td>
 						<td class="price-cell">
 							${parseFloat(listing.low_price).toFixed(0)} – ${parseFloat(listing.high_price).toFixed(0)}
 						</td>
@@ -700,4 +781,87 @@
 			display: none;
 		}
 	}
+
+	.coverage-stats-bar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1rem 1.5rem;
+		margin-bottom: 1.5rem;
+		border-radius: 12px;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	.stats-group {
+		display: flex;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	.stat-pill {
+		display: flex;
+		flex-direction: column;
+		padding: 0.5rem 1rem;
+		background: var(--bg-surface);
+		border: 1px solid var(--border-light);
+		border-radius: 8px;
+	}
+	.stat-pill.has-gaps {
+		border-color: #f59e0b;
+		background: rgba(245, 158, 11, 0.08);
+	}
+	.stat-num {
+		font-size: 1.25rem;
+		font-weight: 800;
+		color: var(--text-primary);
+	}
+	.stat-pill.has-gaps .stat-num {
+		color: #f59e0b;
+	}
+	.stat-lbl {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+	.btn-gap-filter {
+		background: var(--glass-bg);
+		color: var(--text-primary);
+		border: 1px solid var(--border-light);
+		padding: 0.5rem 0.9rem;
+		border-radius: 8px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	.btn-gap-filter.active {
+		background: rgba(245, 158, 11, 0.2);
+		border-color: #f59e0b;
+		color: #f59e0b;
+	}
+	.badge-gap {
+		display: inline-block;
+		font-size: 0.75rem;
+		padding: 0.25rem 0.6rem;
+		border-radius: 6px;
+		background: rgba(245, 158, 11, 0.15);
+		color: #f59e0b;
+		border: 1px solid rgba(245, 158, 11, 0.3);
+		font-weight: 600;
+	}
+	.badge-covered {
+		display: inline-block;
+		font-size: 0.75rem;
+		padding: 0.25rem 0.6rem;
+		border-radius: 6px;
+		background: rgba(34, 197, 94, 0.15);
+		color: #22c55e;
+		font-weight: 600;
+	}
+	.cell-sub {
+		display: block;
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+	}
+
 </style>

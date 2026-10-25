@@ -6,11 +6,12 @@ import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { sendNotification, getSiteUrl } from '$lib/notifications';
 import { generateCaptainToken } from '$lib/security';
 import { refundStripePaymentIntent } from '$lib/server/stripe';
+import { releasePendingNeedsCaptainTrips } from '$lib/server/trips';
 
 const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-	const [tripsRes, listingsRes] = await Promise.all([
+	const [tripsRes, listingsRes, captainsRes] = await Promise.all([
 		supabase
 			.from('trip_instances')
 			.select(`
@@ -18,7 +19,15 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 				date,
 				status,
 				captain_id,
+				needs_captain,
+				needs_captain_flagged_at,
+				marina_id,
 				created_at,
+				marinas:marina_id (
+					id,
+					name,
+					address
+				),
 				captains:captains!trip_instances_captain_id_fkey (
 					name,
 					phone
@@ -27,7 +36,18 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 					id,
 					trip_type,
 					location,
-					meeting_area
+					meeting_area,
+					areas (
+						id,
+						name,
+						slug
+					),
+					durations (
+						id,
+						name,
+						label,
+						hours
+					)
 				),
 				bookings (
 					id,
@@ -48,7 +68,12 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			.from('listing_templates')
 			.select('id, trip_type, location')
 			.eq('active', true)
-			.order('trip_type', { ascending: true })
+			.order('trip_type', { ascending: true }),
+		supabase
+			.from('captains')
+			.select('id, name, phone, home_marina_id, marinas:home_marina_id(id, name)')
+			.eq('active', true)
+			.order('name', { ascending: true })
 	]);
 
 	if (tripsRes.error) {
@@ -58,11 +83,52 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 
 	return {
 		trips: tripsRes.data || [],
-		listingTemplates: listingsRes.data || []
+		listingTemplates: listingsRes.data || [],
+		captains: captainsRes.data || []
 	};
 };
 
 export const actions: Actions = {
+	releaseNeedsCaptainTrips: async () => {
+		try {
+			const count = await releasePendingNeedsCaptainTrips();
+			return { success: true, message: `Evaluated pending queue. ${count} trip(s) were matched and released to captains!` };
+		} catch (err: any) {
+			console.error('Error releasing needs captain trips:', err);
+			return fail(500, { message: err?.message || 'Failed to release trips' });
+		}
+	},
+	manualAssignCaptain: async ({ request, locals: { supabase } }) => {
+		const formData = await request.formData();
+		const tripId = formData.get('tripId') as string;
+		const captainId = formData.get('captainId') as string;
+
+		if (!tripId || !captainId) {
+			return fail(400, { message: 'Missing tripId or captainId' });
+		}
+
+		// Fetch captain to obtain home_marina_id
+		const { data: cap } = await supabase
+			.from('captains')
+			.select('id, name, home_marina_id')
+			.eq('id', captainId)
+			.single();
+
+		const { error: updErr } = await supabase
+			.from('trip_instances')
+			.update({
+				captain_id: captainId,
+				marina_id: cap?.home_marina_id || null,
+				needs_captain: false
+			})
+			.eq('id', tripId);
+
+		if (updErr) {
+			return fail(500, { message: updErr.message || 'Failed to assign captain' });
+		}
+
+		return { success: true, message: `Captain ${cap?.name || ''} successfully assigned to trip!` };
+	},
 	getLogs: async ({ request, locals: { supabase } }) => {
 		const formData = await request.formData();
 		const email = (formData.get('email') as string)?.trim();

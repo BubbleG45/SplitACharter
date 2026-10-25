@@ -29,7 +29,51 @@
 
 	let rangeViewTab = $state<'all' | 'ready' | 'open'>('all');
 
-	let filterLocation = $state(page.url.searchParams.get('location') || 'all');
+	function parseLocationsParam(param: string | null): string[] {
+		if (!param || param === 'all') return [];
+		return param.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+	}
+
+	let filterLocations = $state<string[]>(
+		parseLocationsParam(page.url.searchParams.get('location'))
+	);
+
+	const upperSlugs = ['key-largo', 'tavernier', 'islamorada'];
+	const middleSlugs = ['long-key', 'duck-key', 'marathon'];
+	const lowerSlugs = ['big-pine-key', 'summerland-key', 'cudjoe-key', 'sugarloaf-key', 'stock-island', 'key-west'];
+
+	function toggleLocation(slug: string) {
+		const s = slug.toLowerCase();
+		if (filterLocations.includes(s)) {
+			filterLocations = filterLocations.filter((l) => l !== s);
+		} else {
+			filterLocations = [...filterLocations, s];
+		}
+	}
+
+	function toggleCluster(cluster: 'upper' | 'middle' | 'lower') {
+		const slugs = cluster === 'upper' ? upperSlugs : cluster === 'middle' ? middleSlugs : lowerSlugs;
+		const allIn = slugs.every((s) => filterLocations.includes(s));
+		if (allIn) {
+			filterLocations = filterLocations.filter((s) => !slugs.includes(s));
+		} else {
+			filterLocations = Array.from(new Set([...filterLocations, ...slugs]));
+		}
+	}
+
+	function isClusterSelected(cluster: 'upper' | 'middle' | 'lower'): boolean {
+		const slugs = cluster === 'upper' ? upperSlugs : cluster === 'middle' ? middleSlugs : lowerSlugs;
+		return slugs.every((s) => filterLocations.includes(s));
+	}
+
+	function toggleSelectAllKeys() {
+		const allSlugs = (data.areas || []).map((a: any) => a.slug);
+		if (filterLocations.length >= allSlugs.length) {
+			filterLocations = [];
+		} else {
+			filterLocations = [...allSlugs];
+		}
+	}
 	let filterDuration = $state(page.url.searchParams.get('duration') || 'all'); // 'all', 'half-day', 'full-day'
 	let filterTripTypes = $state<string[]>(
 		parseTripTypesParam(page.url.searchParams.get('trip_type'))
@@ -62,7 +106,7 @@
 				searchDate = pStart;
 			}
 
-			filterLocation = urlParams.get('location') || 'all';
+			filterLocations = parseLocationsParam(urlParams.get('location'));
 			filterDuration = urlParams.get('duration') || 'all';
 			filterTripTypes = parseTripTypesParam(urlParams.get('trip_type'));
 			filterGroupSize = urlParams.get('groupSize') || '1';
@@ -83,7 +127,7 @@
 			if (startDate) params.set('startDate', startDate);
 			if (endDate) params.set('endDate', endDate);
 		}
-		if (filterLocation !== 'all') params.set('location', filterLocation);
+		if (filterLocations.length > 0) params.set('location', filterLocations.join(','));
 		if (filterDuration !== 'all') params.set('duration', filterDuration);
 		if (filterTripTypes.length > 0) params.set('trip_type', filterTripTypes.join(','));
 		if (filterGroupSize !== '1') params.set('groupSize', filterGroupSize);
@@ -194,19 +238,46 @@
 		return Math.min(4, Math.max(1, maxPax - 1));
 	}
 
-	function matchesLocationFilter(locString: string, filterVal: string) {
-		if (filterVal === 'all') return true;
-		const loc = (locString || '').toLowerCase();
-		if (filterVal === 'lower-keys') {
-			return loc.includes('lower key') || loc.includes('key west') || loc.includes('big pine');
+	function matchesLocationFilter(template: any, selectedLocations: string[]): boolean {
+		if (!selectedLocations || selectedLocations.length === 0) return false;
+		if (selectedLocations.includes('all')) return true;
+
+		// Match by area_id
+		if (template.area_id && data.areas) {
+			const matchedArea = data.areas.find((a: any) => a.id === template.area_id);
+			if (matchedArea && selectedLocations.includes(matchedArea.slug)) {
+				return true;
+			}
 		}
-		if (filterVal === 'middle-keys') {
-			return loc.includes('middle key') || loc.includes('marathon') || loc.includes('pigeon key');
+
+		// Match by template.location string
+		const locText = (template.location || '').toLowerCase();
+		return selectedLocations.some((slug) => {
+			const nameFromSlug = slug.replace(/-/g, ' ');
+			return locText.includes(nameFromSlug) || nameFromSlug.includes(locText);
+		});
+	}
+
+	function getDurationHours(dur: any): number {
+		if (!dur) return 0;
+		if (typeof dur === 'number') return dur;
+		if (typeof dur === 'object' && dur.hours) return dur.hours;
+		if (typeof dur === 'string') {
+			const parts = dur.split(':');
+			return parseInt(parts[0], 10) || 0;
 		}
-		if (filterVal === 'upper-keys') {
-			return loc.includes('upper key') || loc.includes('key largo') || loc.includes('islamorada');
-		}
-		return true;
+		return 0;
+	}
+
+	function matchesDurationFilter(template: any, filterDur: string): boolean {
+		if (filterDur === 'all') return true;
+		const hours = getDurationHours(template.duration);
+		if (template.durations?.name && template.durations.name === filterDur) return true;
+		if (filterDur === 'Half Day' || filterDur === 'half-day') return hours === 4;
+		if (filterDur === '6 Hours' || filterDur === '6-hours' || filterDur === '6hours') return hours === 6;
+		if (filterDur === 'Full Day' || filterDur === 'full-day') return hours === 8;
+		if (filterDur === 'Sunset / Express' || filterDur === 'sunset') return hours === 2;
+		return false;
 	}
 
 	function parseLocation(locString: string): { main: string; details: string | null } {
@@ -219,25 +290,8 @@
 	}
 
 	function matchesFilters(template: any) {
-		const matchesLocation = matchesLocationFilter(template.location, filterLocation);
-
-		let isHalfDay = false;
-		let isFullDay = false;
-		if (template.duration && typeof template.duration === 'string') {
-			const parts = template.duration.split(':');
-			const hours = parseInt(parts[0], 10);
-			isHalfDay = hours <= 4;
-			isFullDay = hours > 4;
-		} else if (template.duration && typeof template.duration === 'object') {
-			const hours = template.duration.hours || 0;
-			isHalfDay = hours <= 4;
-			isFullDay = hours > 4;
-		}
-		const matchesDuration =
-			filterDuration === 'all' ||
-			(filterDuration === 'half-day' && isHalfDay) ||
-			(filterDuration === 'full-day' && isFullDay);
-
+		const matchesLocation = matchesLocationFilter(template, filterLocations);
+		const matchesDuration = matchesDurationFilter(template, filterDuration);
 		const matchesTripType =
 			filterTripTypes.length === 0 || filterTripTypes.includes(template.trip_type);
 
@@ -351,7 +405,7 @@
 
 	let hasActiveFilters = $derived(
 		(dateMode === 'single' ? Boolean(searchDate) : Boolean(startDate || endDate)) ||
-			filterLocation !== 'all' ||
+			filterLocations.length > 0 ||
 			filterDuration !== 'all' ||
 			filterTripTypes.length > 0 ||
 			filterGroupSize !== '1'
@@ -406,27 +460,100 @@
 		{ value: '3', label: '3 Passengers' },
 		{ value: '4', label: '4 Passengers' }
 	];
-	const locationOptions = [
-		{ value: 'all', label: 'All Locations' },
-		{ value: 'lower-keys', label: 'Lower Keys (Key West, Big Pine Key)' },
-		{ value: 'middle-keys', label: 'Middle Keys (Marathon, Pigeon Key)' },
-		{ value: 'upper-keys', label: 'Upper Keys (Key Largo, Islamorada)' }
-	];
-	const durationOptions = [
+		const locationOptions = $derived([
+		...(data.areas || []).map((a) => ({
+			value: a.slug,
+			label: a.name
+		}))
+	]);
+	const durationOptions = $derived([
 		{ value: 'all', label: 'Any Duration' },
-		{ value: 'half-day', label: 'Half Day (≤ 4 hrs)' },
-		{ value: 'full-day', label: 'Full Day (> 4 hrs)' }
-	];
+		...(data.durations || []).map((d) => ({
+			value: d.name,
+			label: `${d.label} (${d.hours} hrs)`
+		}))
+	]);
 	const tripTypeOptions = $derived([
 		{ value: 'all', label: 'Any Trip Type' },
 		...data.tripTypes.map((t) => ({ value: t.name, label: t.name }))
 	]);
 
+	
+	// Hotel / Staying Location State for Road Drive Times
+	let hotelQuery = $state('');
+	let selectedHotel = $state<{ name: string; address: string; lat: number; lng: number } | null>(null);
+	let hotelSuggestions = $state<Array<{ name: string; address: string; lat: number; lng: number }>>([]);
+	let isSearchingHotel = $state(false);
+	let driveTimesByArea = $state<Record<string, string>>({});
+	let hotelSearchTimer: any = null;
+
+	function handleHotelSearchInput() {
+		if (hotelSearchTimer) clearTimeout(hotelSearchTimer);
+		if (!hotelQuery || hotelQuery.trim().length < 2) {
+			hotelSuggestions = [];
+			return;
+		}
+		hotelSearchTimer = setTimeout(async () => {
+			isSearchingHotel = true;
+			try {
+				const res = await fetch(`/api/locations/search-places?q=${encodeURIComponent(hotelQuery)}`);
+				if (res.ok) {
+					const dataRes = await res.json();
+					hotelSuggestions = dataRes.results || [];
+				}
+			} catch (err) {
+				console.error('Error searching places:', err);
+			} finally {
+				isSearchingHotel = false;
+			}
+		}, 300);
+	}
+
+	async function selectHotel(hotel: { name: string; address: string; lat: number; lng: number }) {
+		selectedHotel = hotel;
+		hotelQuery = hotel.name;
+		hotelSuggestions = [];
+		await computeDriveTimesForAreas(hotel.lat, hotel.lng);
+	}
+
+	function clearSelectedHotel() {
+		selectedHotel = null;
+		hotelQuery = '';
+		hotelSuggestions = [];
+		driveTimesByArea = {};
+	}
+
+	async function computeDriveTimesForAreas(lat: number, lng: number) {
+		if (!data.areas || data.areas.length === 0) return;
+		const times: Record<string, string> = {};
+		await Promise.all(
+			data.areas.map(async (area: any) => {
+				try {
+					const res = await fetch('/api/locations/drive-time', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ lat, lng, areaId: area.id })
+					});
+					if (res.ok) {
+						const result = await res.json();
+						if (result.success && result.text) {
+							times[area.id] = result.text;
+							times[area.slug] = result.text;
+						}
+					}
+				} catch (err) {
+					console.error(`Error computing drive time for ${area.name}:`, err);
+				}
+			})
+		);
+		driveTimesByArea = times;
+	}
+
 	function resetAllFilters() {
 		searchDate = '';
 		startDate = '';
 		endDate = '';
-		filterLocation = 'all';
+		filterLocations = [];
 		filterDuration = 'all';
 		filterTripTypes = [];
 		filterGroupSize = '1';
@@ -583,11 +710,13 @@
 					options={groupSizeOptions}
 				/>
 
-				<CustomSelect
+				<CustomMultiSelect
 					id="location"
-					label="Location"
-					bind:value={filterLocation}
+					label="Locations"
+					bind:values={filterLocations}
 					options={locationOptions}
+					placeholder="Select Location(s)"
+					itemLabel="Locations Selected"
 				/>
 
 				<CustomSelect
@@ -626,7 +755,92 @@
 			{/if}
 		</div>
 
-		<!-- ==================== MODE 1: SINGLE DATE MODE ==================== -->
+		{#if filterLocations.length === 0}
+			<!-- Empty Location State: Nudge to Select Location and Date -->
+			<div class="location-nudge-card glass">
+				<div class="nudge-hero">
+					<div class="nudge-icon-circle">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke-width="1.8"
+							stroke="currentColor"
+							class="w-8 h-8"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+							/>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
+							/>
+						</svg>
+					</div>
+					<h2>Where would you like to depart?</h2>
+					<p class="nudge-subtitle">
+						Select one or more Florida Keys locations and your desired date to view available shared charters.
+					</p>
+				</div>
+
+				<!-- Step 1: Date Status Banner -->
+				<div class="nudge-step-card" class:step-done={Boolean(dateMode === 'single' ? searchDate : (startDate || endDate))}>
+					<div class="step-badge">Step 1</div>
+					<div class="step-content">
+						{#if (dateMode === 'single' && searchDate) || (dateMode === 'range' && (startDate || endDate))}
+							<span class="step-title status-ok">Charter Date Selected: <strong>{dateMode === 'single' ? searchDate : `${startDate || 'Any'} to ${endDate || 'Any'}`}</strong></span>
+							<span class="step-sub">Now pick your preferred departure location(s) below.</span>
+						{:else}
+							<span class="step-title">Choose your trip date or flexible range in the bar above</span>
+							<span class="step-sub">Lock in a date to join a half-booked charter or start a brand new boat.</span>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Step 2: Interactive Location Quick-Select Grid -->
+				<div class="nudge-step-card">
+					<div class="step-badge">Step 2</div>
+					<div class="step-content">
+						<div class="keys-section-header">
+							<span class="step-title">Select One or More Departure Keys</span>
+							<div class="cluster-actions">
+								<button type="button" class="btn-cluster-quick" onclick={() => toggleCluster('upper')}>
+									{isClusterSelected('upper') ? '✓ Upper Keys' : '+ Upper Keys'}
+								</button>
+								<button type="button" class="btn-cluster-quick" onclick={() => toggleCluster('middle')}>
+									{isClusterSelected('middle') ? '✓ Middle Keys' : '+ Middle Keys'}
+								</button>
+								<button type="button" class="btn-cluster-quick" onclick={() => toggleCluster('lower')}>
+									{isClusterSelected('lower') ? '✓ Lower Keys' : '+ Lower Keys'}
+								</button>
+								<button type="button" class="btn-cluster-quick btn-all-keys" onclick={toggleSelectAllKeys}>
+									{filterLocations.length === (data.areas?.length || 12) ? 'Clear All' : 'Select All 12 Keys'}
+								</button>
+							</div>
+						</div>
+
+						<div class="keys-pills-grid">
+							{#each (data.areas || []) as area}
+								{@const isSelected = filterLocations.includes(area.slug)}
+								<button
+									type="button"
+									class="key-pill"
+									class:selected={isSelected}
+									onclick={() => toggleLocation(area.slug)}
+								>
+									<span class="pill-check-icon">{isSelected ? '✓' : '+'}</span>
+									<span class="pill-text">{area.name}</span>
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+			</div>
+		{:else}
+			<!-- ==================== MODE 1: SINGLE DATE MODE ==================== -->
 		{#if dateMode === 'single'}
 			<!-- Encouraging Banner when no single date selected -->
 			{#if !searchDate}
@@ -1391,6 +1605,7 @@
 				{/if}
 			{/if}
 		{/if}
+		{/if}
 	</div>
 </div>
 
@@ -2148,4 +2363,225 @@
 			text-align: center;
 		}
 	}
+
+	/* Location Nudge Card */
+	.location-nudge-card {
+		padding: 2.5rem 2rem;
+		margin-top: 2rem;
+		border-radius: var(--radius-xl, 1rem);
+		border: 1px solid var(--border-light);
+		background: var(--glass-bg);
+		backdrop-filter: blur(16px);
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		gap: 1.75rem;
+		animation: fadeIn 0.3s ease-in-out;
+	}
+
+	.nudge-hero {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+		max-width: 600px;
+		margin: 0 auto;
+	}
+
+	.nudge-icon-circle {
+		width: 4rem;
+		height: 4rem;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--primary-glow, rgba(14, 165, 233, 0.15));
+		color: var(--primary, #0ea5e9);
+		border: 1px solid var(--border-light);
+		margin-bottom: 0.5rem;
+	}
+
+	.nudge-hero h2 {
+		font-size: 1.85rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin: 0;
+	}
+
+	.nudge-subtitle {
+		font-size: 1.05rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+		margin: 0;
+	}
+
+	.nudge-step-card {
+		background: var(--bg-surface);
+		border: 1px solid var(--border-light);
+		border-radius: var(--radius-lg, 0.75rem);
+		padding: 1.25rem 1.5rem;
+		display: flex;
+		gap: 1.25rem;
+		text-align: left;
+		align-items: flex-start;
+		transition: all 0.2s ease;
+	}
+
+	.nudge-step-card.step-done {
+		border-color: rgba(34, 197, 94, 0.35);
+		background: rgba(34, 197, 94, 0.04);
+	}
+
+	.step-badge {
+		background: var(--border-light);
+		color: var(--text-primary);
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		padding: 0.25rem 0.65rem;
+		border-radius: 9999px;
+		white-space: nowrap;
+		margin-top: 0.15rem;
+	}
+
+	.step-done .step-badge {
+		background: #22c55e;
+		color: #ffffff;
+	}
+
+	.step-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.step-title {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.step-title.status-ok {
+		color: #22c55e;
+	}
+
+	.step-sub {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+	}
+
+	.keys-section-header {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 0.85rem;
+	}
+
+	.cluster-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.btn-cluster-quick {
+		font-size: 0.75rem;
+		font-weight: 600;
+		padding: 0.35rem 0.65rem;
+		border-radius: var(--radius-sm, 0.375rem);
+		border: 1px solid var(--border-light);
+		background: var(--glass-bg);
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.btn-cluster-quick:hover {
+		color: var(--text-primary);
+		border-color: var(--primary, #0ea5e9);
+		background: var(--input-bg);
+	}
+
+	.btn-all-keys {
+		font-weight: 700;
+		color: var(--primary, #0ea5e9);
+		border-color: rgba(14, 165, 233, 0.35);
+	}
+
+	.keys-pills-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+		gap: 0.65rem;
+	}
+
+	.key-pill {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.7rem 0.9rem;
+		background: var(--input-bg);
+		border: 1px solid var(--border-light);
+		border-radius: var(--radius-md, 0.5rem);
+		color: var(--text-secondary);
+		font-size: 0.9rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		text-align: left;
+	}
+
+	.key-pill:hover {
+		border-color: var(--primary, #0ea5e9);
+		color: var(--text-primary);
+		transform: translateY(-1px);
+	}
+
+	.key-pill.selected {
+		background: rgba(14, 165, 233, 0.12);
+		border-color: var(--primary, #0ea5e9);
+		color: var(--text-primary);
+		font-weight: 600;
+	}
+
+	.pill-check-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.25rem;
+		height: 1.25rem;
+		border-radius: 50%;
+		font-size: 0.8rem;
+		font-weight: 700;
+		background: var(--border-light);
+		color: var(--text-secondary);
+	}
+
+	.key-pill.selected .pill-check-icon {
+		background: var(--primary, #0ea5e9);
+		color: #ffffff;
+	}
+
+	.pill-text {
+		flex: 1;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	@media (max-width: 640px) {
+		.location-nudge-card {
+			padding: 1.5rem 1rem;
+		}
+		.keys-pills-grid {
+			grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+		}
+		.keys-section-header {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+	}
+
 </style>

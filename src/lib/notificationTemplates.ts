@@ -93,10 +93,10 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: Record<string, NotificationTemplate
 		label: 'Captain Confirmed',
 		description: 'Sent to passengers once a captain accepts the charter, sharing captain info and meeting area.',
 		email_template:
-			'Hello {customer_name},\n\nGreat news! Captain {captain_name} has accepted your charter on {trip_date} ({trip_type}).\n\nMeeting Area: {meeting_area}\nCaptain Contact: {captain_phone}\n\nYour captain has been provided with your contact details and will reach out to you directly to coordinate any final details before departure.\n\nView trip details: {dashboard_url}',
+			'Hello {customer_name},\n\nGreat news! Captain {captain_name} has accepted your charter on {trip_date} ({trip_type}).\n\nDeparture Marina: {marina_name}\nAddress: {marina_address}\n{drive_time_info}Captain Contact: {captain_phone}\n\nYour captain has been provided with your contact details and will reach out to you directly to coordinate any final details before departure.\n\nView trip details: {dashboard_url}',
 		sms_template:
-			'Match confirmed! Captain {captain_name} will be your skipper on {trip_date} at {meeting_area}. Contact: {captain_phone}. Details: {dashboard_url}',
-		placeholders: ['{customer_name}', '{captain_name}', '{captain_phone}', '{meeting_area}', '{trip_date}', '{trip_type}', '{dashboard_url}']
+			'Match confirmed! Captain {captain_name} will skipper your charter on {trip_date} from {marina_name} ({marina_address}). Contact: {captain_phone}. Details: {dashboard_url}',
+		placeholders: ['{customer_name}', '{captain_name}', '{captain_phone}', '{marina_name}', '{marina_address}', '{drive_time_info}', '{trip_date}', '{trip_type}', '{dashboard_url}']
 	},
 	captain_secured: {
 		trigger_name: 'captain_secured',
@@ -137,6 +137,26 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: Record<string, NotificationTemplate
 		sms_template:
 			'Your charter on {trip_date} ({trip_type}) did not match in time. The trip is canceled and your deposit has been fully refunded.',
 		placeholders: ['{customer_name}', '{trip_date}', '{trip_type}', '{dashboard_url}']
+	},
+	admin_needs_captain_alert: {
+		trigger_name: 'admin_needs_captain_alert',
+		label: 'Admin Alert: Trip Needs Captain',
+		description: 'Sent immediately to operations when a trip confirmed by customers has no matching captain in that area.',
+		email_template:
+			'URGENT ADMIN ALERT: A confirmed charter reservation needs a captain!\n\nTrip Details:\n- Date: {trip_date}\n- Activity: {trip_type}\n- Area: {area_name}\n- Duration: {duration_label}\n- Total Passengers: {total_passengers}\n\nPlease recruit or assign an eligible captain in {area_name} on the admin dashboard:\n{admin_url}',
+		sms_template:
+			'🚨 SplitACharter Alert: Booking on {trip_date} ({trip_type} in {area_name}) has NO captain! Assign captain: {admin_url}',
+		placeholders: ['{trip_date}', '{trip_type}', '{area_name}', '{duration_label}', '{total_passengers}', '{admin_url}']
+	},
+	admin_needs_captain_released: {
+		trigger_name: 'admin_needs_captain_released',
+		label: 'Admin Alert: Trip Released to Captains',
+		description: 'Sent to operations when a previously flagged Needs Captain trip matches newly added coverage.',
+		email_template:
+			'ADMIN UPDATE: Trip on {trip_date} ({trip_type} in {area_name}) now has matching captain coverage!\n\nAn automated SMS blast has been dispatched to {captain_count} eligible captain(s).\n\nView details: {admin_url}',
+		sms_template:
+			'SplitACharter Update: Trip on {trip_date} ({trip_type} in {area_name}) has been released to {captain_count} captain(s). {admin_url}',
+		placeholders: ['{trip_date}', '{trip_type}', '{area_name}', '{captain_count}', '{admin_url}']
 	}
 };
 

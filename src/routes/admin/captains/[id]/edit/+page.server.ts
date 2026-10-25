@@ -1,9 +1,10 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { formatPromoCode, deriveCaptainPromoCode } from '$lib/promo_codes';
+import { releasePendingNeedsCaptainTrips } from '$lib/server/trips';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
-	const [captainRes, tripTypesRes] = await Promise.all([
+	const [captainRes, tripTypesRes, durationsRes, marinasRes, areasRes] = await Promise.all([
 		supabase
 			.from('captains')
 			.select('*')
@@ -12,7 +13,21 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 		supabase
 			.from('trip_types')
 			.select('*')
-			.order('name', { ascending: true })
+			.order('name', { ascending: true }),
+		supabase
+			.from('durations')
+			.select('*')
+			.order('hours', { ascending: true }),
+		supabase
+			.from('marinas')
+			.select('id, name, address, active')
+			.eq('active', true)
+			.order('name', { ascending: true }),
+		supabase
+			.from('areas')
+			.select('*')
+			.eq('active', true)
+			.order('display_order', { ascending: true })
 	]);
 
 	if (captainRes.error || !captainRes.data) {
@@ -22,7 +37,10 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 
 	return {
 		captain: captainRes.data,
-		tripTypes: tripTypesRes.data || []
+		tripTypes: tripTypesRes.data || [],
+		durations: durationsRes.data || [],
+		marinas: marinasRes.data || [],
+		areas: areasRes.data || []
 	};
 };
 
@@ -33,7 +51,9 @@ export const actions: Actions = {
 		const charterName = (formData.get('charter_name') as string)?.trim();
 		const email = (formData.get('email') as string)?.trim();
 		const phone = (formData.get('phone') as string)?.trim();
+		const homeMarinaId = (formData.get('home_marina_id') as string)?.trim() || null;
 		const tripTypes = formData.getAll('trip_types') as string[];
+		const durations = formData.getAll('durations') as string[];
 		const locations = formData.getAll('locations') as string[];
 		const minimumNotice = formData.get('minimum_notice') as string;
 		const maxPassengers = parseInt(formData.get('max_passengers') as string, 10);
@@ -78,7 +98,9 @@ export const actions: Actions = {
 			charter_name: charterName || null,
 			email,
 			phone,
+			home_marina_id: homeMarinaId,
 			trip_types: tripTypes,
+			durations: durations,
 			locations,
 			minimum_notice: minimumNotice || '24 hours',
 			max_passengers: maxPassengers,
@@ -87,22 +109,21 @@ export const actions: Actions = {
 			admin_notes: notes || null
 		};
 
-		let { error: updateErr } = await supabase
+		const { error: updateErr } = await supabase
 			.from('captains')
 			.update(updatePayload)
 			.eq('id', params.id);
 
-		// Defensive fallback: if DB schema cache has not yet refreshed with charter_name column
-		if (updateErr && updateErr.message?.includes('charter_name')) {
-			console.warn('Fallback updating captain without charter_name column:', updateErr.message);
-			delete updatePayload.charter_name;
-			const fallbackRes = await supabase.from('captains').update(updatePayload).eq('id', params.id);
-			updateErr = fallbackRes.error;
-		}
-
 		if (updateErr) {
 			console.error('Error updating captain:', updateErr);
 			return fail(500, { message: updateErr.message || 'Failed to update captain record.' });
+		}
+
+		// Release any upcoming needs_captain trips if newly covered
+		try {
+			await releasePendingNeedsCaptainTrips();
+		} catch (relErr) {
+			console.error('Error releasing pending trips on captain update:', relErr);
 		}
 
 		throw redirect(303, '/admin/captains');

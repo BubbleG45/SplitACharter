@@ -2,7 +2,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
-	const [listingRes, tripTypesRes] = await Promise.all([
+	const [listingRes, tripTypesRes, areasRes] = await Promise.all([
 		supabase
 			.from('listing_templates')
 			.select('*')
@@ -11,7 +11,12 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 		supabase
 			.from('trip_types')
 			.select('*')
-			.order('name', { ascending: true })
+			.order('name', { ascending: true }),
+		supabase
+			.from('areas')
+			.select('*')
+			.eq('active', true)
+			.order('display_order', { ascending: true })
 	]);
 
 	if (listingRes.error || !listingRes.data) {
@@ -50,7 +55,8 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 	return {
 		listing,
 		formattedDuration,
-		tripTypes: tripTypesRes.data || []
+		tripTypes: tripTypesRes.data || [],
+		areas: areasRes.data || []
 	};
 };
 
