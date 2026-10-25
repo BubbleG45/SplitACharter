@@ -463,6 +463,19 @@
 		return `${start} – ${end}`;
 	}
 
+	function formatMeetingArea(meetingArea?: string | null): string {
+		if (!meetingArea) return 'Departure marina provided upon booking';
+		const lower = meetingArea.toLowerCase();
+		if (
+			lower.includes('sent after') ||
+			lower.includes('details sent') ||
+			lower.includes('confirmation')
+		) {
+			return 'Departure marina provided upon booking';
+		}
+		return `Departure: ${meetingArea}`;
+	}
+
 	function formatWeekdayDate(dateStr: string) {
 		if (!dateStr) return '';
 		const parts = dateStr.split('-');
@@ -972,11 +985,11 @@
 										</span>
 										{#if exceedsCapacity}
 											<span class="exceeds-badge"
-												>{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
+												>{formatDuration(template.duration)} • {seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
 											>
 										{:else}
 											<span class="active-badge"
-												>{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
+												>{formatDuration(template.duration)} • {seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
 											>
 										{/if}
 									</div>
@@ -988,17 +1001,12 @@
 										</div>
 										<p class="description">{template.description}</p>
 
-										<div class="meta-row">
-											<div class="meta-item">
-												<span class="meta-label">Duration</span>
-												<span class="meta-value">{formatDuration(template.duration)}</span>
-											</div>
-											<div class="meta-item">
-												<span class="meta-label">Meeting Area</span>
-												<span class="meta-value" title={template.meeting_area}
-													>{template.meeting_area}</span
-												>
-											</div>
+										<div class="meeting-row">
+											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-3.5 h-3.5 meeting-icon">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+												<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+											</svg>
+											<span class="meeting-text" title={template.meeting_area}>{formatMeetingArea(template.meeting_area)}</span>
 										</div>
 									</div>
 
@@ -1107,14 +1115,14 @@
 								</span>
 								{#if exceedsCapacity}
 									<span class="exceeds-badge"
-										>{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
+										>{formatDuration(listing.duration)} • {seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
 									>
 								{:else if listing.matchedInstance}
 									<span class="active-badge"
-										>{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
+										>{formatDuration(listing.duration)} • {seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
 									>
 								{:else}
-									<span class="pax-badge">{listing.max_passengers} Max Pax</span>
+									<span class="pax-badge">{formatDuration(listing.duration)} • {listing.max_passengers} Max Pax</span>
 								{/if}
 							</div>
 
@@ -1130,17 +1138,12 @@
 								</div>
 								<p class="description">{listing.description}</p>
 
-								<div class="meta-row">
-									<div class="meta-item">
-										<span class="meta-label">Duration</span>
-										<span class="meta-value">{formatDuration(listing.duration)}</span>
-									</div>
-									<div class="meta-item">
-										<span class="meta-label">Meeting Area</span>
-										<span class="meta-value" title={listing.meeting_area}
-											>{listing.meeting_area}</span
-										>
-									</div>
+								<div class="meeting-row">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-3.5 h-3.5 meeting-icon">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+										<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+									</svg>
+									<span class="meeting-text" title={listing.meeting_area}>{formatMeetingArea(listing.meeting_area)}</span>
 								</div>
 							</div>
 
@@ -1269,11 +1272,11 @@
 										</span>
 										{#if exceedsCapacity}
 											<span class="exceeds-badge"
-												>{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
+												>{formatDuration(trip.duration)} • {seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
 											>
 										{:else}
 											<span class="active-badge"
-												>{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
+												>{formatDuration(trip.duration)} • {seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
 											>
 										{/if}
 									</div>
@@ -1285,16 +1288,12 @@
 										</div>
 										<p class="description">{trip.description}</p>
 
-										<div class="meta-row">
-											<div class="meta-item">
-												<span class="meta-label">Duration</span>
-												<span class="meta-value">{formatDuration(trip.duration)}</span>
-											</div>
-											<div class="meta-item">
-												<span class="meta-label">Meeting Area</span>
-												<span class="meta-value" title={trip.meeting_area}>{trip.meeting_area}</span
-												>
-											</div>
+										<div class="meeting-row">
+											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-3.5 h-3.5 meeting-icon">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+												<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+											</svg>
+											<span class="meeting-text" title={trip.meeting_area}>{formatMeetingArea(trip.meeting_area)}</span>
 										</div>
 									</div>
 
@@ -1463,11 +1462,11 @@
 												</span>
 												{#if exceedsCapacity}
 													<span class="exceeds-badge"
-														>{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
+														>{formatDuration(trip.duration)} • {seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
 													>
 												{:else}
 													<span class="active-badge"
-														>{seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
+														>{formatDuration(trip.duration)} • {seatsLeft} {seatsLeft === 1 ? 'seat' : 'seats'} left</span
 													>
 												{/if}
 											</div>
@@ -1481,17 +1480,12 @@
 												</div>
 												<p class="description">{trip.description}</p>
 
-												<div class="meta-row">
-													<div class="meta-item">
-														<span class="meta-label">Duration</span>
-														<span class="meta-value">{formatDuration(trip.duration)}</span>
-													</div>
-													<div class="meta-item">
-														<span class="meta-label">Meeting Area</span>
-														<span class="meta-value" title={trip.meeting_area}
-															>{trip.meeting_area}</span
-														>
-													</div>
+												<div class="meeting-row">
+													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-3.5 h-3.5 meeting-icon">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+														<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+													</svg>
+													<span class="meeting-text" title={trip.meeting_area}>{formatMeetingArea(trip.meeting_area)}</span>
 												</div>
 											</div>
 
@@ -1589,7 +1583,7 @@
 														{/if}
 													</div>
 												</span>
-												<span class="pax-badge">{template.max_passengers} Max Pax</span>
+												<span class="pax-badge">{formatDuration(template.duration)} • {template.max_passengers} Max Pax</span>
 											</div>
 
 											<div class="card-body">
@@ -1601,17 +1595,12 @@
 												</div>
 												<p class="description">{template.description}</p>
 
-												<div class="meta-row">
-													<div class="meta-item">
-														<span class="meta-label">Duration</span>
-														<span class="meta-value">{formatDuration(template.duration)}</span>
-													</div>
-													<div class="meta-item">
-														<span class="meta-label">Meeting Area</span>
-														<span class="meta-value" title={template.meeting_area}
-															>{template.meeting_area}</span
-														>
-													</div>
+												<div class="meeting-row">
+													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-3.5 h-3.5 meeting-icon">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+														<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+													</svg>
+													<span class="meeting-text" title={template.meeting_area}>{formatMeetingArea(template.meeting_area)}</span>
 												</div>
 											</div>
 
@@ -2228,40 +2217,36 @@
 		font-size: 0.85rem;
 		color: var(--text-secondary);
 		line-height: 1.4;
-		margin-bottom: 0.75rem;
+		margin-bottom: 0.65rem;
 		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		line-clamp: 2;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
-	.meta-row {
+	.meeting-row {
 		display: flex;
-		gap: 1.25rem;
+		align-items: center;
+		gap: 6px;
+		font-size: 0.78rem;
 		border-top: 1px solid var(--border-light);
-		padding-top: 0.75rem;
+		padding-top: 0.65rem;
 		margin-top: auto;
-	}
-	.meta-item {
-		display: flex;
-		flex-direction: column;
 		min-width: 0;
 	}
-	.meta-label {
-		font-size: 0.7rem;
-		color: var(--text-muted);
-		text-transform: uppercase;
-		font-weight: 600;
-		letter-spacing: 0.5px;
+	.meeting-icon {
+		flex-shrink: 0;
+		color: var(--primary);
+		opacity: 0.85;
 	}
-	.meta-value {
-		font-size: 0.85rem;
+	.meeting-text {
 		font-weight: 500;
-		color: var(--text-primary);
-		text-overflow: ellipsis;
+		color: var(--text-secondary);
 		overflow: hidden;
+		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
+
 
 	.card-footer {
 		display: flex;

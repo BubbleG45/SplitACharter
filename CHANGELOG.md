@@ -6,6 +6,12 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 📋 Optimized Card Meta Layout & 3-Line Descriptions on /browse — 2026-10-25 18:45 UTC
+
+- **Combined Duration & Capacity in Card Header**: Moved charter duration (`4 hr`, `6 hr`, `8 hr`) up into the header badge beside passenger capacity (e.g. `4 hr • 4 Max Pax` or `4 hr • 2 seats left`), consolidating key metrics at a glance and freeing up space in the card body.
+- **Expanded Description to 3 Lines**: Increased the description clamp from 2 lines to 3 lines, giving customers 50% more charter details without increasing the card's outer dimensions.
+- **Dedicated Full-Width Departure Marina Row**: Replaced the cramped 2-column duration/meeting table with a clean, full-width departure row (e.g. `Departure marina provided upon booking`), completely eliminating the awkward `Meeting details sent after c...` truncation.
+
 ### 🎨 Compact Date Range Badges on /browse Cards — 2026-10-25 18:32 UTC
 
 - **Clean & Compact Range Badge**: Streamlined the date range badge format on charter cards from `MM/DD/YYYY – MM/DD/YYYY` (25 characters) to `MM/DD – MM/DD` (e.g. `10/25 – 11/01`), keeping the date badge well within card boundaries.
