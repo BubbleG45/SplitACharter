@@ -559,7 +559,7 @@
 			// Single date search has an exact departure date
 			params.set('date', searchDate);
 		} else if (dateMode === 'range' && (startDate || endDate)) {
-			// Vacation range search passes range so user intentionally confirms departure day on details page
+			// Date range search passes range so user intentionally confirms departure day on details page
 			if (startDate) params.set('startDate', startDate);
 			if (endDate) params.set('endDate', endDate);
 		}

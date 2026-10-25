@@ -18,7 +18,7 @@
 		minDate = `${yyyy}-${mm}-${dd}`;
 	});
 
-	// Vacation range day list (when user arrived with a date range)
+	// Trip window range day list (when user arrived with a date range)
 	const rangeDates = $derived.by(() => {
 		if (!data.startDate) return [];
 		const start = new Date(data.startDate + 'T00:00:00');
@@ -370,11 +370,11 @@
 				</div>
 
 				{#if data.startDate}
-					<!-- Vacation Window Range Day Selector -->
+					<!-- Trip Window Range Day Selector -->
 					<div class="vacation-range-card glass">
 						<div class="vacation-range-header">
 							<div class="range-tag-group">
-								<span class="range-tag">Vacation Stay</span>
+								<span class="range-tag">Your Trip Window</span>
 								<h3>Choose Departure Day</h3>
 							</div>
 							<span class="range-dates-badge">
@@ -414,7 +414,7 @@
 							<!-- Long stay (> 14 days): highlight half-booked days + bounded date input -->
 							{#if rangeDates.some(d => d.hasHalfBooked)}
 								<div class="long-stay-ready-section">
-									<span class="section-micro-title">⚡ Charters Ready to Join During Your Stay:</span>
+									<span class="section-micro-title">⚡ Charters Ready to Join During Your Dates:</span>
 									<div class="day-chips-grid">
 										{#each rangeDates.filter(d => d.hasHalfBooked) as d}
 											{@const isCurrent = selectedDate === d.date}
@@ -1030,7 +1030,7 @@
 	}
 
 
-	/* Vacation Range Card & Day Chips */
+	/* Trip Window Range Card & Day Chips */
 	.vacation-range-card {
 		padding: 1.5rem;
 		border-radius: var(--radius-lg, 0.75rem);

@@ -6,6 +6,11 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 🧭 Trip Window Verbiage Refinement on Charter Details — 2026-10-25 17:40 UTC
+
+- **Refined Date Range Heading**: Updated the date range container badge on `/browse/[id]` from "Vacation Stay" to **"Your Trip Window"**, providing cleaner, charter-specific phrasing that naturally fits all travelers.
+- **Trip Dates Phrasing**: Aligned long-range charter prompts to reference "Your Dates" and "Your Trip Window", keeping the interface concise, focused, and intuitive.
+
 ### 📅 Vacation Date Range Navigation & Exact Charter Day Selection — 2026-10-25 17:35 UTC
 
 - **Intelligent Vacation Range Navigation**: When customers browse charters using a date range (e.g. Nov 1 to Nov 7) and click "Book Charter" on an open template, the system now forwards their full vacation window (`startDate` and `endDate`) to the listing details page without locking them into an arbitrary day.
