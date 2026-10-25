@@ -569,3 +569,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 18:49 UTC (fd8e147)
 - Optimize card meta layout, combine duration and pax in header, and expand description to 3 lines on /browse
+
+### Push Update — 2026-10-25 18:52 UTC (681b67d)
+- Fix meeting icon sizing on /browse listing cards
