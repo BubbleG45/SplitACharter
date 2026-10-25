@@ -20,12 +20,20 @@
 		page.url.searchParams.get('endDate') || page.url.searchParams.get('date_to') || '';
 	const initialSingleDate = page.url.searchParams.get('date') || '';
 
-	let dateMode = $state<'single' | 'range'>(
-		initialSingleDate && !initialStart && !initialEnd ? 'single' : 'range'
-	);
-	let searchDate = $state(initialSingleDate || initialStart || '');
 	let startDate = $state(initialStart || initialSingleDate || '');
 	let endDate = $state(initialEnd || '');
+	let dateMode = $derived<'single' | 'range'>(endDate ? 'range' : 'single');
+	let searchDate = $derived(startDate);
+
+	function scrollToResults() {
+		if (typeof window === 'undefined') return;
+		setTimeout(() => {
+			const el = document.getElementById('browse-listings-start');
+			if (el) {
+				el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+		}, 80);
+	}
 
 	let rangeViewTab = $state<'all' | 'ready' | 'open'>('all');
 
@@ -40,15 +48,23 @@
 
 	function toggleLocation(slug: string) {
 		const s = slug.toLowerCase();
+		const wasEmpty = filterLocations.length === 0;
 		if (filterLocations.includes(s)) {
 			filterLocations = filterLocations.filter((l) => l !== s);
 		} else {
 			filterLocations = [...filterLocations, s];
+			if (wasEmpty) {
+				scrollToResults();
+			}
 		}
 	}
 
 	function selectAllLocations() {
+		const wasEmpty = filterLocations.length === 0;
 		filterLocations = (data.areas || []).map((a: any) => a.slug);
+		if (wasEmpty) {
+			scrollToResults();
+		}
 	}
 
 	function clearAllLocations() {
@@ -57,10 +73,14 @@
 
 	function toggleSelectAllKeys() {
 		const allSlugs = (data.areas || []).map((a: any) => a.slug);
+		const wasEmpty = filterLocations.length === 0;
 		if (filterLocations.length >= allSlugs.length) {
 			filterLocations = [];
 		} else {
 			filterLocations = [...allSlugs];
+			if (wasEmpty) {
+				scrollToResults();
+			}
 		}
 	}
 	let filterDuration = $state(page.url.searchParams.get('duration') || 'all'); // 'all', 'half-day', 'full-day'
@@ -84,15 +104,11 @@
 			const pEnd = urlParams.get('endDate') || urlParams.get('date_to') || '';
 
 			if (pDate && !pStart && !pEnd) {
-				dateMode = 'single';
-				searchDate = pDate;
 				startDate = pDate;
 				endDate = '';
 			} else {
-				dateMode = 'range';
 				startDate = pStart;
 				endDate = pEnd;
-				searchDate = pStart;
 			}
 
 			filterLocations = parseLocationsParam(urlParams.get('location'));
@@ -132,20 +148,6 @@
 		}
 	});
 
-	function setDateMode(mode: 'single' | 'range') {
-		if (mode === dateMode) return;
-		dateMode = mode;
-		if (mode === 'range') {
-			if (searchDate && !startDate) {
-				startDate = searchDate;
-			}
-		} else {
-			if (startDate && !searchDate) {
-				searchDate = startDate;
-			}
-		}
-	}
-
 	function handleStartDateChange() {
 		if (startDate && endDate && endDate < startDate) {
 			endDate = startDate;
@@ -153,6 +155,9 @@
 	}
 
 	function handleEndDateChange() {
+		if (endDate && !startDate) {
+			startDate = minDate || new Date().toISOString().split('T')[0];
+		}
 		if (startDate && endDate && startDate > endDate) {
 			startDate = endDate;
 		}
@@ -190,7 +195,6 @@
 	}
 
 	function applyPreset(preset: 'weekend' | '7days' | '14days' | '30days') {
-		dateMode = 'range';
 		if (preset === 'weekend') {
 			const { start, end } = getWeekendDates();
 			startDate = start;
@@ -539,7 +543,6 @@
 	}
 
 	function resetAllFilters() {
-		searchDate = '';
 		startDate = '';
 		endDate = '';
 		filterLocations = [];
@@ -547,7 +550,6 @@
 		filterTripTypes = [];
 		filterGroupSize = '1';
 		rangeViewTab = 'all';
-		dateMode = 'range';
 	}
 
 	function getListingHref(listing: any) {
@@ -621,24 +623,6 @@
 			<div class="controls-card-header">
 				<div class="controls-title-group">
 					<span class="controls-title">Filter Charters</span>
-					<div class="date-mode-toggle-group" role="group" aria-label="Date Selection Mode">
-						<button
-							type="button"
-							class="mode-pill"
-							class:active={dateMode === 'range'}
-							onclick={() => setDateMode('range')}
-						>
-							Date Range
-						</button>
-						<button
-							type="button"
-							class="mode-pill"
-							class:active={dateMode === 'single'}
-							onclick={() => setDateMode('single')}
-						>
-							Exact Date
-						</button>
-					</div>
 				</div>
 				{#if hasActiveFilters}
 					<button type="button" class="btn-clear-all" onclick={resetAllFilters}>
@@ -662,41 +646,41 @@
 			</div>
 
 			<div class="filters-group">
-				{#if dateMode === 'single'}
-					<div class="select-wrapper">
-						<label for="search-date">Trip Date</label>
-						<input
-							type="date"
-							id="search-date"
-							bind:value={searchDate}
-							min={minDate}
-							class="date-input-field"
-						/>
+				<div class="select-wrapper">
+					<label for="start-date">Trip / Start Date</label>
+					<input
+						type="date"
+						id="start-date"
+						bind:value={startDate}
+						min={minDate}
+						class="date-input-field"
+						onchange={handleStartDateChange}
+					/>
+				</div>
+
+				<div class="select-wrapper">
+					<div class="label-with-clear">
+						<label for="end-date">End Date <span class="optional-tag">(Optional)</span></label>
+						{#if endDate}
+							<button
+								type="button"
+								class="btn-clear-date"
+								title="Search single day only"
+								onclick={() => { endDate = ''; }}
+							>
+								× Clear
+							</button>
+						{/if}
 					</div>
-				{:else}
-					<div class="select-wrapper">
-						<label for="start-date">Start Date (From)</label>
-						<input
-							type="date"
-							id="start-date"
-							bind:value={startDate}
-							min={minDate}
-							class="date-input-field"
-							onchange={handleStartDateChange}
-						/>
-					</div>
-					<div class="select-wrapper">
-						<label for="end-date">End Date (To)</label>
-						<input
-							type="date"
-							id="end-date"
-							bind:value={endDate}
-							min={startDate || minDate}
-							class="date-input-field"
-							onchange={handleEndDateChange}
-						/>
-					</div>
-				{/if}
+					<input
+						type="date"
+						id="end-date"
+						bind:value={endDate}
+						min={startDate || minDate}
+						class="date-input-field"
+						onchange={handleEndDateChange}
+					/>
+				</div>
 
 				<CustomSelect
 					id="group-size"
@@ -704,8 +688,6 @@
 					bind:value={filterGroupSize}
 					options={groupSizeOptions}
 				/>
-
-
 
 				<CustomSelect
 					id="duration"
@@ -720,6 +702,35 @@
 					bind:values={filterTripTypes}
 					options={tripTypeOptions}
 				/>
+			</div>
+
+			<!-- Quick Presets Row: Placed immediately beneath date inputs & above Departure Locations -->
+			<div class="quick-presets-row">
+				<span class="quick-presets-label">Quick Ranges:</span>
+				<div class="preset-buttons">
+					<button type="button" class="btn-preset" onclick={() => applyPreset('weekend')}>
+						This Weekend
+					</button>
+					<button type="button" class="btn-preset" onclick={() => applyPreset('7days')}>
+						Next 7 Days
+					</button>
+					<button type="button" class="btn-preset" onclick={() => applyPreset('14days')}>
+						Next 14 Days
+					</button>
+					<button type="button" class="btn-preset" onclick={() => applyPreset('30days')}>
+						Next 30 Days
+					</button>
+					{#if endDate}
+						<button
+							type="button"
+							class="btn-preset btn-preset-clear"
+							title="Search single day only"
+							onclick={() => { endDate = ''; }}
+						>
+							Exact Day Only
+						</button>
+					{/if}
+				</div>
 			</div>
 
 			<!-- Full Visible Locations Selector (12 Florida Keys) -->
@@ -761,25 +772,7 @@
 				</div>
 			</div>
 
-			{#if dateMode === 'range'}
-				<div class="quick-presets-row">
-					<span class="quick-presets-label">Quick Presets:</span>
-					<div class="preset-buttons">
-						<button type="button" class="btn-preset" onclick={() => applyPreset('weekend')}
-							>This Weekend</button
-						>
-						<button type="button" class="btn-preset" onclick={() => applyPreset('7days')}
-							>Next 7 Days</button
-						>
-						<button type="button" class="btn-preset" onclick={() => applyPreset('14days')}
-							>Next 14 Days</button
-						>
-						<button type="button" class="btn-preset" onclick={() => applyPreset('30days')}
-							>Next 30 Days</button
-						>
-					</div>
-				</div>
-			{/if}
+
 		</div>
 
 		{#if filterLocations.length === 0}
@@ -814,11 +807,14 @@
 				</div>
 
 				<!-- Step 1: Date Status Banner -->
-				<div class="nudge-step-card" class:step-done={Boolean(dateMode === 'single' ? searchDate : (startDate || endDate))}>
+				<div class="nudge-step-card" class:step-done={Boolean(startDate)}>
 					<div class="step-badge">Step 1</div>
 					<div class="step-content">
-						{#if (dateMode === 'single' && searchDate) || (dateMode === 'range' && (startDate || endDate))}
-							<span class="step-title status-ok">Charter Date Selected: <strong>{dateMode === 'single' ? searchDate : `${startDate || 'Any'} to ${endDate || 'Any'}`}</strong></span>
+						{#if startDate && !endDate}
+							<span class="step-title status-ok">Charter Date Selected: <strong>{startDate}</strong></span>
+							<span class="step-sub">Now pick your preferred departure location(s) below.</span>
+						{:else if startDate && endDate}
+							<span class="step-title status-ok">Charter Date Range Selected: <strong>{startDate} to {endDate}</strong></span>
 							<span class="step-sub">Now pick your preferred departure location(s) below.</span>
 						{:else}
 							<span class="step-title">Choose your trip date or flexible range in the bar above</span>
@@ -861,6 +857,7 @@
 				</div>
 			</div>
 		{:else}
+			<div id="browse-listings-start" class="browse-listings-anchor" aria-hidden="true" style="scroll-margin-top: 1.5rem;"></div>
 			<!-- ==================== MODE 1: SINGLE DATE MODE ==================== -->
 		{#if dateMode === 'single'}
 			<!-- Encouraging Banner when no single date selected -->
@@ -2605,6 +2602,46 @@
 		}
 	}
 
+
+	/* Optional Date Field Styling */
+	.label-with-clear {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.optional-tag {
+		font-weight: normal;
+		font-size: 0.72rem;
+		color: var(--text-muted);
+		text-transform: none;
+	}
+	.btn-clear-date {
+		background: none;
+		border: none;
+		color: var(--primary);
+		font-size: 0.72rem;
+		font-weight: 600;
+		cursor: pointer;
+		padding: 0;
+		margin: 0;
+	}
+	.btn-clear-date:hover {
+		text-decoration: underline;
+	}
+	.btn-preset-clear {
+		border-color: rgba(239, 68, 68, 0.4);
+		color: #f87171;
+	}
+	.btn-preset-clear:hover {
+		background: rgba(239, 68, 68, 0.12);
+		border-color: #ef4444;
+		color: #ef4444;
+	}
+	.browse-listings-anchor {
+		height: 0;
+		width: 100%;
+		display: block;
+	}
 
 	/* Locations Full Visible Bar */
 	.locations-bar-card {

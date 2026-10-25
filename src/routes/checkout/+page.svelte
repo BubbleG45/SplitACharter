@@ -909,7 +909,7 @@
 				<div class="divider"></div>
 
 				<div class="due-row">
-					<span>Due Now (Stripe Deposit):</span>
+					<span>Due Now:</span>
 					<span class="due-amount">$50.00</span>
 				</div>
 			</div>

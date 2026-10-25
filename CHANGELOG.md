@@ -6,6 +6,13 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 🎯 Unified Date Filter, Step 2 Scroll Focus & Simplified Checkout Label — 2026-10-25 18:15 UTC
+
+- **Simplified Checkout Payment Label**: Replaced `Due Now (Stripe Deposit):` with a clean `Due Now:` on the checkout summary card (`/checkout`), keeping pricing clear, standard, and clutter-free for customers.
+- **Unified Date Selection on /browse**: Eliminated the mode-switching pills ("Date Range" vs. "Exact Date") in favor of a single, unified date selection interface. Customers are presented with `Trip / Start Date` and an optional `End Date (Optional)` with an instant one-click clear (×) button to switch between single-day and flexible date range searches without friction.
+- **Streamlined Date Presets Placement**: Moved the Quick Date Ranges bar ("This Weekend", "Next 7 Days", "Next 14 Days", "Next 30 Days", plus an "Exact Day Only" option) directly beneath the date inputs and above Departure Locations, grouping all date settings together logically.
+- **Smooth Viewport Scroll on Step 2 Location Selection**: When customers choose a departure location from Step 2 (or use "Select All 12 Keys") from the location nudge view, the page now smoothly scrolls directly to the top of the available charter results instead of leaving the viewport focused down at the bottom of the list.
+
 ### 📅 Simplified Charter Details to Required Departure Date Picker — 2026-10-25 17:52 UTC
 
 - **Clean Date Picker Interface**: Replaced the multi-day departure chip grid on `/browse/[id]` with a clean, standard date picker for selecting the departure date.
