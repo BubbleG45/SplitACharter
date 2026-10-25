@@ -6,6 +6,15 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 🔘 Inlined Booking Button with Price & 4-Line Description on /browse — 2026-10-25 19:02 UTC
+
+- **Side-by-Side Price and Action Button**: Styled the card footer so that the booking button (`Book Charter` / `Join Group`) sits on the exact same row directly beside the group price and total cost, eliminating a full row of vertical button space.
+- **Added 4th Line to Description**: Expanded the charter description clamp from 3 lines to **4 lines**, providing customers with comprehensive charter details while maintaining the exact same compact card height.
+
+### 📝 Updated Card Meeting Text Phrasing on /browse — 2026-10-25 18:55 UTC
+
+- **Meeting Wording Update**: Updated the departure info row on charter cards from `Departure marina provided upon booking` to `Meeting details sent after confirmation`, keeping customer expectations precise and reassuring.
+
 ### 🛠️ Fixed Meeting Icon Sizing on /browse Cards — 2026-10-25 18:52 UTC
 
 - **Meeting Icon Dimensions**: Fixed an issue where the departure marina map-pin SVG expanded without constraint by adding explicit `width="14"` and `height="14"` attributes and CSS constraints (`width: 14px; height: 14px`), rendering a sleek 14px inline pin icon alongside departure marina text.

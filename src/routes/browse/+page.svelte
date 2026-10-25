@@ -464,14 +464,14 @@
 	}
 
 	function formatMeetingArea(meetingArea?: string | null): string {
-		if (!meetingArea) return 'Departure marina provided upon booking';
+		if (!meetingArea) return 'Meeting details sent after confirmation';
 		const lower = meetingArea.toLowerCase();
 		if (
 			lower.includes('sent after') ||
 			lower.includes('details sent') ||
 			lower.includes('confirmation')
 		) {
-			return 'Departure marina provided upon booking';
+			return 'Meeting details sent after confirmation';
 		}
 		return `Departure: ${meetingArea}`;
 	}
@@ -2219,8 +2219,8 @@
 		line-height: 1.4;
 		margin-bottom: 0.65rem;
 		display: -webkit-box;
-		-webkit-line-clamp: 3;
-		line-clamp: 3;
+		-webkit-line-clamp: 4;
+		line-clamp: 4;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
@@ -2257,22 +2257,27 @@
 		flex-direction: row;
 		align-items: center;
 		justify-content: space-between;
-		flex-wrap: wrap;
-		gap: 0.75rem;
+		flex-wrap: nowrap;
+		gap: 0.5rem;
 		border-top: 1px solid var(--border-light);
-		padding-top: 1rem;
+		padding-top: 0.75rem;
+		margin-top: auto;
 	}
 	.price-info {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
 		text-align: left;
+		min-width: 0;
+		flex-shrink: 1;
 	}
 	.price-split {
 		font-family: var(--font-heading);
 		font-weight: 700;
-		font-size: 1.15rem;
+		font-size: 1.05rem;
 		color: var(--text-primary);
+		line-height: 1.15;
+		white-space: nowrap;
 	}
 	.per-group {
 		font-size: 0.7rem;
@@ -2281,9 +2286,10 @@
 		font-family: var(--font-body);
 	}
 	.price-total {
-		font-size: 0.7rem;
+		font-size: 0.68rem;
 		color: var(--text-muted);
 		margin-top: 1px;
+		white-space: nowrap;
 	}
 
 	/* Centered custom pill buttons */
@@ -2292,20 +2298,20 @@
 		color: #ffffff !important;
 		font-weight: 700;
 		text-transform: uppercase;
-		font-size: 0.85rem;
-		letter-spacing: 0.8px;
-		padding: 10px 20px;
+		font-size: 0.76rem;
+		letter-spacing: 0.4px;
+		padding: 8px 14px;
 		border-radius: 30px;
-		min-width: 130px;
+		white-space: nowrap;
+		flex-shrink: 0;
 		text-align: center;
 		border: 1px solid rgba(255, 255, 255, 0.15);
-		box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+		box-shadow: 0 0 12px rgba(99, 102, 241, 0.35);
 		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-		align-self: center;
 	}
 	.btn-join:hover {
-		transform: translateY(-2px) scale(1.03);
-		box-shadow: 0 0 25px rgba(99, 102, 241, 0.65);
+		transform: translateY(-2px) scale(1.02);
+		box-shadow: 0 0 20px rgba(99, 102, 241, 0.55);
 	}
 
 	.btn-book {
@@ -2313,19 +2319,19 @@
 		color: #060913 !important;
 		font-weight: 800;
 		text-transform: uppercase;
-		font-size: 0.85rem;
-		letter-spacing: 0.8px;
-		padding: 10px 20px;
+		font-size: 0.76rem;
+		letter-spacing: 0.4px;
+		padding: 8px 14px;
 		border-radius: 30px;
-		min-width: 130px;
+		white-space: nowrap;
+		flex-shrink: 0;
 		text-align: center;
-		box-shadow: 0 4px 15px rgba(6, 182, 212, 0.25);
+		box-shadow: 0 3px 12px rgba(6, 182, 212, 0.25);
 		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-		align-self: center;
 	}
 	.btn-book:hover {
-		transform: translateY(-2px) scale(1.03);
-		box-shadow: 0 6px 20px rgba(6, 182, 212, 0.45);
+		transform: translateY(-2px) scale(1.02);
+		box-shadow: 0 4px 16px rgba(6, 182, 212, 0.4);
 	}
 
 	.empty-state {
