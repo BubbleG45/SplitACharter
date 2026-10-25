@@ -6,6 +6,11 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 🎨 Compact Date Range Badges on /browse Cards — 2026-10-25 18:32 UTC
+
+- **Clean & Compact Range Badge**: Streamlined the date range badge format on charter cards from `MM/DD/YYYY – MM/DD/YYYY` (25 characters) to `MM/DD – MM/DD` (e.g. `10/25 – 11/01`), keeping the date badge well within card boundaries.
+- **Title Row Wrap Protection**: Added wrapping capability (`flex-wrap: wrap`) and adjusted spacing on `.title-row` so that even for long charter names or narrow viewports, the date badge flows neatly inside the card without overflowing the card edge.
+
 ### 🎯 Tuned Step 2 Scroll Target to Top of Charter Listings on /browse — 2026-10-25 18:25 UTC
 
 - **Accurate Top-of-Listings Scroll Target**: Updated the smooth-scroll behavior when selecting a location in Step 2 to target the top of the charter listings results directly, bringing the available boat cards immediately into full focus while keeping standard upward scrolling completely open and natural to return to filter options at any time.

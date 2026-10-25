@@ -437,6 +437,32 @@
 		return dateStr;
 	}
 
+	function formatDateShort(dateStr: string): string {
+		if (!dateStr) return '';
+		const parts = dateStr.split('-');
+		if (parts.length === 3) {
+			return `${parts[1]}/${parts[2]}`;
+		}
+		return dateStr;
+	}
+
+	function formatDateRangeDisplay(start: string, end: string): string {
+		if (!start && !end) return 'Flexible Dates';
+		if (start && !end) return `From ${formatDateShort(start)}`;
+		if (!start && end) return `Up to ${formatDateShort(end)}`;
+		if (start === end) return formatDateShort(start);
+
+		const startParts = start.split('-');
+		const endParts = end.split('-');
+		if (startParts.length === 3 && endParts.length === 3) {
+			if (startParts[0] !== endParts[0]) {
+				return `${startParts[1]}/${startParts[2]}/${startParts[0].slice(-2)} – ${endParts[1]}/${endParts[2]}/${endParts[0].slice(-2)}`;
+			}
+			return `${startParts[1]}/${startParts[2]} – ${endParts[1]}/${endParts[2]}`;
+		}
+		return `${start} – ${end}`;
+	}
+
 	function formatWeekdayDate(dateStr: string) {
 		if (!dateStr) return '';
 		const parts = dateStr.split('-');
@@ -1570,13 +1596,7 @@
 												<div class="title-row">
 													<h3>{template.trip_type}</h3>
 													<span class="range-date-badge">
-														{#if startDate && endDate && startDate !== endDate}
-															{formatDateDisplay(startDate)} – {formatDateDisplay(endDate)}
-														{:else if startDate}
-															From {formatDateDisplay(startDate)}
-														{:else}
-															Flexible Dates
-														{/if}
+														{formatDateRangeDisplay(startDate, endDate)}
 													</span>
 												</div>
 												<p class="description">{template.description}</p>
@@ -2008,17 +2028,20 @@
 		background: rgba(99, 102, 241, 0.14);
 		border: 1px solid rgba(99, 102, 241, 0.3);
 		color: var(--secondary);
-		padding: 3px 9px;
+		padding: 3px 8px;
 		border-radius: 6px;
-		font-size: 0.78rem;
+		font-size: 0.76rem;
 		font-weight: 600;
 		white-space: nowrap;
+		letter-spacing: -0.01em;
+		flex-shrink: 0;
 	}
 	.title-row {
 		display: flex;
 		justify-content: space-between;
-		align-items: flex-start;
-		gap: 12px;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px 10px;
 		margin-bottom: 8px;
 	}
 	.title-row h3 {
