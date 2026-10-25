@@ -562,3 +562,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 18:34 UTC (a481b33)
 - Compact date range badges and add wrap safety on /browse cards
+
+### Push Update — 2026-10-25 18:49 UTC (fd8e147)
+- Optimize card meta layout, combine duration and pax in header, and expand description to 3 lines on /browse
