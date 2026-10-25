@@ -495,3 +495,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-25 17:20 UTC (1fdde71)
 - Display full 12-location list on /browse, remove Upper/Middle/Lower groupings, and remap trip instances
+
+### Push Update — 2026-10-25 17:30 UTC (0ae9670)
+- Support date range navigation from /browse to /browse/[id] with interactive day selector and instant match badges
