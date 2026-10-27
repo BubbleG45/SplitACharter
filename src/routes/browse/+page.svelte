@@ -25,21 +25,6 @@
 	let dateMode = $derived<'single' | 'range'>(endDate ? 'range' : 'single');
 	let searchDate = $derived(startDate);
 
-	function scrollToResults() {
-		if (typeof window === 'undefined') return;
-		setTimeout(() => {
-			const el = document.getElementById('browse-listings-start');
-			if (el) {
-				const rect = el.getBoundingClientRect();
-				const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-				const targetY = Math.max(0, rect.top + scrollTop - 16);
-				window.scrollTo({ top: targetY, behavior: 'smooth' });
-			}
-		}, 80);
-	}
-
-	let rangeViewTab = $state<'all' | 'ready' | 'open'>('all');
-
 	function parseLocationsParam(param: string | null): string[] {
 		if (!param || param === 'all') return [];
 		return param.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
@@ -49,43 +34,6 @@
 		parseLocationsParam(page.url.searchParams.get('location'))
 	);
 
-	function toggleLocation(slug: string) {
-		const s = slug.toLowerCase();
-		const wasEmpty = filterLocations.length === 0;
-		if (filterLocations.includes(s)) {
-			filterLocations = filterLocations.filter((l) => l !== s);
-		} else {
-			filterLocations = [...filterLocations, s];
-			if (wasEmpty) {
-				scrollToResults();
-			}
-		}
-	}
-
-	function selectAllLocations() {
-		const wasEmpty = filterLocations.length === 0;
-		filterLocations = (data.areas || []).map((a: any) => a.slug);
-		if (wasEmpty) {
-			scrollToResults();
-		}
-	}
-
-	function clearAllLocations() {
-		filterLocations = [];
-	}
-
-	function toggleSelectAllKeys() {
-		const allSlugs = (data.areas || []).map((a: any) => a.slug);
-		const wasEmpty = filterLocations.length === 0;
-		if (filterLocations.length >= allSlugs.length) {
-			filterLocations = [];
-		} else {
-			filterLocations = [...allSlugs];
-			if (wasEmpty) {
-				scrollToResults();
-			}
-		}
-	}
 	let filterDuration = $state(page.url.searchParams.get('duration') || 'all'); // 'all', 'half-day', 'full-day'
 	let filterTripTypes = $state<string[]>(
 		parseTripTypesParam(page.url.searchParams.get('trip_type'))
@@ -235,8 +183,7 @@
 	}
 
 	function matchesLocationFilter(template: any, selectedLocations: string[]): boolean {
-		if (!selectedLocations || selectedLocations.length === 0) return false;
-		if (selectedLocations.includes('all')) return true;
+		if (!selectedLocations || selectedLocations.length === 0 || selectedLocations.includes('all')) return true;
 
 		// Match by area_id
 		if (template.area_id && data.areas) {
@@ -496,6 +443,7 @@
 		{ value: '4', label: '4 Passengers' }
 	];
 		const locationOptions = $derived([
+		{ value: 'all', label: 'All Departure Locations' },
 		...(data.areas || []).map((a) => ({
 			value: a.slug,
 			label: a.name
@@ -591,7 +539,6 @@
 		filterDuration = 'all';
 		filterTripTypes = [];
 		filterGroupSize = '1';
-		rangeViewTab = 'all';
 	}
 
 	function getListingHref(listing: any) {
@@ -724,6 +671,16 @@
 					/>
 				</div>
 
+				<CustomMultiSelect
+					id="departure-location"
+					label="Departure Location"
+					bind:values={filterLocations}
+					options={locationOptions}
+					placeholder="All Departure Locations"
+					itemLabel="Locations Selected"
+					allLabel="All Departure Locations"
+				/>
+
 				<CustomSelect
 					id="group-size"
 					label="Your Group Size"
@@ -775,132 +732,10 @@
 				</div>
 			</div>
 
-			<!-- Full Visible Locations Selector (12 Florida Keys) -->
-			<div class="locations-bar-card">
-				<div class="locations-bar-header">
-					<div class="locations-bar-title-group">
-						<span class="locations-bar-title">Departure Locations</span>
-						<span class="locations-bar-count">
-							{#if filterLocations.length === 0}
-								(Select 1 or more Keys to view charters)
-							{:else}
-								({filterLocations.length} of {data.areas?.length || 12} Selected)
-							{/if}
-						</span>
-					</div>
-					<div class="locations-bar-actions">
-						<button type="button" class="btn-loc-action" onclick={selectAllLocations}>
-							Select All
-						</button>
-						<button type="button" class="btn-loc-action" onclick={clearAllLocations}>
-							Clear
-						</button>
-					</div>
-				</div>
-
-				<div class="locations-full-list">
-					{#each (data.areas || []) as area}
-						{@const isSelected = filterLocations.includes(area.slug)}
-						<button
-							type="button"
-							class="loc-chip"
-							class:selected={isSelected}
-							onclick={() => toggleLocation(area.slug)}
-						>
-							<span class="loc-chip-icon">{isSelected ? '✓' : '+'}</span>
-							<span class="loc-chip-name">{area.name}</span>
-						</button>
-					{/each}
-				</div>
 			</div>
 
-
-		</div>
-
-		{#if filterLocations.length === 0}
-			<!-- Empty Location State: Nudge to Select Location and Date -->
-			<div class="location-nudge-card glass">
-				<div class="nudge-hero">
-					<div class="nudge-icon-circle">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke-width="1.8"
-							stroke="currentColor"
-							class="w-8 h-8"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
-							/>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
-							/>
-						</svg>
-					</div>
-					<h2>Where would you like to depart?</h2>
-					<p class="nudge-subtitle">
-						Select one or more Florida Keys locations and your desired date to view available shared charters.
-					</p>
-				</div>
-
-				<!-- Step 1: Date Status Banner -->
-				<div class="nudge-step-card" class:step-done={Boolean(startDate)}>
-					<div class="step-badge">Step 1</div>
-					<div class="step-content">
-						{#if startDate && !endDate}
-							<span class="step-title status-ok">Charter Date Selected: <strong>{startDate}</strong></span>
-							<span class="step-sub">Now pick your preferred departure location(s) below.</span>
-						{:else if startDate && endDate}
-							<span class="step-title status-ok">Charter Date Range Selected: <strong>{startDate} to {endDate}</strong></span>
-							<span class="step-sub">Now pick your preferred departure location(s) below.</span>
-						{:else}
-							<span class="step-title">Choose your trip date or flexible range in the bar above</span>
-							<span class="step-sub">Lock in a date to join a half-booked charter or start a brand new boat.</span>
-						{/if}
-					</div>
-				</div>
-
-				<!-- Step 2: Interactive Location Quick-Select Grid -->
-				<div class="nudge-step-card">
-					<div class="step-badge">Step 2</div>
-					<div class="step-content">
-						<div class="keys-section-header">
-							<span class="step-title">Full Florida Keys Location List</span>
-							<div class="cluster-actions">
-								<button type="button" class="btn-cluster-quick btn-all-keys" onclick={selectAllLocations}>
-									Select All 12 Keys
-								</button>
-								<button type="button" class="btn-cluster-quick" onclick={clearAllLocations}>
-									Clear All
-								</button>
-							</div>
-						</div>
-
-						<div class="keys-pills-grid">
-							{#each (data.areas || []) as area}
-								{@const isSelected = filterLocations.includes(area.slug)}
-								<button
-									type="button"
-									class="key-pill"
-									class:selected={isSelected}
-									onclick={() => toggleLocation(area.slug)}
-								>
-									<span class="pill-check-icon">{isSelected ? '✓' : '+'}</span>
-									<span class="pill-text">{area.name}</span>
-								</button>
-							{/each}
-						</div>
-					</div>
-				</div>
-			</div>
-		{:else}
-			<div id="browse-listings-start" class="browse-listings-anchor" aria-hidden="true" style="scroll-margin-top: 1.5rem;"></div>
-			<!-- ==================== MODE 1: SINGLE DATE MODE ==================== -->
+		<div id="browse-listings-start" class="browse-listings-anchor" aria-hidden="true" style="scroll-margin-top: 1.5rem;"></div>
+		<!-- ==================== MODE 1: SINGLE DATE MODE ==================== -->
 		{#if dateMode === 'single'}
 			<!-- Encouraging Banner when no single date selected -->
 			{#if !searchDate}
@@ -1327,65 +1162,6 @@
 				</div>
 			{:else}
 				<!-- Date Range Mode with Start / End Date Active -->
-				<div class="range-summary-banner glass">
-					<div class="summary-top-row">
-						<div class="summary-title-col">
-							<span class="range-pill">Date Range Active</span>
-							<h2>
-								{#if startDate && endDate}
-									{#if startDate === endDate}
-										Charters for <strong>{formatWeekdayDate(startDate)}</strong>
-									{:else}
-										Charters from <strong>{formatWeekdayDate(startDate)}</strong> to
-										<strong>{formatWeekdayDate(endDate)}</strong>
-									{/if}
-								{:else if startDate}
-									Charters from <strong>{formatWeekdayDate(startDate)}</strong> onwards
-								{:else}
-									Charters up to <strong>{formatWeekdayDate(endDate)}</strong>
-								{/if}
-							</h2>
-							<p class="summary-subtext">
-								Showing charters with open spots ready to join instantly, plus charter types you can
-								launch on any date in this range.
-							</p>
-						</div>
-
-						<div class="range-tabs-group" role="tablist" aria-label="Charter View Filters">
-							<button
-								type="button"
-								role="tab"
-								aria-selected={rangeViewTab === 'all'}
-								class="range-tab-btn"
-								class:active={rangeViewTab === 'all'}
-								onclick={() => (rangeViewTab = 'all')}
-							>
-								All Options ({rangeHalfBookedTrips.length + rangeTemplates.length})
-							</button>
-							<button
-								type="button"
-								role="tab"
-								aria-selected={rangeViewTab === 'ready'}
-								class="range-tab-btn"
-								class:active={rangeViewTab === 'ready'}
-								onclick={() => (rangeViewTab = 'ready')}
-							>
-								Ready to Join ({rangeHalfBookedTrips.length})
-							</button>
-							<button
-								type="button"
-								role="tab"
-								aria-selected={rangeViewTab === 'open'}
-								class="range-tab-btn"
-								class:active={rangeViewTab === 'open'}
-								onclick={() => (rangeViewTab = 'open')}
-							>
-								Start New ({rangeTemplates.length})
-							</button>
-						</div>
-					</div>
-				</div>
-
 				{#if rangeHalfBookedTrips.length === 0 && rangeTemplates.length === 0}
 					<div class="empty-state glass">
 						<svg
@@ -1407,7 +1183,6 @@
 					</div>
 				{:else}
 					<!-- Section 1: Charters Ready to Join -->
-					{#if rangeViewTab === 'all' || rangeViewTab === 'ready'}
 						<div class="section-container">
 							<div class="section-heading-row">
 								<div>
@@ -1520,23 +1295,12 @@
 							{:else}
 								<div class="empty-range-section glass">
 									<p>No half-booked charters found in this date range matching your filters.</p>
-									{#if rangeViewTab === 'ready'}
-										<button
-											type="button"
-											class="btn btn-secondary mt-3"
-											onclick={() => (rangeViewTab = 'open')}
-										>
-											Browse Charter Types to Start
-										</button>
-									{/if}
 								</div>
 							{/if}
 						</div>
-					{/if}
 
 					<!-- Section 2: Start a New Charter -->
-					{#if rangeViewTab === 'all' || rangeViewTab === 'open'}
-						<div class="section-container" class:mt-10={rangeViewTab === 'all'}>
+						<div class="section-container mt-10">
 							<div class="section-heading-row">
 								<div>
 									<h2 class="section-title">Start a New Charter ({rangeTemplates.length})</h2>
@@ -1632,9 +1396,7 @@
 							{/if}
 						</div>
 					{/if}
-				{/if}
 			{/if}
-		{/if}
 		{/if}
 	</div>
 </div>
@@ -1751,84 +1513,6 @@
 		border-color: var(--primary);
 		color: var(--primary);
 		transform: translateY(-1px);
-	}
-
-	/* Range Summary Banner */
-	.range-summary-banner {
-		padding: 1.5rem 1.75rem;
-		margin-bottom: 2rem;
-		border-radius: 12px;
-		background: linear-gradient(135deg, rgba(6, 182, 212, 0.08), rgba(99, 102, 241, 0.08));
-		border: 1px solid var(--border-glow);
-	}
-	.summary-top-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 1.5rem;
-		flex-wrap: wrap;
-	}
-	.summary-title-col {
-		flex: 1;
-		min-width: 260px;
-	}
-	.range-pill {
-		display: inline-block;
-		font-size: 0.72rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.8px;
-		background: rgba(6, 182, 212, 0.15);
-		color: var(--primary);
-		padding: 2px 8px;
-		border-radius: 4px;
-		margin-bottom: 6px;
-		border: 1px solid var(--border-glow);
-	}
-	.summary-title-col h2 {
-		font-size: 1.45rem;
-		font-weight: 800;
-		color: var(--text-primary);
-		margin-bottom: 4px;
-	}
-	.summary-title-col strong {
-		color: var(--primary);
-	}
-	.summary-subtext {
-		font-size: 0.88rem;
-		color: var(--text-secondary);
-	}
-
-	/* Range Tabs */
-	.range-tabs-group {
-		display: flex;
-		align-items: center;
-		background: var(--input-bg);
-		padding: 4px;
-		border-radius: 10px;
-		border: 1px solid var(--border-light);
-		gap: 4px;
-		flex-wrap: wrap;
-	}
-	.range-tab-btn {
-		background: transparent;
-		border: none;
-		color: var(--text-secondary);
-		padding: 7px 14px;
-		border-radius: 7px;
-		font-size: 0.82rem;
-		font-weight: 700;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		white-space: nowrap;
-	}
-	.range-tab-btn:hover {
-		color: var(--text-primary);
-	}
-	.range-tab-btn.active {
-		background: var(--bg-surface-elevated);
-		color: var(--primary);
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 	}
 
 	/* Section Headings */
@@ -2440,226 +2124,6 @@
 	}
 
 	/* Location Nudge Card */
-	.location-nudge-card {
-		padding: 2.5rem 2rem;
-		margin-top: 2rem;
-		border-radius: var(--radius-xl, 1rem);
-		border: 1px solid var(--border-light);
-		background: var(--glass-bg);
-		backdrop-filter: blur(16px);
-		text-align: center;
-		display: flex;
-		flex-direction: column;
-		gap: 1.75rem;
-		animation: fadeIn 0.3s ease-in-out;
-	}
-
-	.nudge-hero {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.75rem;
-		max-width: 600px;
-		margin: 0 auto;
-	}
-
-	.nudge-icon-circle {
-		width: 4rem;
-		height: 4rem;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--primary-glow, rgba(14, 165, 233, 0.15));
-		color: var(--primary, #0ea5e9);
-		border: 1px solid var(--border-light);
-		margin-bottom: 0.5rem;
-	}
-
-	.nudge-hero h2 {
-		font-size: 1.85rem;
-		font-weight: 700;
-		color: var(--text-primary);
-		margin: 0;
-	}
-
-	.nudge-subtitle {
-		font-size: 1.05rem;
-		color: var(--text-secondary);
-		line-height: 1.5;
-		margin: 0;
-	}
-
-	.nudge-step-card {
-		background: var(--bg-surface);
-		border: 1px solid var(--border-light);
-		border-radius: var(--radius-lg, 0.75rem);
-		padding: 1.25rem 1.5rem;
-		display: flex;
-		gap: 1.25rem;
-		text-align: left;
-		align-items: flex-start;
-		transition: all 0.2s ease;
-	}
-
-	.nudge-step-card.step-done {
-		border-color: rgba(34, 197, 94, 0.35);
-		background: rgba(34, 197, 94, 0.04);
-	}
-
-	.step-badge {
-		background: var(--border-light);
-		color: var(--text-primary);
-		font-size: 0.75rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		padding: 0.25rem 0.65rem;
-		border-radius: 9999px;
-		white-space: nowrap;
-		margin-top: 0.15rem;
-	}
-
-	.step-done .step-badge {
-		background: #22c55e;
-		color: #ffffff;
-	}
-
-	.step-content {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-	}
-
-	.step-title {
-		font-size: 1rem;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	.step-title.status-ok {
-		color: #22c55e;
-	}
-
-	.step-sub {
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-	}
-
-	.keys-section-header {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-		align-items: center;
-		gap: 0.75rem;
-		margin-bottom: 0.85rem;
-	}
-
-	.cluster-actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.btn-cluster-quick {
-		font-size: 0.75rem;
-		font-weight: 600;
-		padding: 0.35rem 0.65rem;
-		border-radius: var(--radius-sm, 0.375rem);
-		border: 1px solid var(--border-light);
-		background: var(--glass-bg);
-		color: var(--text-secondary);
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.btn-cluster-quick:hover {
-		color: var(--text-primary);
-		border-color: var(--primary, #0ea5e9);
-		background: var(--input-bg);
-	}
-
-	.btn-all-keys {
-		font-weight: 700;
-		color: var(--primary, #0ea5e9);
-		border-color: rgba(14, 165, 233, 0.35);
-	}
-
-	.keys-pills-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-		gap: 0.65rem;
-	}
-
-	.key-pill {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.7rem 0.9rem;
-		background: var(--input-bg);
-		border: 1px solid var(--border-light);
-		border-radius: var(--radius-md, 0.5rem);
-		color: var(--text-secondary);
-		font-size: 0.9rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.15s ease;
-		text-align: left;
-	}
-
-	.key-pill:hover {
-		border-color: var(--primary, #0ea5e9);
-		color: var(--text-primary);
-		transform: translateY(-1px);
-	}
-
-	.key-pill.selected {
-		background: rgba(14, 165, 233, 0.12);
-		border-color: var(--primary, #0ea5e9);
-		color: var(--text-primary);
-		font-weight: 600;
-	}
-
-	.pill-check-icon {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 1.25rem;
-		height: 1.25rem;
-		border-radius: 50%;
-		font-size: 0.8rem;
-		font-weight: 700;
-		background: var(--border-light);
-		color: var(--text-secondary);
-	}
-
-	.key-pill.selected .pill-check-icon {
-		background: var(--primary, #0ea5e9);
-		color: #ffffff;
-	}
-
-	.pill-text {
-		flex: 1;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	@media (max-width: 640px) {
-		.location-nudge-card {
-			padding: 1.5rem 1rem;
-		}
-		.keys-pills-grid {
-			grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-		}
-		.keys-section-header {
-			flex-direction: column;
-			align-items: flex-start;
-		}
-	}
-
-
 	/* Optional Date Field Styling */
 	.label-with-clear {
 		display: flex;
@@ -2700,120 +2164,4 @@
 		display: block;
 	}
 
-	/* Locations Full Visible Bar */
-	.locations-bar-card {
-		margin-top: 1.25rem;
-		padding-top: 1.25rem;
-		border-top: 1px solid var(--border-light);
-		display: flex;
-		flex-direction: column;
-		gap: 0.85rem;
-	}
-
-	.locations-bar-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.locations-bar-title-group {
-		display: flex;
-		align-items: center;
-		gap: 0.65rem;
-	}
-
-	.locations-bar-title {
-		font-size: 0.95rem;
-		font-weight: 700;
-		color: var(--text-primary);
-		letter-spacing: -0.01em;
-	}
-
-	.locations-bar-count {
-		font-size: 0.825rem;
-		color: var(--text-secondary);
-	}
-
-	.locations-bar-actions {
-		display: flex;
-		gap: 0.5rem;
-	}
-
-	.btn-loc-action {
-		font-size: 0.775rem;
-		font-weight: 600;
-		padding: 0.3rem 0.65rem;
-		border-radius: var(--radius-sm, 0.375rem);
-		border: 1px solid var(--border-light);
-		background: var(--input-bg);
-		color: var(--text-secondary);
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.btn-loc-action:hover {
-		color: var(--text-primary);
-		border-color: var(--primary, #0ea5e9);
-		background: var(--glass-bg);
-	}
-
-	.locations-full-list {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.loc-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.45rem;
-		padding: 0.5rem 0.85rem;
-		background: var(--input-bg);
-		border: 1px solid var(--border-light);
-		border-radius: 9999px;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--text-secondary);
-		cursor: pointer;
-		transition: all 0.15s ease;
-		user-select: none;
-	}
-
-	.loc-chip:hover {
-		border-color: var(--primary, #0ea5e9);
-		color: var(--text-primary);
-		transform: translateY(-1px);
-	}
-
-	.loc-chip.selected {
-		background: rgba(14, 165, 233, 0.15);
-		border-color: var(--primary, #0ea5e9);
-		color: var(--text-primary);
-		font-weight: 600;
-	}
-
-	.loc-chip-icon {
-		font-size: 0.8rem;
-		font-weight: 700;
-		width: 1.1rem;
-		height: 1.1rem;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		background: var(--border-light);
-		color: var(--text-secondary);
-	}
-
-	.loc-chip.selected .loc-chip-icon {
-		background: var(--primary, #0ea5e9);
-		color: #ffffff;
-	}
-
-	.loc-chip-name {
-		white-space: nowrap;
-	}
-
-</style>
+	</style>

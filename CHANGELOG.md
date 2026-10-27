@@ -6,6 +6,12 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### ⚓ Streamlined /browse Filter Bar & Removed Redundant Step Sections — 2026-10-27 21:15 UTC
+
+- **Integrated Departure Location Dropdown**: Moved Departure Location directly into the top filter row alongside dates, group size, duration, and trip type. Customers can easily filter by a specific Florida Key, select multiple keys, or browse all locations.
+- **Default Display of All Available Charters**: Removed the large "Where would you like to depart?" Step 1 / Step 2 nudge box and the separate 12-button location bar. When customers land on /browse, all upcoming half-booked trips and charter templates are displayed immediately by default.
+- **Removed "Date Range Active" Banner & View Tabs**: Eliminated the redundant "Date Range Active" banner box and its "All Options / Ready to Join / Start New" tabs. When a date range is active, both the "Charters Ready to Join" and "Start a New Charter" sections are displayed directly and cleanly stacked.
+
 ### 📱 Mobile Tap Target Optimization & Header Wrap Safety on /browse — 2026-10-25 20:45 UTC
 
 - **Enhanced Mobile Touch Targets**: Increased button padding and height on charter card action pills (`Book Charter`, `Join Group`, `Exceeds Capacity`) with a minimum 40px touch target on mobile viewports and centered vertical alignment for seamless thumb tapping.

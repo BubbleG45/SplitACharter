@@ -7,7 +7,8 @@
 		values = $bindable([]),
 		options,
 		placeholder = 'Any Trip Type',
-		itemLabel = 'Trip Types Selected'
+		itemLabel = 'Trip Types Selected',
+		allLabel = ''
 	} = $props<{
 		id: string;
 		label: string;
@@ -15,6 +16,7 @@
 		options: Array<{ value: string; label: string }>;
 		placeholder?: string;
 		itemLabel?: string;
+		allLabel?: string;
 	}>();
 
 	let isOpen = $state(false);
@@ -104,7 +106,7 @@
 							</svg>
 						{/if}
 					</span>
-					<span>Any Trip Type</span>
+					<span>{allLabel || placeholder || 'All Options'}</span>
 				</button>
 				{#if values.length > 0}
 					<button type="button" class="btn-clear" onclick={clearAll}>Clear</button>
