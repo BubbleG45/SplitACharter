@@ -307,11 +307,13 @@ export const actions: Actions = {
 							.eq('status', 'succeeded')
 							.maybeSingle();
 
+						const paidAmount = originalPay?.amount ?? 0.00;
 						let refundId = `ref_admin_${Math.random().toString(36).substring(2, 10)}`;
-						if (originalPay?.stripe_payment_intent_id && originalPay.stripe_payment_intent_id.startsWith('pi_')) {
+						if (paidAmount > 0 && originalPay?.stripe_payment_intent_id && !originalPay.stripe_payment_intent_id.startsWith('pi_free')) {
 							try {
 								const stripeRefund = await refundStripePaymentIntent({
-									paymentIntentId: originalPay.stripe_payment_intent_id
+									paymentIntentId: originalPay.stripe_payment_intent_id,
+									amountInCents: Math.round(paidAmount * 100)
 								});
 								refundId = stripeRefund.refundId;
 							} catch (err: any) {
@@ -324,7 +326,7 @@ export const actions: Actions = {
 							.insert({
 								booking_id: b.id,
 								stripe_payment_intent_id: refundId,
-								amount: originalPay?.amount || 50.00,
+								amount: paidAmount,
 								status: 'refunded'
 							});
 					}
@@ -335,7 +337,7 @@ export const actions: Actions = {
 
 					if (customer) {
 						const refundText = withRefund
-							? 'Your $50.00 reservation fee has been fully refunded to your original payment method.'
+							? 'Your reservation fee has been fully refunded to your original payment method.'
 							: 'Per platform policy, this cancellation is non-refundable.';
 
 						try {

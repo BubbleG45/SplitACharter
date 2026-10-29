@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { createStripePaymentIntent } from '$lib/server/stripe';
+import { normalizePromoCode, calculateDiscount } from '$lib/promo_codes';
 
 export const POST: RequestHandler = async ({ request, locals: { safeGetSession } }) => {
 	try {
@@ -13,7 +14,7 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
 		}
 
 		const body = await request.json();
-		const { templateId, date, name, phone, email, groupSize } = body;
+		const { templateId, date, name, phone, email, groupSize, promoCode } = body;
 
 		const emailToUse = (email || user.email || '').trim();
 		const nameToUse = (name || 'Customer').trim();
@@ -70,23 +71,71 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
 			return json({ error: `Group size (${size}) exceeds maximum allowed passengers (${maxAllowed}) for this charter.` }, { status: 400 });
 		}
 
-		// Create PaymentIntent
+		// Calculate deposit amount, applying discount promo code if provided
+		let amountInCents = 5000;
+		let appliedPromoCode: string | null = null;
+		let discountPercent = 0;
+		let discountAmount = 0;
+
+		const normalizedCode = normalizePromoCode(promoCode);
+		if (normalizedCode) {
+			const { data: promo } = await supabaseAdmin
+				.from('promo_codes')
+				.select('*')
+				.ilike('code', normalizedCode)
+				.eq('active', true)
+				.maybeSingle();
+
+			if (promo) {
+				const calc = calculateDiscount(50.00, promo.discount_percent);
+				appliedPromoCode = promo.code;
+				discountPercent = promo.discount_percent;
+				discountAmount = calc.discountAmount;
+				amountInCents = Math.round(calc.finalAmount * 100);
+			}
+		}
+
+		// If 100% discount is applied, no Stripe PaymentIntent is needed
+		if (amountInCents === 0) {
+			return json({
+				success: true,
+				isFree: true,
+				clientSecret: null,
+				paymentIntentId: 'pi_free',
+				amountInCents: 0,
+				finalAmount: 0.00,
+				discountAmount: 50.00,
+				discountPercent: 100,
+				promoCode: appliedPromoCode
+			});
+		}
+
+		// Create Stripe PaymentIntent for amount > $0
 		const intentResult = await createStripePaymentIntent({
-			amountInCents: 5000,
+			amountInCents,
 			customerEmail: emailToUse,
 			customerName: nameToUse,
 			metadata: {
 				user_id: user.id,
 				template_id: templateId,
 				date,
-				group_size: String(size)
+				group_size: String(size),
+				promo_code: appliedPromoCode || '',
+				discount_percent: String(discountPercent),
+				discount_amount: discountAmount.toFixed(2)
 			}
 		});
 
 		return json({
 			success: true,
+			isFree: false,
 			clientSecret: intentResult.clientSecret,
-			paymentIntentId: intentResult.paymentIntentId
+			paymentIntentId: intentResult.paymentIntentId,
+			amountInCents,
+			finalAmount: amountInCents / 100,
+			discountAmount,
+			discountPercent,
+			promoCode: appliedPromoCode
 		});
 	} catch (err: any) {
 		console.error('Error creating Stripe payment intent API:', err);

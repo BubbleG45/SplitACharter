@@ -357,11 +357,13 @@ export const captainMatchingWorkflow = inngest.createFunction(
 						.eq('status', 'succeeded')
 						.maybeSingle();
 
-					let stripeRefundId = `re_mock_${Math.random().toString(36).substring(2, 15)}`;
-					if (originalPay) {
+					const paidAmount = originalPay?.amount ?? 0.00;
+					let stripeRefundId = `re_free_${Math.random().toString(36).substring(2, 15)}`;
+					if (paidAmount > 0 && originalPay && !originalPay.stripe_payment_intent_id.startsWith('pi_free')) {
 						try {
 							const stripeRefund = await refundStripePaymentIntent({
-								paymentIntentId: originalPay.stripe_payment_intent_id
+								paymentIntentId: originalPay.stripe_payment_intent_id,
+								amountInCents: Math.round(paidAmount * 100)
 							});
 							stripeRefundId = stripeRefund.refundId;
 						} catch (err: any) {
@@ -374,7 +376,7 @@ export const captainMatchingWorkflow = inngest.createFunction(
 						.insert({
 							booking_id: b.id,
 							stripe_payment_intent_id: stripeRefundId,
-							amount: originalPay?.amount || 50.00,
+							amount: paidAmount,
 							status: 'refunded'
 						});
 
@@ -566,11 +568,13 @@ export const unmatchedTripTimeoutWorkflow = inngest.createFunction(
 				.eq('status', 'succeeded')
 				.maybeSingle();
 
-			let stripeRefundId = `re_mock_unmatched_${Math.random().toString(36).substring(2, 15)}`;
-			if (originalPay) {
+			const paidAmount = originalPay?.amount ?? 0.00;
+			let stripeRefundId = `re_free_unmatched_${Math.random().toString(36).substring(2, 15)}`;
+			if (paidAmount > 0 && originalPay && !originalPay.stripe_payment_intent_id.startsWith('pi_free')) {
 				try {
 					const stripeRefund = await refundStripePaymentIntent({
-						paymentIntentId: originalPay.stripe_payment_intent_id
+						paymentIntentId: originalPay.stripe_payment_intent_id,
+						amountInCents: Math.round(paidAmount * 100)
 					});
 					stripeRefundId = stripeRefund.refundId;
 				} catch (err: any) {
@@ -583,7 +587,7 @@ export const unmatchedTripTimeoutWorkflow = inngest.createFunction(
 				.insert({
 					booking_id: bookingId,
 					stripe_payment_intent_id: stripeRefundId,
-					amount: originalPay?.amount || 50.00, // Positive amount to satisfy DB constraints
+					amount: paidAmount,
 					status: 'refunded'
 				});
 

@@ -8,6 +8,7 @@ import { initiateAccountLinking } from '$lib/account_linking';
 import { createStripePaymentIntent, getStripeClient } from '$lib/server/stripe';
 import { confirmTripAndTriggerCaptainBlast } from '$lib/server/trips';
 import { calculateAreaDriveTimeRange } from '$lib/server/routing';
+import { normalizePromoCode, calculateDiscount } from '$lib/promo_codes';
 import type { PageServerLoad, Actions } from './$types';
 
 async function findOrCreateTripInstanceForGroup(
@@ -309,23 +310,69 @@ export const actions: Actions = {
 				return fail(400, { message: 'Booking blocked. Account suspended due to strikes or flagging.' });
 			}
 
-			// Create Stripe PaymentIntent for $50.00
+			const promoCode = (formData.get('promo_code') as string)?.trim();
+			let amountInCents = 5000;
+			let appliedPromoCode: string | null = null;
+			let discountPercent = 0;
+			let discountAmount = 0;
+
+			const normalizedCode = normalizePromoCode(promoCode);
+			if (normalizedCode) {
+				const { data: promoData } = await supabaseAdmin
+					.from('promo_codes')
+					.select('*')
+					.ilike('code', normalizedCode)
+					.eq('active', true)
+					.maybeSingle();
+
+				const promo = promoData as any;
+				if (promo) {
+					const calc = calculateDiscount(50.00, promo.discount_percent);
+					appliedPromoCode = promo.code;
+					discountPercent = promo.discount_percent;
+					discountAmount = calc.discountAmount;
+					amountInCents = Math.round(calc.finalAmount * 100);
+				}
+			}
+
+			if (amountInCents === 0) {
+				return {
+					success: true,
+					isFree: true,
+					clientSecret: null,
+					paymentIntentId: 'pi_free',
+					finalAmount: 0.00,
+					discountAmount: 50.00,
+					discountPercent: 100,
+					promoCode: appliedPromoCode
+				};
+			}
+
+			// Create Stripe PaymentIntent for amount > $0
 			const intentResult = await createStripePaymentIntent({
-				amountInCents: 5000,
+				amountInCents,
 				customerEmail: emailToUse,
 				customerName: name,
 				metadata: {
 					user_id: user.id,
 					template_id: templateId,
 					date,
-					group_size: String(groupSize)
+					group_size: String(groupSize),
+					promo_code: appliedPromoCode || '',
+					discount_percent: String(discountPercent),
+					discount_amount: discountAmount.toFixed(2)
 				}
 			});
 
 			return {
 				success: true,
+				isFree: false,
 				clientSecret: intentResult.clientSecret,
-				paymentIntentId: intentResult.paymentIntentId
+				paymentIntentId: intentResult.paymentIntentId,
+				finalAmount: amountInCents / 100,
+				discountAmount,
+				discountPercent,
+				promoCode: appliedPromoCode
 			};
 		} catch (err: any) {
 			console.error('Error creating Stripe payment intent:', err);
@@ -357,6 +404,7 @@ export const actions: Actions = {
 			const smsOptIn = formData.get('sms_opt_in') === 'true';
 			const howHeard = formData.get('how_heard') as string;
 			const referralPromoCode = (formData.get('referral_promo_code') as string)?.trim()?.toUpperCase();
+			const promoCode = (formData.get('promo_code') as string)?.trim();
 
 			// Booking Details
 			const groupSize = parseInt(formData.get('group_size') as string, 10);
@@ -608,6 +656,31 @@ export const actions: Actions = {
 				return fail(500, { message: `Failed to initialize trip instance: ${err.message || 'Database error'}` });
 			}
 
+			// Calculate discount and payable amount for this booking
+			let payableAmount = 50.00;
+			let appliedPromoCode: string | null = null;
+			let discountPercent = 0;
+			let discountAmount = 0;
+
+			const normalizedPromo = normalizePromoCode(promoCode);
+			if (normalizedPromo) {
+				const { data: promoRecData } = await supabaseAdmin
+					.from('promo_codes')
+					.select('*')
+					.ilike('code', normalizedPromo)
+					.eq('active', true)
+					.maybeSingle();
+
+				const promoRecord = promoRecData as any;
+				if (promoRecord) {
+					const calc = calculateDiscount(50.00, promoRecord.discount_percent);
+					appliedPromoCode = promoRecord.code;
+					discountPercent = promoRecord.discount_percent;
+					discountAmount = calc.discountAmount;
+					payableAmount = calc.finalAmount;
+				}
+			}
+
 			// 3. Create Booking in 'pending-payment' status
 			const { data: booking, error: bookingError } = await supabaseAdmin
 				.from('bookings')
@@ -616,7 +689,9 @@ export const actions: Actions = {
 					customer_id: user.id,
 					group_size: groupSize,
 					status: 'pending-payment',
-					certification_fields: certFields
+					certification_fields: certFields,
+					promo_code: appliedPromoCode,
+					discount_percent: discountPercent
 				})
 				.select('id')
 				.single();
@@ -626,37 +701,68 @@ export const actions: Actions = {
 				return fail(400, { message: bookingError.message || 'Failed to create booking. Capacity may have been exceeded.' });
 			}
 
-			// 4. Handle Mock/Real payment success (for development, we simulate success)
-			const amount = 50.00; // Phase 1 reservation deposit
+			// 4. Handle Mock/Real payment success
 			const paymentOutcome = formData.get('payment_outcome') as string;
 
-			if (paymentOutcome === 'fail') {
-				const stripePaymentIntentId = `pi_failed_${Math.random().toString(36).substring(2, 15)}`;
-				await supabaseAdmin
+			if (payableAmount === 0) {
+				// 100% Free Reservation
+				const stripePaymentIntentId = `pi_free_${Math.random().toString(36).substring(2, 15)}`;
+				const { error: payRecordError } = await supabaseAdmin
 					.from('payment_records')
 					.insert({
 						booking_id: booking.id,
 						stripe_payment_intent_id: stripePaymentIntentId,
-						amount,
-						status: 'failed'
+						amount: 0.00,
+						original_amount: 50.00,
+						discount_amount: 50.00,
+						discount_percent: 100,
+						promo_code: appliedPromoCode,
+						status: 'succeeded'
 					});
-				return fail(402, { message: 'Payment Declined: The sandbox card has insufficient funds or was rejected by the bank.' });
+				if (payRecordError) {
+					console.error('Error inserting free payment record:', payRecordError);
+				}
+			} else {
+				if (paymentOutcome === 'fail') {
+					const stripePaymentIntentId = `pi_failed_${Math.random().toString(36).substring(2, 15)}`;
+					await supabaseAdmin
+						.from('payment_records')
+						.insert({
+							booking_id: booking.id,
+							stripe_payment_intent_id: stripePaymentIntentId,
+							amount: payableAmount,
+							original_amount: 50.00,
+							discount_amount: discountAmount,
+							discount_percent: discountPercent,
+							promo_code: appliedPromoCode,
+							status: 'failed'
+						});
+					return fail(402, { message: 'Payment Declined: The sandbox card has insufficient funds or was rejected by the bank.' });
+				}
+
+				const clientPaymentIntentId = (formData.get('stripe_payment_intent_id') as string)?.trim();
+				const stripePaymentIntentId = (clientPaymentIntentId && !clientPaymentIntentId.startsWith('pi_free'))
+					? clientPaymentIntentId
+					: `pi_mock_${Math.random().toString(36).substring(2, 15)}`;
+
+				const { error: payRecordError } = await supabaseAdmin
+					.from('payment_records')
+					.insert({
+						booking_id: booking.id,
+						stripe_payment_intent_id: stripePaymentIntentId,
+						amount: payableAmount,
+						original_amount: 50.00,
+						discount_amount: discountAmount,
+						discount_percent: discountPercent,
+						promo_code: appliedPromoCode,
+						status: 'succeeded'
+					});
+				if (payRecordError) {
+					console.error('Error inserting payment record:', payRecordError);
+				}
 			}
 
-			const stripePaymentIntentId = `pi_mock_${Math.random().toString(36).substring(2, 15)}`;
 
-			const { error: payRecordError } = await supabaseAdmin
-				.from('payment_records')
-				.insert({
-					booking_id: booking.id,
-					stripe_payment_intent_id: stripePaymentIntentId,
-					amount,
-					status: 'succeeded'
-				});
-
-			if (payRecordError) {
-				console.error('Error inserting payment record:', payRecordError);
-			}
 
 			// 5. Transition booking status to paid
 			const { error: bookingUpdateError } = await supabaseAdmin

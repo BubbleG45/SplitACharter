@@ -84,18 +84,23 @@ export const actions: Actions = {
 			return fail(400, { message: 'This transaction has already been fully refunded.' });
 		}
 
-		// 1. Process refund directly in Stripe first
+		// 1. Process refund directly in Stripe first (only if amount > $0)
 		let refundIntentId: string;
-		try {
-			const stripeRefund = await refundStripePaymentIntent({
-				paymentIntentId: originalPay.stripe_payment_intent_id
-			});
-			refundIntentId = stripeRefund.refundId;
-		} catch (err: any) {
-			console.error('Stripe API refund error in admin panel:', err);
-			return fail(500, { 
-				message: `Stripe Refund Failed: ${err?.message || 'Unable to communicate with Stripe API'}` 
-			});
+		if (originalPay.amount > 0 && originalPay.stripe_payment_intent_id && !originalPay.stripe_payment_intent_id.startsWith('pi_free')) {
+			try {
+				const stripeRefund = await refundStripePaymentIntent({
+					paymentIntentId: originalPay.stripe_payment_intent_id,
+					amountInCents: Math.round(originalPay.amount * 100)
+				});
+				refundIntentId = stripeRefund.refundId;
+			} catch (err: any) {
+				console.error('Stripe API refund error in admin panel:', err);
+				return fail(500, { 
+					message: `Stripe Refund Failed: ${err?.message || 'Unable to communicate with Stripe API'}` 
+				});
+			}
+		} else {
+			refundIntentId = `re_free_${Math.random().toString(36).substring(2, 12)}`;
 		}
 
 		// 2. Cancel the booking

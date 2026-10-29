@@ -851,3 +851,168 @@ export async function runAdHocQuery(supabase: SupabaseClient, params: AdHocQuery
 		totalCount: rows.length
 	};
 }
+
+export interface PromoCodeReportSummary {
+	code: string;
+	slotNumber: number;
+	discountPercent: number;
+	active: boolean;
+	totalUses: number;
+	totalDiscounted: number;
+	totalRevenue: number;
+}
+
+export interface PromoCodeTransactionItem {
+	paymentId: string;
+	bookingId: string;
+	createdAt: string;
+	promoCode: string;
+	discountPercent: number;
+	originalAmount: number;
+	discountAmount: number;
+	amountPaid: number;
+	status: string;
+	stripePaymentIntentId: string;
+	customerName: string;
+	customerEmail: string;
+	customerPhone: string;
+	tripDate: string;
+	tripType: string;
+	location: string;
+}
+
+export interface PromoCodesReportData {
+	kpis: {
+		totalRedemptions: number;
+		totalDiscountValue: number;
+		totalRevenue: number;
+		topCode: string;
+	};
+	summary: PromoCodeReportSummary[];
+	transactions: PromoCodeTransactionItem[];
+}
+
+export async function getPromoCodesReport(
+	supabase: SupabaseClient,
+	bounds?: DateRangeBounds
+): Promise<PromoCodesReportData> {
+	// 1. Fetch promo codes
+	const { data: promoCodes } = await supabase
+		.from('promo_codes')
+		.select('*')
+		.order('slot_number', { ascending: true });
+
+	// 2. Fetch payment records that used a promo code
+	let query = supabase
+		.from('payment_records')
+		.select(`
+			id,
+			booking_id,
+			stripe_payment_intent_id,
+			amount,
+			original_amount,
+			discount_amount,
+			discount_percent,
+			promo_code,
+			status,
+			created_at,
+			bookings (
+				id,
+				customer_id,
+				customers (name, email, phone),
+				trip_instances (
+					date,
+					listing_templates (trip_type, location)
+				)
+			)
+		`)
+		.not('promo_code', 'is', null)
+		.order('created_at', { ascending: false });
+
+	if (bounds && bounds.preset !== 'custom' && bounds.startIso && bounds.endIso) {
+		query = query.gte('created_at', bounds.startIso).lte('created_at', bounds.endIso);
+	}
+
+	const { data: payments } = await query;
+	const paymentList = (payments || []) as any[];
+
+	const transactions: PromoCodeTransactionItem[] = paymentList.map((p: any) => {
+		const booking = p.bookings;
+		const customer = booking?.customers;
+		const trip = booking?.trip_instances;
+		const listing = trip?.listing_templates;
+
+		return {
+			paymentId: p.id,
+			bookingId: p.booking_id,
+			createdAt: p.created_at,
+			promoCode: p.promo_code,
+			discountPercent: p.discount_percent ?? 0,
+			originalAmount: Number(p.original_amount) || 50.00,
+			discountAmount: Number(p.discount_amount) || 0.00,
+			amountPaid: Number(p.amount) || 0.00,
+			status: p.status,
+			stripePaymentIntentId: p.stripe_payment_intent_id || '',
+			customerName: customer?.name || 'Customer',
+			customerEmail: customer?.email || '',
+			customerPhone: customer?.phone || '',
+			tripDate: trip?.date || 'N/A',
+			tripType: listing?.trip_type || 'Charter',
+			location: listing?.location || 'Florida Keys'
+		};
+	});
+
+	// 3. Build summary per promo code slot
+	const defaultSlots = [
+		{ slot_number: 1, code: 'SAVE10', discount_percent: 10, active: true },
+		{ slot_number: 2, code: 'SAVE20', discount_percent: 20, active: true },
+		{ slot_number: 3, code: 'HALF50', discount_percent: 50, active: true },
+		{ slot_number: 4, code: 'CHARTERFREE', discount_percent: 100, active: true }
+	];
+
+	const codesFromDb = promoCodes || [];
+	const summary: PromoCodeReportSummary[] = defaultSlots.map((def) => {
+		const found = codesFromDb.find((c: any) => c.slot_number === def.slot_number) || def;
+		const txs = transactions.filter(
+			(t) => (t.promoCode || '').toUpperCase() === (found.code || '').toUpperCase()
+		);
+		const totalUses = txs.length;
+		const totalDiscounted = txs.reduce((sum, t) => sum + t.discountAmount, 0);
+		const totalRevenue = txs.reduce((sum, t) => sum + t.amountPaid, 0);
+
+		return {
+			code: found.code,
+			slotNumber: found.slot_number,
+			discountPercent: found.discount_percent,
+			active: found.active ?? true,
+			totalUses,
+			totalDiscounted,
+			totalRevenue
+		};
+	});
+
+	// 4. Compute KPIs
+	const totalRedemptions = transactions.length;
+	const totalDiscountValue = transactions.reduce((sum, t) => sum + t.discountAmount, 0);
+	const totalRevenue = transactions.reduce((sum, t) => sum + t.amountPaid, 0);
+
+	let topCode = 'None';
+	let topUses = 0;
+	for (const s of summary) {
+		if (s.totalUses > topUses) {
+			topUses = s.totalUses;
+			topCode = s.code;
+		}
+	}
+
+	return {
+		kpis: {
+			totalRedemptions,
+			totalDiscountValue,
+			totalRevenue,
+			topCode
+		},
+		summary,
+		transactions
+	};
+}

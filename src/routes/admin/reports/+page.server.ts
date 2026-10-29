@@ -9,6 +9,7 @@ import {
 	getOperationsReport,
 	getCustomersReport,
 	getAccountingReport,
+	getPromoCodesReport,
 	runAdHocQuery,
 	type DatePreset
 } from '$lib/server/reports';
@@ -44,8 +45,12 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 		let accountingData = null;
 		let adhocData = null;
 
+		let promoCodesData = null;
+
 		if (tab === 'performance') {
 			performanceData = await getPerformanceReport(supabaseAdmin, dateBounds);
+		} else if (tab === 'promo-codes') {
+			promoCodesData = await getPromoCodesReport(supabaseAdmin, dateBounds);
 		} else if (tab === 'operations') {
 			operationsData = await getOperationsReport(supabaseAdmin);
 		} else if (tab === 'customers') {
@@ -77,6 +82,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 			operationsData,
 			customersData,
 			accountingData,
+			promoCodesData,
 			adhocData,
 			adhocDataset,
 			adhocStatus,

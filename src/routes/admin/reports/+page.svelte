@@ -207,6 +207,15 @@
 			Customers
 		</button>
 		<button
+			class="tab-btn {activeTab === 'promo-codes' ? 'active' : ''}"
+			onclick={() => switchTab('promo-codes')}
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
+			</svg>
+			Promo Codes
+		</button>
+		<button
 			class="tab-btn {activeTab === 'accounting' ? 'active' : ''}"
 			onclick={() => switchTab('accounting')}
 		>
@@ -227,7 +236,7 @@
 	</div>
 
 	<!-- Date Presets Bar (Used by Performance & Accounting) -->
-	{#if activeTab === 'performance' || activeTab === 'accounting'}
+	{#if activeTab === 'performance' || activeTab === 'accounting' || activeTab === 'promo-codes'}
 		<div class="preset-filter-bar glass">
 			<div class="preset-label">
 				<span class="dot"></span>

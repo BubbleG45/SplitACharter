@@ -162,7 +162,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 	const { user } = await safeGetSession();
 	const supabaseAdmin = getAdminClient();
 
-	const [settingsRes, tripTypesRes, reviewsRes, slidesRes, adminEmailsRes, customersRes, authUsersRes] = await Promise.all([
+	const [settingsRes, tripTypesRes, reviewsRes, slidesRes, adminEmailsRes, customersRes, authUsersRes, promoCodesRes, promoUsageRes] = await Promise.all([
 		supabase
 			.from('admin_notification_settings')
 			.select('*')
@@ -191,7 +191,15 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		supabaseAdmin.auth.admin.listUsers().catch((err) => {
 			console.warn('Could not list auth users in settings load:', err);
 			return { data: { users: [] }, error: err };
-		})
+		}),
+		supabaseAdmin
+			.from('promo_codes')
+			.select('*')
+			.order('slot_number', { ascending: true }),
+		supabaseAdmin
+			.from('payment_records')
+			.select('promo_code, amount, discount_amount, status')
+			.not('promo_code', 'is', null)
 	]);
 
 	if (settingsRes.error) {
@@ -280,6 +288,31 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		};
 	});
 
+	const defaultPromoSlots = [
+		{ slot_number: 1, code: 'SAVE10', discount_percent: 10, active: true },
+		{ slot_number: 2, code: 'SAVE20', discount_percent: 20, active: true },
+		{ slot_number: 3, code: 'HALF50', discount_percent: 50, active: true },
+		{ slot_number: 4, code: 'CHARTERFREE', discount_percent: 100, active: true }
+	];
+
+	const promoUsageList = (promoUsageRes?.data || []) as any[];
+	const promoCodesFromDb = (promoCodesRes?.data || []) as any[];
+
+	const promoCodes = defaultPromoSlots.map((defaultSlot) => {
+		const found = promoCodesFromDb.find((p: any) => p.slot_number === defaultSlot.slot_number) || defaultSlot;
+		const usages = promoUsageList.filter((u: any) => (u.promo_code || '').toUpperCase() === (found.code || '').toUpperCase());
+		const totalUses = usages.length;
+		const totalDiscounted = usages.reduce((sum: number, u: any) => sum + (Number(u.discount_amount) || 0), 0);
+		const totalRevenue = usages.reduce((sum: number, u: any) => sum + (Number(u.amount) || 0), 0);
+
+		return {
+			...found,
+			totalUses,
+			totalDiscounted,
+			totalRevenue
+		};
+	});
+
 	return {
 		settings: settingsRes.data || [],
 		tripTypes: tripTypesRes.data || [],
@@ -287,11 +320,46 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		carouselSlides,
 		changelogRaw,
 		adminUsers,
+		promoCodes,
 		currentUserEmail: user?.email || null
 	};
 };
 
 export const actions: Actions = {
+	savePromoCodes: async ({ request }) => {
+		const supabaseAdmin = getAdminClient();
+		const formData = await request.formData();
+
+		for (let slot = 1; slot <= 4; slot++) {
+			const rawCode = (formData.get('code_' + slot) as string)?.trim().toUpperCase();
+			const discountPercent = parseInt(formData.get('discount_' + slot) as string, 10);
+			const active = formData.get('active_' + slot) === 'true';
+
+			if (!rawCode) {
+				return fail(400, { promoMessage: 'Slot ' + slot + ': Code cannot be empty.' });
+			}
+			if (isNaN(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+				return fail(400, { promoMessage: 'Slot ' + slot + ': Discount must be between 0% and 100%.' });
+			}
+
+			const { error: upsertErr } = await supabaseAdmin
+				.from('promo_codes')
+				.upsert({
+					slot_number: slot,
+					code: rawCode,
+					discount_percent: discountPercent,
+					active,
+					updated_at: new Date().toISOString()
+				}, { onConflict: 'slot_number' });
+
+			if (upsertErr) {
+				console.error('Error saving promo code slot ' + slot + ':', upsertErr);
+				return fail(500, { promoMessage: 'Failed to save Slot ' + slot + ': ' + upsertErr.message });
+			}
+		}
+
+		return { success: true, promoSuccess: true, promoMessage: 'All promo codes successfully updated!' };
+	},
 	saveTemplate: async ({ request, locals: { supabase } }) => {
 		const formData = await request.formData();
 		const id = formData.get('id') as string;

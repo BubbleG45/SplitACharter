@@ -1,5 +1,5 @@
 /**
- * Utility functions for generating and standardizing captain referral promo codes.
+ * Utility functions for generating and standardizing promo codes (both captain referral and checkout discounts).
  */
 
 /**
@@ -28,4 +28,33 @@ export function deriveCaptainPromoCode(charterName?: string | null, captainName?
 	}
 
 	return '';
+}
+
+/**
+ * Normalizes user input for discount promo codes (e.g. " save10 " -> "SAVE10").
+ */
+export function normalizePromoCode(input: string | null | undefined): string {
+	if (!input) return '';
+	return input
+		.trim()
+		.toUpperCase()
+		.replace(/[^A-Z0-9_-]+/g, '');
+}
+
+/**
+ * Calculates discount and final payable amount given a base reservation fee and a percentage (0-100).
+ */
+export function calculateDiscount(
+	baseAmount: number,
+	discountPercent: number
+): { discountAmount: number; finalAmount: number } {
+	if (discountPercent <= 0) {
+		return { discountAmount: 0, finalAmount: Number(baseAmount.toFixed(2)) };
+	}
+	if (discountPercent >= 100) {
+		return { discountAmount: Number(baseAmount.toFixed(2)), finalAmount: 0 };
+	}
+	const discountAmount = Number(((baseAmount * discountPercent) / 100).toFixed(2));
+	const finalAmount = Math.max(0, Number((baseAmount - discountAmount).toFixed(2)));
+	return { discountAmount, finalAmount };
 }

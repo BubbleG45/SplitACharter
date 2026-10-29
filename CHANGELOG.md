@@ -6,6 +6,15 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ## 🚀 October 2026
 
+### 🎟️ Flexible Promo Code System, Admin Management, & Exact Refund Protection — 2026-10-28 20:10 UTC
+
+- **Optional Promo Codes at Checkout**: Added an optional discount promo code box on the checkout page with an explicit "Apply" button. Customers can easily apply promotional discounts to their $50 online reservation fee and see an updated price breakdown before finalizing their booking.
+- **Support for 100% Free Bookings**: When a 100% discount code is applied, the reservation fee drops to $0.00. The credit card entry form is cleanly hidden, and customers can confirm their reservation with a single click without needing to enter payment details.
+- **Admin Promo Code Management**: Added a dedicated Promo Codes manager in Admin Settings (`/admin/settings?tab=sec-promo-codes`). Administrators can customize code names, discount percentages (defaulting to 10%, 20%, 50%, and 100%), and toggle any code on or off across 4 slots with real-time redemption counters.
+- **Comprehensive Promo Code Reporting**: Created a dedicated Promo Codes reporting tab in Admin Reports (`/admin/reports?tab=promo-codes`) featuring total redemptions, total discounts awarded, revenue collected, a breakdown by discount tier, and a detailed transaction log with date filters.
+- **Exact-Amount Refund Safety**: Updated the entire refund engine across Admin Trips, Admin Payments, Customer Dashboard cancellations, and automated Inngest timeouts so that refunds strictly return only the exact dollar amount the customer paid (e.g. $45, $40, $25, or $0.00) rather than a rigid $50 default. Free $0 reservations automatically bypass credit card processing entirely.
+
+
 ### ⚓ Streamlined /browse Filter Bar & Removed Redundant Step Sections — 2026-10-27 21:15 UTC
 
 - **Integrated Departure Location Dropdown**: Moved Departure Location directly into the top filter row alongside dates, group size, duration, and trip type. Customers can easily filter by a specific Florida Key, select multiple keys, or browse all locations.

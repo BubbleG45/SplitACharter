@@ -190,23 +190,29 @@ export const actions: Actions = {
 				.maybeSingle();
 
 			if (payRecord) {
-				try {
-					const refundRes = await refundStripePaymentIntent({
-						paymentIntentId: payRecord.stripe_payment_intent_id,
-						reason: 'requested_by_customer'
-					});
-
-					await supabaseAdmin
-						.from('payment_records')
-						.insert({
-							booking_id: bookingId,
-							stripe_payment_intent_id: refundRes.refundId,
-							amount: payRecord.amount,
-							status: 'refunded'
+				const paidAmount = payRecord.amount ?? 0.00;
+				let refundId = 're_free_' + Math.random().toString(36).substring(2, 12);
+				if (paidAmount > 0 && !payRecord.stripe_payment_intent_id.startsWith('pi_free')) {
+					try {
+						const refundRes = await refundStripePaymentIntent({
+							paymentIntentId: payRecord.stripe_payment_intent_id,
+							amountInCents: Math.round(paidAmount * 100),
+							reason: 'requested_by_customer'
 						});
-				} catch (refundErr) {
-					console.error('Error processing Stripe refund during booking cancellation:', refundErr);
+						refundId = refundRes.refundId;
+					} catch (refundErr) {
+						console.error('Error processing Stripe refund during booking cancellation:', refundErr);
+					}
 				}
+
+				await supabaseAdmin
+					.from('payment_records')
+					.insert({
+						booking_id: bookingId,
+						stripe_payment_intent_id: refundId,
+						amount: paidAmount,
+						status: 'refunded'
+					});
 			}
 		}
 
@@ -257,7 +263,7 @@ export const actions: Actions = {
 			success: true,
 			wasRefunded: !isReconfirmed,
 			message: !isReconfirmed
-				? 'Your booking has been canceled and your $50 reservation deposit has been fully refunded.'
+				? 'Your booking has been canceled and your reservation deposit has been fully refunded.'
 				: 'Your booking has been canceled. Per our policy, fees for reconfirmed trips are non-refundable.'
 		};
 	},

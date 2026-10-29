@@ -135,6 +135,20 @@
 	}
 
 	// Admin Access States
+	// Promo Codes Management State
+	let promoDrafts = $state(
+		(data.promoCodes || []).map((p: any) => ({
+			slot_number: p.slot_number,
+			code: p.code || '',
+			discount_percent: p.discount_percent ?? 10,
+			active: p.active ?? true,
+			totalUses: p.totalUses || 0,
+			totalDiscounted: p.totalDiscounted || 0,
+			totalRevenue: p.totalRevenue || 0
+		}))
+	);
+	let savingPromoCodes = $state(false);
+
 	let revokingAdmin = $state<any | null>(null);
 	let revokeConfirmInput = $state('');
 	let isRevokeModalOpen = $state(false);
@@ -1937,6 +1951,114 @@
 			></iframe>
 		</div>
 	</div>
+{:else if activeNavSection === 'sec-promo-codes'}
+	<div id="sec-promo-codes" class="admin-header section-header">
+		<div>
+			<span class="subtitle">Discounts & Promotions</span>
+			<h2>Promo Code Management</h2>
+		</div>
+		<p class="section-lead-text">
+			Configure up to 4 discount codes for checkout. Toggle codes on/off, customize the discount percentage (10%, 20%, 50%, 100%), and view live usage totals.
+		</p>
+	</div>
+
+	{#if form?.promoMessage}
+		<div class="alert" class:alert-success={form?.promoSuccess} class:alert-danger={!form?.promoSuccess} style="margin-bottom: 1.5rem;">
+			<span>{form.promoMessage}</span>
+		</div>
+	{/if}
+
+	<form method="POST" action="?/savePromoCodes" use:enhance={() => {
+		savingPromoCodes = true;
+		return async ({ update }) => {
+			await update();
+			savingPromoCodes = false;
+		};
+	}}>
+		<div class="promo-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+			{#each promoDrafts as draft (draft.slot_number)}
+				<div class="glass" style="padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border-light); background: var(--bg-surface); position: relative;">
+					<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+						<span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0, 210, 255, 0.12); color: #00d2ff; padding: 3px 10px; border-radius: 20px;">
+							Slot {draft.slot_number}
+						</span>
+						<label class="toggle-switch" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+							<input
+								type="checkbox"
+								name="active_{draft.slot_number}"
+								value="true"
+								bind:checked={draft.active}
+								style="display: none;"
+							/>
+							<span class="switch-ui" style="display: inline-block; width: 38px; height: 22px; background: {draft.active ? '#10b981' : 'rgba(255,255,255,0.2)'}; border-radius: 12px; position: relative; transition: background 0.2s;">
+								<span style="display: block; width: 16px; height: 16px; background: #fff; border-radius: 50%; position: absolute; top: 3px; left: {draft.active ? '19px' : '3px'}; transition: left 0.2s;"></span>
+							</span>
+							<span style="font-size: 0.8rem; font-weight: 600; color: {draft.active ? '#10b981' : 'var(--text-secondary)'};">
+								{draft.active ? 'Active' : 'Inactive'}
+							</span>
+						</label>
+					</div>
+
+					<div class="form-group" style="margin-bottom: 0.85rem;">
+						<label for="code_{draft.slot_number}" style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 600;">Promo Code</label>
+						<input
+							type="text"
+							id="code_{draft.slot_number}"
+							name="code_{draft.slot_number}"
+							bind:value={draft.code}
+							placeholder="e.g. SAVE10"
+							style="text-transform: uppercase; font-family: monospace; font-weight: bold; font-size: 1.05rem;"
+							class="card-input"
+							required
+						/>
+					</div>
+
+					<div class="form-group" style="margin-bottom: 1rem;">
+						<label for="discount_{draft.slot_number}" style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 600;">Discount Percentage (%)</label>
+						<div style="position: relative;">
+							<input
+								type="number"
+								id="discount_{draft.slot_number}"
+								name="discount_{draft.slot_number}"
+								bind:value={draft.discount_percent}
+								min="0"
+								max="100"
+								class="card-input"
+								style="padding-right: 2.2rem; font-weight: 600;"
+								required
+							/>
+							<span style="position: absolute; right: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-weight: 600;">%</span>
+						</div>
+					</div>
+
+					<!-- Quick Usage Metrics -->
+					<div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border-light); font-size: 0.8rem; display: flex; justify-content: space-between; color: var(--text-secondary);">
+						<div>
+							<span style="display: block; font-size: 0.7rem; text-transform: uppercase;">Uses</span>
+							<strong style="color: var(--text-primary); font-size: 1rem;">{draft.totalUses}</strong>
+						</div>
+						<div>
+							<span style="display: block; font-size: 0.7rem; text-transform: uppercase;">Total Saved</span>
+							<strong style="color: #10b981; font-size: 1rem;">${draft.totalDiscounted.toFixed(2)}</strong>
+						</div>
+						<div>
+							<span style="display: block; font-size: 0.7rem; text-transform: uppercase;">Revenue</span>
+							<strong style="color: var(--primary, #00d2ff); font-size: 1rem;">${draft.totalRevenue.toFixed(2)}</strong>
+						</div>
+					</div>
+				</div>
+			{/each}
+		</div>
+
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+			<a href="/admin/reports?tab=promo-codes" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+				📊 View Detailed Transaction Report →
+			</a>
+			<button type="submit" class="btn btn-primary" disabled={savingPromoCodes}>
+				{savingPromoCodes ? 'Saving Promo Codes...' : '💾 Save Promo Codes'}
+			</button>
+		</div>
+	</form>
 {:else if activeNavSection === 'sec-admin-access'}
 	<div id="sec-admin-access" class="admin-header section-header">
 		<div>

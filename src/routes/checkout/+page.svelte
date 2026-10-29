@@ -128,6 +128,78 @@
 		}
 	}
 
+	// Discount Promo Code state (10%, 20%, 50%, 100%)
+	let discountPromoCode = $state('');
+	let appliedDiscountCode = $state('');
+	let discountPercent = $state(0);
+	let discountAmount = $state(0);
+	let payableAmount = $state(50.00);
+	let validatingDiscountCode = $state(false);
+	let isFreeReservation = $derived(payableAmount === 0);
+	let discountValidation = $state<{
+		valid: boolean;
+		status: 'none' | 'valid' | 'invalid' | 'inactive';
+		message: string;
+	}>({
+		valid: false,
+		status: 'none',
+		message: ''
+	});
+
+	async function applyDiscountPromoCode() {
+		const code = discountPromoCode.trim().toUpperCase();
+		if (!code) {
+			discountValidation = { valid: false, status: 'none', message: '' };
+			return;
+		}
+
+		validatingDiscountCode = true;
+		try {
+			const res = await fetch('/api/validate-discount-code?code=' + encodeURIComponent(code));
+			const result = await res.json();
+			if (result.valid) {
+				appliedDiscountCode = result.code;
+				discountPercent = result.discountPercent;
+				discountAmount = result.discountAmount;
+				payableAmount = result.finalAmount;
+				discountValidation = {
+					valid: true,
+					status: 'valid',
+					message: result.message
+				};
+				if (result.finalAmount > 0) {
+					await prepareStripePayment(result.code);
+				}
+			} else {
+				discountValidation = {
+					valid: false,
+					status: result.status || 'invalid',
+					message: result.message || 'Invalid promo code.'
+				};
+			}
+		} catch (err) {
+			console.error('Error validating discount promo code:', err);
+			discountValidation = {
+				valid: false,
+				status: 'invalid',
+				message: 'Could not verify promo code. Please try again.'
+			};
+		} finally {
+			validatingDiscountCode = false;
+		}
+	}
+
+	async function removeDiscountPromoCode() {
+		discountPromoCode = '';
+		appliedDiscountCode = '';
+		discountPercent = 0;
+		discountAmount = 0;
+		payableAmount = 50.00;
+		discountValidation = { valid: false, status: 'none', message: '' };
+		await prepareStripePayment('');
+	}
+
+
 	// Captain Promo Code interactive validation state
 	let validatingPromoCode = $state(false);
 	let promoCodeValidation = $state<{
@@ -208,8 +280,16 @@
 		}
 	});
 
-	async function prepareStripePayment() {
+	async function prepareStripePayment(codeToUse?: string) {
 		paymentErrorMessage = '';
+
+		const activeCode = codeToUse !== undefined ? codeToUse : appliedDiscountCode;
+
+		if (payableAmount === 0) {
+			stripeLoading = false;
+			paymentIntentId = 'pi_free';
+			return true;
+		}
 
 		if (!data.isAuthenticated || !stripe || !data.publishableKey || data.publishableKey.includes('placeholder')) {
 			mode = 'sandbox';
@@ -227,13 +307,19 @@
 					name: name || data.profile?.name || 'Customer',
 					phone: phone || data.profile?.phone || '555-000-0000',
 					email: email || data.userEmail || 'customer@splitacharter.boats',
-					groupSize
+					groupSize,
+					promoCode: activeCode
 				})
 			});
 
 			const result = await res.json();
 
-			if (result.clientSecret) {
+			if (result.isFree) {
+				paymentIntentId = 'pi_free';
+				payableAmount = 0.00;
+				stripeLoading = false;
+				return true;
+			} else if (result.clientSecret) {
 				clientSecret = result.clientSecret;
 				paymentIntentId = result.paymentIntentId;
 
@@ -290,6 +376,11 @@
 		if (!commitment || !liability) {
 			event.preventDefault();
 			paymentErrorMessage = 'Please accept both agreement checkboxes in Section 2 before paying.';
+			return;
+		}
+
+		if (isFreeReservation) {
+			submitting = true;
 			return;
 		}
 
@@ -695,9 +786,98 @@
 					<section class="form-section">
 						<div class="section-title">
 							<span class="step-badge">3</span>
-							<h2>Reservation Fee ($50.00)</h2>
+							<h2>
+								Reservation Fee
+								{#if payableAmount === 0}
+									(FREE)
+								{:else}
+									(${payableAmount.toFixed(2)})
+								{/if}
+							</h2>
 						</div>
-						<p class="section-desc">A $50.00 non-refundable reservation deposit is collected securely via Stripe to confirm your slot.</p>
+						<p class="section-desc">A reservation deposit is collected securely via Stripe to confirm your slot. Apply a promo code below to reduce your deposit.</p>
+
+						<!-- Discount Promo Code Entry -->
+						<div class="discount-promo-container glass" style="margin-bottom: 1.5rem; padding: 1.1rem 1.25rem; border-radius: 8px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.02);">
+							<label for="checkout-discount-promo" style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.35rem;">
+								🎟️ Have a Discount Promo Code? <span class="optional-tag">(Optional)</span>
+							</label>
+							<p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+								Enter your 10%, 20%, 50%, or 100% discount promo code and click Apply before completing checkout.
+							</p>
+							<div class="promo-code-input-wrapper">
+								<input
+									type="text"
+									id="checkout-discount-promo"
+									bind:value={discountPromoCode}
+									placeholder="e.g. SAVE10, SAVE20, HALF50, CHARTERFREE"
+									style="text-transform: uppercase;"
+									disabled={validatingDiscountCode || !!appliedDiscountCode}
+									onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyDiscountPromoCode(); } }}
+									class:is-valid={discountValidation.status === 'valid'}
+									class:is-invalid={discountValidation.status === 'invalid' || discountValidation.status === 'inactive'}
+								/>
+								{#if appliedDiscountCode}
+									<button
+										type="button"
+										class="btn btn-secondary btn-small"
+										onclick={removeDiscountPromoCode}
+										style="padding: 0.5rem 0.85rem;"
+									>
+										Remove
+									</button>
+								{:else}
+									<button
+										type="button"
+										class="btn-validate-promo"
+										onclick={applyDiscountPromoCode}
+										disabled={validatingDiscountCode || !discountPromoCode.trim()}
+									>
+										{validatingDiscountCode ? 'Applying...' : 'Apply Code'}
+									</button>
+								{/if}
+							</div>
+
+							{#if discountValidation.status !== 'none'}
+								<div
+									class="promo-feedback-badge"
+									class:badge-valid={discountValidation.status === 'valid'}
+									class:badge-invalid={discountValidation.status === 'invalid' || discountValidation.status === 'inactive'}
+									style="margin-top: 0.65rem;"
+								>
+									{#if discountValidation.status === 'valid'}
+										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+									{:else}
+										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+									{/if}
+									<span>{discountValidation.message}</span>
+								</div>
+							{/if}
+
+							<!-- Pricing breakdown pill -->
+							<div class="pricing-breakdown" style="margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-light); font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.35rem;">
+								<div style="display: flex; justify-content: space-between; color: var(--text-secondary);">
+									<span>Standard Reservation Fee:</span>
+									<span>$50.00</span>
+								</div>
+								{#if discountPercent > 0}
+									<div style="display: flex; justify-content: space-between; color: #10b981; font-weight: 600;">
+										<span>Promo Discount ({appliedDiscountCode} - {discountPercent}%):</span>
+										<span>-${discountAmount.toFixed(2)}</span>
+									</div>
+								{/if}
+								<div style="display: flex; justify-content: space-between; color: var(--text-primary); font-weight: 700; font-size: 0.95rem; margin-top: 0.25rem;">
+									<span>Total Reservation Deposit Due:</span>
+									<span style="color: {payableAmount === 0 ? '#10b981' : 'var(--primary, #00d2ff)'};">
+										{#if payableAmount === 0}
+											FREE ($0.00)
+										{:else}
+											${payableAmount.toFixed(2)}
+										{/if}
+									</span>
+								</div>
+							</div>
+						</div>
 
 						{#if paymentErrorMessage}
 							<div class="alert alert-danger glass" style="margin-bottom: 1rem;">
@@ -716,6 +896,15 @@
 							</div>
 						{/if}
 
+						{#if isFreeReservation}
+							<div class="free-reservation-banner glass" style="padding: 1.75rem; text-align: center; border: 2px solid #10b981; border-radius: 8px; background: rgba(16, 185, 129, 0.08); margin-bottom: 1.5rem;">
+								<div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎉</div>
+								<h3 style="color: #10b981; margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 700;">100% Discount Applied!</h3>
+								<p style="color: var(--text-secondary); margin: 0 auto; max-width: 460px; font-size: 0.9rem; line-height: 1.45;">
+									Your online reservation fee is completely waived ($0.00 due). No credit card required. Click below to immediately lock in your charter reservation slot!
+								</p>
+							</div>
+						{:else}
 						<div class="mock-card-panel glass">
 							{#if data.publishableKey && !data.publishableKey.includes('placeholder') && mode === 'stripe'}
 								<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
@@ -833,8 +1022,11 @@
 								</div>
 							{/if}
 						</div>
+						{/if}
 					</section>
 
+					<input type="hidden" name="promo_code" value={appliedDiscountCode} />
+					<input type="hidden" name="stripe_payment_intent_id" value={paymentIntentId} />
 					<div class="form-actions">
 						{#if !data.isAuthenticated}
 							<div class="auth-prompt-card glass" style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; text-align: center;">
@@ -862,7 +1054,13 @@
 									</svg>
 									<span>Processing Reservation Deposit...</span>
 								{:else}
-									{isTestMode ? 'Simulate $50.00 Test Deposit & Reserve Slot' : 'Pay $50.00 & Reserve Slot'}
+									{#if isFreeReservation}
+										Confirm Free Reservation ($0.00)
+									{:else if isTestMode}
+										Simulate ${payableAmount.toFixed(2)} Test Deposit & Reserve Slot
+									{:else}
+										Pay ${payableAmount.toFixed(2)} & Reserve Slot
+									{/if}
 								{/if}
 							</button>
 						{/if}
@@ -908,9 +1106,22 @@
 
 				<div class="divider"></div>
 
+				{#if discountPercent > 0}
+				<div class="summary-item" style="color: #10b981; font-weight: 600;">
+					<span class="summary-label">Promo ({appliedDiscountCode})</span>
+					<span class="summary-val">-{discountPercent}% (-${discountAmount.toFixed(2)})</span>
+				</div>
+				<div class="divider"></div>
+				{/if}
 				<div class="due-row">
 					<span>Due Now:</span>
-					<span class="due-amount">$50.00</span>
+					<span class="due-amount" style="color: {payableAmount === 0 ? '#10b981' : 'var(--primary, #00d2ff)'};">
+						{#if payableAmount === 0}
+							FREE ($0.00)
+						{:else}
+							${payableAmount.toFixed(2)}
+						{/if}
+					</span>
 				</div>
 			</div>
 		</div>
