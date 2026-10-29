@@ -614,3 +614,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-29 00:08 UTC (7ba3e8a)
 - feat(promo): add promo code management, checkout discounts, reporting, and exact refunds
+
+### Push Update — 2026-10-29 00:15 UTC (2dfb9ca)
+- fix(admin-settings): add promo codes nav pill and remove checkout helper text
