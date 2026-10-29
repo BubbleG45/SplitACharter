@@ -136,18 +136,22 @@
 
 	// Admin Access States
 	// Promo Codes Management State
-	let promoDrafts = $state(
-		(data.promoCodes || []).map((p: any) => ({
-			slot_number: p.slot_number,
-			code: p.code || '',
-			discount_percent: p.discount_percent ?? 10,
-			active: p.active ?? true,
-			totalUses: p.totalUses || 0,
-			totalDiscounted: p.totalDiscounted || 0,
-			totalRevenue: p.totalRevenue || 0
-		}))
-	);
+	let promoDrafts = $state<any[]>([]);
 	let savingPromoCodes = $state(false);
+
+	$effect(() => {
+		if (data.promoCodes && data.promoCodes.length > 0) {
+			promoDrafts = data.promoCodes.map((p: any) => ({
+				slot_number: p.slot_number,
+				code: p.code || '',
+				discount_percent: p.discount_percent ?? 10,
+				active: p.active ?? true,
+				totalUses: p.totalUses || 0,
+				totalDiscounted: p.totalDiscounted || 0,
+				totalRevenue: p.totalRevenue || 0
+			}));
+		}
+	});
 
 	let revokingAdmin = $state<any | null>(null);
 	let revokeConfirmInput = $state('');
@@ -1979,7 +1983,7 @@
 	<form method="POST" action="?/savePromoCodes" use:enhance={() => {
 		savingPromoCodes = true;
 		return async ({ update }) => {
-			await update();
+			await update({ reset: false });
 			savingPromoCodes = false;
 		};
 	}}>
@@ -1992,9 +1996,12 @@
 						</span>
 						<label class="toggle-switch" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
 							<input
-								type="checkbox"
+								type="hidden"
 								name="active_{draft.slot_number}"
-								value="true"
+								value={draft.active ? 'true' : 'false'}
+							/>
+							<input
+								type="checkbox"
 								bind:checked={draft.active}
 								style="display: none;"
 							/>
@@ -2047,11 +2054,11 @@
 						</div>
 						<div>
 							<span style="display: block; font-size: 0.7rem; text-transform: uppercase;">Total Saved</span>
-							<strong style="color: #10b981; font-size: 1rem;">${draft.totalDiscounted.toFixed(2)}</strong>
+							<strong style="color: #10b981; font-size: 1rem;">${(draft.totalDiscounted || 0).toFixed(2)}</strong>
 						</div>
 						<div>
 							<span style="display: block; font-size: 0.7rem; text-transform: uppercase;">Revenue</span>
-							<strong style="color: var(--primary, #00d2ff); font-size: 1rem;">${draft.totalRevenue.toFixed(2)}</strong>
+							<strong style="color: var(--primary, #00d2ff); font-size: 1rem;">${(draft.totalRevenue || 0).toFixed(2)}</strong>
 						</div>
 					</div>
 				</div>
