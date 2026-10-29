@@ -618,3 +618,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-29 00:15 UTC (2dfb9ca)
 - fix(admin-settings): add promo codes nav pill and remove checkout helper text
+
+### Push Update — 2026-10-29 00:22 UTC (f78851d)
+- fix(admin-settings): prevent promo form reset on save and sync live state
