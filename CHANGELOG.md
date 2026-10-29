@@ -610,3 +610,6 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### Push Update — 2026-10-27 21:17 UTC (12a63f4)
 - Streamline /browse filters with location dropdown and remove redundant step sections
+
+### Push Update — 2026-10-29 00:08 UTC (7ba3e8a)
+- feat(promo): add promo code management, checkout discounts, reporting, and exact refunds
