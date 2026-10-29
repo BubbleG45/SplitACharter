@@ -799,18 +799,15 @@
 
 						<!-- Discount Promo Code Entry -->
 						<div class="discount-promo-container glass" style="margin-bottom: 1.5rem; padding: 1.1rem 1.25rem; border-radius: 8px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.02);">
-							<label for="checkout-discount-promo" style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.35rem;">
+							<label for="checkout-discount-promo" style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;">
 								🎟️ Have a Discount Promo Code? <span class="optional-tag">(Optional)</span>
 							</label>
-							<p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
-								Enter your 10%, 20%, 50%, or 100% discount promo code and click Apply before completing checkout.
-							</p>
 							<div class="promo-code-input-wrapper">
 								<input
 									type="text"
 									id="checkout-discount-promo"
 									bind:value={discountPromoCode}
-									placeholder="e.g. SAVE10, SAVE20, HALF50, CHARTERFREE"
+									placeholder=""
 									style="text-transform: uppercase;"
 									disabled={validatingDiscountCode || !!appliedDiscountCode}
 									onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyDiscountPromoCode(); } }}

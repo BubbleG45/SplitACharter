@@ -8,7 +8,8 @@ This change log keeps the site owner up to date on all updates, new features, de
 
 ### 🎟️ Flexible Promo Code System, Admin Management, & Exact Refund Protection — 2026-10-28 20:10 UTC
 
-- **Optional Promo Codes at Checkout**: Added an optional discount promo code box on the checkout page with an explicit "Apply" button. Customers can easily apply promotional discounts to their $50 online reservation fee and see an updated price breakdown before finalizing their booking.
+- **Optional Promo Codes at Checkout**: Added an optional discount promo code box on the checkout page with an explicit "Apply" button. The field has zero helper text or placeholders so available codes remain private. Customers enter their code to see an updated price breakdown before finalizing their booking.
+- **Admin Settings Navigation Tab**: Added the "🎟️ Promo Codes" tab directly to the navigation pills in Admin Settings (`/admin/settings`) so administrators can seamlessly access and manage all 4 promo slots.
 - **Support for 100% Free Bookings**: When a 100% discount code is applied, the reservation fee drops to $0.00. The credit card entry form is cleanly hidden, and customers can confirm their reservation with a single click without needing to enter payment details.
 - **Admin Promo Code Management**: Added a dedicated Promo Codes manager in Admin Settings (`/admin/settings?tab=sec-promo-codes`). Administrators can customize code names, discount percentages (defaulting to 10%, 20%, 50%, and 100%), and toggle any code on or off across 4 slots with real-time redemption counters.
 - **Comprehensive Promo Code Reporting**: Created a dedicated Promo Codes reporting tab in Admin Reports (`/admin/reports?tab=promo-codes`) featuring total redemptions, total discounts awarded, revenue collected, a breakdown by discount tier, and a detailed transaction log with date filters.

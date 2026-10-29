@@ -537,6 +537,14 @@
 		<button 
 			type="button" 
 			class="nav-pill-btn" 
+			class:active={activeNavSection === 'sec-promo-codes'} 
+			onclick={() => navigateToSection('sec-promo-codes')}
+		>
+			🎟️ Promo Codes
+		</button>
+		<button 
+			type="button" 
+			class="nav-pill-btn" 
 			class:active={activeNavSection === 'sec-admin-access'} 
 			onclick={() => navigateToSection('sec-admin-access')}
 		>
